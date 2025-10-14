@@ -277,3 +277,37 @@ Implementation options:
 - **Lưu ý: các trường update có thể có hoặc không**
 
 ---
+
+## Endpoint 6 — Thay đổi mật khẩu
+
+**PUT `/api/users/update-password`**
+
+- **Mô tả:** cập nhật mật khẩu người dùng
+- **HTTP:** PUT
+- **URL:** **`/auth/users/update-password`**
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+```json
+{
+    "password":"123",
+    "oldPassword":"123",
+    "confirmPassword":"123"
+}
+```
+
+- **Response body**
+
+```json
+{
+    "message": "Cập nhật mật khẩu thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
