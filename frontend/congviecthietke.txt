@@ -1,3 +1,4 @@
-thiết kế đăng kí đăng nhập ngày 13/11
-thiết kế đăng kí đăng nhập ngày 17/11
-thiết kế đăng kí đăng nhập ngày 24/11
+thiết kế giao diện đăng nhập ngày 13/11
+thiết kế giao diện đăng ký ngày 17/11
+thiết kế đăng kí dashboard teacher ngày 24/11
+thiết kế outside ngày 20/10
