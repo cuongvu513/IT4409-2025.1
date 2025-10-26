@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Web Thi Trực Tuyến</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Thiết lập Font Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc; /* Màu nền nhẹ nhàng */
+        }
+        /* Custom styles for a nice button effect */
+        .option-button {
+            transition: all 0.3s ease;
+        }
+        .option-button:hover:not(.selected):not(.correct):not(.incorrect) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .option-button.selected {
+            border: 3px solid #3b82f6; /* Vòng viền xanh khi chọn */
+            background-color: #eff6ff;
+        }
+        .option-button.correct {
+            background-color: #10b981; /* Xanh lá cây cho đáp án đúng */
+            color: white;
+            border: 3px solid #059669;
+        }
+        .option-button.incorrect {
+            background-color: #ef4444; /* Đỏ cho đáp án sai */
+            color: white;
+            border: 3px solid #dc2626;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Firebase SDK Imports (MANDATORY BOILERPLATE) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables required by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const __initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        window.app = initializeApp(firebaseConfig);
+        window.db = getFirestore(window.app);
+        window.auth = getAuth(window.app);
+        window.userId = null;
+
+        // Authentication logic
+        async function authenticate() {
+            try {
+                if (__initial_auth_token) {
+                    await signInWithCustomToken(window.auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(window.auth);
+                }
+
+                onAuthStateChanged(window.auth, (user) => {
+                    if (user) {
+                        window.userId = user.uid;
+                        // console.log("User authenticated. UID:", window.userId);
+                    } else {
+                        // console.log("User signed out or anonymous.");
+                        window.userId = crypto.randomUUID(); // Fallback ID for anonymous
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase Auth Error:", error);
+                window.userId = crypto.randomUUID(); // Fallback ID on error
+            }
+        }
+
+        authenticate();
+        // Since this is a self-contained quiz, the primary logic doesn't strictly depend on Firestore,
+        // but the setup is mandatory.
+    </script>
+
+    <!-- MAIN QUIZ CONTAINER -->
+    <div id="quiz-container" class="w-full max-w-lg bg-white shadow-xl rounded-xl p-6 md:p-10 border border-gray-100">
+
+        <!-- Header/Status -->
+        <div id="status-header" class="flex justify-between items-center mb-6 border-b pb-4">
+            <div id="question-count" class="text-lg font-semibold text-indigo-600">
+                Câu hỏi: 1/5
+            </div>
+            <div class="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="timer" class="text-lg font-bold text-red-600">00:60</span>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="text-center">
+            <h1 class="text-3xl font-extrabold text-gray-800 mb-4">Bài Thi Thử Trực Tuyến</h1>
+            <p class="text-gray-500 mb-8">Hãy sẵn sàng kiểm tra kiến thức của bạn. Bạn có 60 giây cho mỗi câu hỏi.</p>
+            <button onclick="startQuiz()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md transform hover:scale-[1.02]">
+                BẮT ĐẦU THI
+            </button>
+        </div>
+
+        <!-- Quiz Content -->
+        <div id="quiz-content" class="hidden">
+            <h2 id="question-text" class="text-xl font-bold text-gray-800 mb-6 min-h-[50px]">
+                <!-- Question text will be inserted here -->
+            </h2>
+            <div id="options-container" class="space-y-4">
+                <!-- Options will be dynamically inserted here -->
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="mt-8 flex justify-end space-x-4">
+                <button id="next-button" onclick="nextQuestion()" disabled class="bg-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-lg transition duration-200">
+                    Câu Tiếp Theo
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden text-center p-6">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">KẾT QUẢ CỦA BẠN</h2>
+            <p id="final-score" class="text-5xl font-extrabold text-green-600 mb-6">
+                <!-- Score will be inserted here -->
+            </p>
+            <p id="score-message" class="text-xl text-gray-600 mb-8">
+                <!-- Message based on score -->
+            </p>
+            <button onclick="resetQuiz()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md transform hover:scale-[1.02]">
+                Làm Bài Lại
+            </button>
+        </div>
+
+        <!-- Notification Message Box (Custom Alert) -->
+        <div id="notification-box" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center transform scale-100 transition duration-300">
+                <p id="notification-message" class="text-lg font-medium text-gray-800 mb-4">Thời gian đã hết!</p>
+                <button onclick="closeNotification()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg">Đóng</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Dữ liệu câu hỏi
+        const quizData = [
+            {
+                question: "HTML là viết tắt của từ gì?",
+                options: ["Hyper Text Markup Language", "Hyperlinks and Text Markup Language", "Home Tool Markup Language", "Hyper Typing Markup Language"],
+                answer: "Hyper Text Markup Language"
+            },
+            {
+                question: "CSS được sử dụng để làm gì?",
+                options: ["Lưu trữ dữ liệu", "Định dạng và tạo kiểu cho tài liệu HTML", "Thêm logic tương tác", "Tạo cơ sở dữ liệu"],
+                answer: "Định dạng và tạo kiểu cho tài liệu HTML"
+            },
+            {
+                question: "Để khai báo một biến không thể gán lại trong JavaScript, chúng ta dùng từ khóa nào?",
+                options: ["var", "let", "const", "static"],
+                answer: "const"
+            },
+            {
+                question: "Tailwind CSS là gì?",
+                options: ["Một framework JavaScript", "Một thư viện cơ sở dữ liệu", "Một framework CSS utility-first", "Một ngôn ngữ lập trình backend"],
+                answer: "Một framework CSS utility-first"
+            },
+            {
+                question: "Nguyên tắc 'Single-File Mandate' trong môi trường này nghĩa là gì?",
+                options: ["Chỉ được dùng 1 ngôn ngữ lập trình", "Tất cả HTML, CSS, JS phải nằm trong một file", "Chỉ được tạo 1 trang web", "Mỗi dự án chỉ có 1 thư mục"],
+                answer: "Tất cả HTML, CSS, JS phải nằm trong một file"
+            }
+        ];
+
+        // Biến trạng thái
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedAnswer = null;
+        let timerInterval;
+        const TIME_LIMIT = 60; // 60 giây cho mỗi câu
+        let timeLeft = TIME_LIMIT;
+
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const quizContent = document.getElementById('quiz-content');
+        const resultScreen = document.getElementById('result-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const questionCount = document.getElementById('question-count');
+        const timerDisplay = document.getElementById('timer');
+        const nextButton = document.getElementById('next-button');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const scoreMessage = document.getElementById('score-message');
+        const notificationBox = document.getElementById('notification-box');
+        const notificationMessage = document.getElementById('notification-message');
+
+        /**
+         * Bắt đầu bài thi, ẩn màn hình bắt đầu và hiển thị nội dung câu hỏi đầu tiên.
+         */
+        function startQuiz() {
+            score = 0;
+            currentQuestionIndex = 0;
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            quizContent.classList.remove('hidden');
+            displayQuestion();
+        }
+
+        /**
+         * Thiết lập và khởi động lại bộ đếm thời gian cho câu hỏi hiện tại.
+         */
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = TIME_LIMIT;
+            timerDisplay.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `00:${timeLeft.toString().padStart(2, '0')}`;
+
+                if (timeLeft <= 10) {
+                    timerDisplay.classList.add('text-red-600', 'animate-pulse');
+                } else {
+                    timerDisplay.classList.remove('text-red-600', 'animate-pulse');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        /**
+         * Xử lý khi hết thời gian cho một câu hỏi.
+         */
+        function handleTimeout() {
+            showNotification("Hết giờ! Đáp án của bạn chưa được tính.");
+            // Tự động chuyển sang câu tiếp theo sau khi hết giờ
+            // Hoặc bạn có thể giữ nguyên câu hỏi và không cho chọn nữa
+            setTimeout(() => {
+                // Tắt khả năng chọn đáp án
+                document.querySelectorAll('.option-button').forEach(btn => btn.disabled = true);
+                nextButton.disabled = false;
+                // Kích hoạt chuyển câu hỏi sau một chút thời gian để người dùng kịp đọc thông báo
+                setTimeout(nextQuestion, 1500);
+            }, 500);
+        }
+
+        /**
+         * Hiển thị câu hỏi và các tùy chọn tương ứng.
+         */
+        function displayQuestion() {
+            if (currentQuestionIndex >= quizData.length) {
+                showResults();
+                return;
+            }
+
+            // Đặt lại trạng thái
+            selectedAnswer = null;
+            nextButton.disabled = true;
+            optionsContainer.innerHTML = '';
+            
+            const currentQ = quizData[currentQuestionIndex];
+
+            // Cập nhật số câu hỏi
+            questionCount.textContent = `Câu hỏi: ${currentQuestionIndex + 1}/${quizData.length}`;
+            questionText.textContent = currentQ.question;
+            
+            // Khởi động Timer
+            startTimer();
+
+            // Tạo các nút tùy chọn
+            currentQ.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = 'option-button w-full text-left bg-gray-50 text-gray-700 p-4 rounded-lg border border-gray-200 font-medium transition duration-150 ease-in-out hover:bg-gray-100 focus:outline-none';
+                button.onclick = () => selectAnswer(button, option);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        /**
+         * Xử lý khi người dùng chọn một đáp án.
+         * @param {HTMLElement} selectedButton - Nút đáp án được chọn.
+         * @param {string} answerText - Nội dung đáp án được chọn.
+         */
+        function selectAnswer(selectedButton, answerText) {
+            if (selectedAnswer !== null) return; // Chỉ cho phép chọn 1 lần
+
+            clearInterval(timerInterval); // Dừng đồng hồ khi đã chọn
+
+            // Loại bỏ class 'selected' khỏi tất cả các nút và thêm vào nút đã chọn
+            document.querySelectorAll('.option-button').forEach(btn => {
+                btn.classList.remove('selected');
+                btn.disabled = true; // Vô hiệu hóa tất cả các nút sau khi chọn
+            });
+
+            selectedButton.classList.add('selected');
+            selectedAnswer = answerText;
+            nextButton.disabled = false; // Cho phép chuyển câu
+
+            // Hiển thị đáp án đúng/sai
+            const currentQ = quizData[currentQuestionIndex];
+            if (selectedAnswer === currentQ.answer) {
+                selectedButton.classList.add('correct');
+                score++;
+            } else {
+                selectedButton.classList.add('incorrect');
+                // Tìm và tô màu đáp án đúng
+                document.querySelectorAll('.option-button').forEach(btn => {
+                    if (btn.textContent === currentQ.answer) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+        }
+
+        /**
+         * Chuyển sang câu hỏi tiếp theo.
+         */
+        function nextQuestion() {
+            currentQuestionIndex++;
+            displayQuestion();
+        }
+
+        /**
+         * Hiển thị màn hình kết quả.
+         */
+        function showResults() {
+            clearInterval(timerInterval);
+            quizContent.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+
+            const percentage = (score / quizData.length) * 100;
+            finalScoreDisplay.textContent = `${score}/${quizData.length}`;
+
+            let message = "";
+            if (percentage === 100) {
+                message = "Xuất sắc! Bạn đã đạt điểm tuyệt đối. [Image of Gold Medal]";
+                finalScoreDisplay.classList.replace('text-green-600', 'text-yellow-600');
+            } else if (percentage >= 60) {
+                message = "Rất tốt! Bạn có kiến thức vững chắc.";
+                finalScoreDisplay.classList.replace('text-yellow-600', 'text-green-600');
+            } else {
+                message = "Cần cố gắng hơn. Hãy ôn tập và thử lại nhé.";
+                finalScoreDisplay.classList.replace('text-yellow-600', 'text-green-600');
+                finalScoreDisplay.classList.replace('text-green-600', 'text-red-500');
+            }
+            scoreMessage.textContent = message;
+        }
+
+        /**
+         * Đặt lại bài thi về màn hình bắt đầu.
+         */
+        function resetQuiz() {
+            // Đặt lại các trạng thái
+            currentQuestionIndex = 0;
+            score = 0;
+            selectedAnswer = null;
+            timeLeft = TIME_LIMIT;
+            clearInterval(timerInterval);
+            timerDisplay.textContent = `00:${TIME_LIMIT}`;
+
+            // Hiển thị màn hình bắt đầu
+            resultScreen.classList.add('hidden');
+            quizContent.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            nextButton.disabled = true;
+        }
+
+        /**
+         * Hiển thị hộp thông báo tùy chỉnh.
+         * @param {string} msg - Nội dung thông báo.
+         */
+        function showNotification(msg) {
+            notificationMessage.textContent = msg;
+            notificationBox.classList.remove('hidden');
+            notificationBox.classList.add('flex');
+        }
+
+        /**
+         * Đóng hộp thông báo.
+         */
+        function closeNotification() {
+            notificationBox.classList.add('hidden');
+            notificationBox.classList.remove('flex');
+        }
+
+        // Khởi tạo trạng thái ban đầu khi tải trang
+        window.onload = function() {
+            document.getElementById('question-count').textContent = `Câu hỏi: 1/${quizData.length}`;
+            timerDisplay.textContent = `00:${TIME_LIMIT}`;
+        };
+
+    </script>
+</body>
+</html>
