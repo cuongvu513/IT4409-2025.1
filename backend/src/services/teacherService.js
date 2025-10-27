@@ -1803,6 +1803,8 @@ module.exports = {
         return csv;
     },
 
+
+
     // giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi
     async getStudentScoresInClass(teacherId, classId, examInstanceId) {
         // 1️ Check quyền lớp học
@@ -1925,12 +1927,13 @@ module.exports = {
                 is_deleted: false
             }
         });
+
         if (!klass) {
             const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền truy cập");
             err.status = 400;
             throw err;
         }
-        // Xóa yêu cầu tham gia lớp học của học sinh
+        // Xóa yêu cầu tham gia
         const deleted = await prisma.enrollment_request.deleteMany({
             where: {
                 class_id: classId,
@@ -1940,6 +1943,7 @@ module.exports = {
         });
         return deleted;
     }
+
 
 };
 
