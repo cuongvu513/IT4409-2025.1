@@ -621,3 +621,199 @@ Implementation options:
     "error": "Lấy danh sách yêu cầu tham gia lớp học thất bại"
 }
 ```
+
+## Endpoint 13 — Phê duyệt hoặc từ chối yêu cầu tham gia lớp học (Dành cho giáo viên)
+
+**POST`/api/teacher/enrollment-requests/approve`**
+
+- **Mô tả: Phê duyệt hoặc từ chối yêu cầu tham gia lớp học**
+- **HTTP: POST**
+- **URL:** **`/api/teacher/enrollment-requests/approve`**
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+```jsx
+{
+    "status": "approved", // Hoặc rejected nếu từ chối 
+    "requestId": "72935d82-c151-4ee5-b46d-6c88ba0fa27f"
+
+}
+```
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```jsx
+{
+    "message": "Cập nhật trạng thái yêu cầu thành công"
+}
+```
+
+**400 Bad Request**
+
+```jsx
+{
+    "error": "Cập nhật trạng thái yêu cầu thất bại"
+}
+```
+
+## Endpoint 15 — Tạo câu hỏi ( Dành cho giáo viên)
+
+**POST`/api/teacher/questions`**
+
+- **Mô tả: Giáo viên tạo ngân hàng câu hỏi cho mình**
+- **HTTP: POST**
+- **URL:** **`/api/teacher/questions`**
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+```jsx
+{
+    "text": "2 + 2 = ?",
+    "tags": ["math"],
+    "difficulty": "easy",
+    "explanation": "Cộng 2 và 2",
+    "choices": [
+        { "order": 1,  "text": "3", "is_correct": false },
+        { "order": 2,  "text": "4", "is_correct": true }
+    ]
+}
+```
+
+- **Response body:**
+    
+    **201 Created**
+    
+
+```json
+{
+    "newQuestion": {
+        "id": "a8573bc2-7586-4fdc-9af3-db3ba88bfc84",
+        "owner_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "text": "2 + 2 = ?",
+        "explanation": "Cộng 2 và 2",
+        "tags": [
+            "math"
+        ],
+        "difficulty": "easy",
+        "created_at": "2025-12-13T01:38:48.043Z",
+        "updated_at": "2025-12-13T01:38:48.043Z",
+        "question_choice": [
+            {
+                "id": "1060eca9-cb40-43d1-a692-9e4db0ac1e2e",
+                "question_id": "a8573bc2-7586-4fdc-9af3-db3ba88bfc84",
+                "label": null,
+                "order": 1,
+                "text": "3",
+                "is_correct": false
+            },
+            {
+                "id": "3b0d447e-8ecd-4e38-bc9d-54849523d087",
+                "question_id": "a8573bc2-7586-4fdc-9af3-db3ba88bfc84",
+                "label": null,
+                "order": 2,
+                "text": "4",
+                "is_correct": true
+            }
+        ]
+    },
+    "message": "Câu hỏi đã được thêm thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+## Endpoint 16 — Lấy danh sách câu hỏi ( Dành cho giáo viên)
+
+**GET`/api/teacher/questions`**
+
+- **Mô tả: Giáo viên lấy ngân hàng câu hỏi của mình**
+- **HTTP: GET**
+- **URL:** **`/api/teacher/questions`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+[
+    
+    {
+        "id": "b8ff6f0f-2433-495d-b6fc-a79f2350402c",
+        "owner_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "text": "2 + 2 = ?",
+        "explanation": "Cộng 2 và 2",
+        "tags": [
+            "math"
+        ],
+        "difficulty": "easy",
+        "created_at": "2025-12-05T13:52:38.380Z",
+        "updated_at": "2025-12-05T13:52:38.380Z",
+        "question_choice": [
+            {
+                "id": "e5894dcf-adbf-4886-becc-019a422fceeb",
+                "question_id": "b8ff6f0f-2433-495d-b6fc-a79f2350402c",
+                "label": null,
+                "order": 1,
+                "text": "3",
+                "is_correct": false
+            },
+            {
+                "id": "fde3addc-44d4-4317-90a1-f599c2cd7234",
+                "question_id": "b8ff6f0f-2433-495d-b6fc-a79f2350402c",
+                "label": null,
+                "order": 2,
+                "text": "4",
+                "is_correct": true
+            }
+        ]
+    },
+    {
+        "id": "69466a53-87a1-46fd-b79e-c3adeb44efd0",
+        "owner_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "text": "2 + 2 = ?",
+        "explanation": "Cộng 2 và 2",
+        "tags": [
+            "math"
+        ],
+        "difficulty": "easy",
+        "created_at": "2025-12-05T13:50:54.612Z",
+        "updated_at": "2025-12-05T13:50:54.612Z",
+        "question_choice": [
+            {
+                "id": "12f92c68-0b10-47ed-ae4c-828e0df05d8d",
+                "question_id": "69466a53-87a1-46fd-b79e-c3adeb44efd0",
+                "label": null,
+                "order": 1,
+                "text": "3",
+                "is_correct": false
+            },
+            {
+                "id": "e4964087-78ae-4b46-81f3-244e3bb904b7",
+                "question_id": "69466a53-87a1-46fd-b79e-c3adeb44efd0",
+                "label": null,
+                "order": 2,
+                "text": "4",
+                "is_correct": true
+            }
+        ]
+    }
+]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
