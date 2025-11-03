@@ -1,6 +1,2 @@
-# IT4409-2025.1
-* Nhóm 4 người :
-Ngô Đức Đại - 20225272
-Bùi Xuân Đạt - 20225274
-Vũ Việt Cường - 20225270
-Hoàng Hải Đăng - 20225174
+# Link figma 
+https://www.figma.com/design/oE3dPOsneu0kaNBTz7tKhl/C%C3%B4ng-ngh%E1%BB%87-web?node-id=49-2&p=f&t=Rexb2QCY7ktFdn8j-0
