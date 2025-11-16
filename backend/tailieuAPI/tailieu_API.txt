@@ -402,3 +402,123 @@ Implementation options:
     "error": "OTP invalid or expired"
 }
 ```
+## Endpoint 8 — Hiển thị danh sách lớp của giáo viên (Dành cho giáo viên)
+
+**GET`/api/teacher/classes`**
+
+- **Mô tả: hiển thị danh sách lớp của giáo viên khởi tạo**
+- **HTTP: GET**
+- **URL:** `/api/teacher/classes`
+- **Query Parameters:**
+  - `includeDeleted` (optional): `true` để xem cả lớp đã xóa mềm, mặc định `false`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Ví dụ:**
+  - Chỉ lớp đang hoạt động: `GET /api/teacher/classes`
+  - Bao gồm cả lớp đã xóa: `GET /api/teacher/classes?includeDeleted=true`
+- **Response body:**
+
+```json
+[
+    {
+        "id": "a03cc090-d543-4474-96d5-1589d91f6027",
+        "teacher_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "name": "Mật mã ứng dụng",
+        "code": "tf7c2kbp",
+        "description": "Học sáng t3",
+        "created_at": "2025-12-02T01:28:39.768Z",
+        "updated_at": "2025-12-02T01:28:39.768Z"
+    },
+    {
+        "id": "7cc843fe-c081-40dc-ab17-5e1225eb8788",
+        "teacher_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "name": "Mật mã ứng dụng",
+        "code": "0cd6z39j",
+        "description": "Học sáng t3",
+        "created_at": "2025-12-02T01:29:07.409Z",
+        "updated_at": "2025-12-02T01:29:07.409Z"
+    },
+    {
+        "id": "ed874019-59a1-4f2f-9d73-53317cb39aac",
+        "teacher_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "name": "Mật mã ứng dụng",
+        "code": "cyp5dynw",
+        "description": "Học sáng t3",
+        "created_at": "2025-12-02T01:29:09.006Z",
+        "updated_at": "2025-12-02T01:29:09.006Z"
+    },
+    {
+        "id": "dfbcd5a0-7b47-4bdb-a15a-ec5b162ffb5b",
+        "teacher_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "name": "Tin học đại cương",
+        "code": "wyld1h50",
+        "description": "Học lâp trình vào sáng t6",
+        "created_at": "2025-12-05T11:33:34.257Z",
+        "updated_at": "2025-12-05T11:33:34.257Z"
+    }
+]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+---
+
+## Endpoint 9 — Hiển thị chi tiết lớp theo ID (Dành cho giáo viên)
+
+**GET`/api/teacher/classes/:id`**
+
+- **Mô tả: hiển thị chi tiết lớp theo ID của giảng viên**
+- **HTTP: GET**
+- **URL:** `/api/teacher/classes/:id`
+- **Query Parameters:**
+  - `includeDeleted` (optional): `true` để xem cả lớp đã xóa mềm, mặc định `false`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Ví dụ:**
+  - Lớp đang hoạt động: `GET /api/teacher/classes/a03cc090-d543-4474-96d5-1589d91f6027`
+  - Xem lớp đã xóa: `GET /api/teacher/classes/a03cc090-d543-4474-96d5-1589d91f6027?includeDeleted=true`
+- **Response body:**
+
+```json
+{
+    "classInfo": {
+        "id": "a03cc090-d543-4474-96d5-1589d91f6027", 
+        "teacher_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "name": "Mật mã ứng dụng",
+        "code": "tf7c2kbp",
+        "description": "Học sáng t3",
+        "created_at": "2025-12-02T01:28:39.768Z",
+        "updated_at": "2025-12-02T01:28:39.768Z"
+    },
+    "listStudent": [
+        {
+            "id": "4dcebb8b-0af9-4cb0-aea2-880bea25fca5",
+            "class_id": "a03cc090-d543-4474-96d5-1589d91f6027",
+            "student_id": "5d0ca9ae-d6f4-4633-8ca6-d41cf548d8fd",
+            "status": "approved",
+            "note": null,
+            "requested_at": "2025-12-02T02:01:49.561Z",
+            "reviewed_at": null,
+            "reviewed_by": null,
+            "studentInfo": {
+                "id": "5d0ca9ae-d6f4-4633-8ca6-d41cf548d8fd",
+                "email": "student1@gmail.com",
+                "name": "student11",
+                "role_name": "student"
+            }
+        }
+    ]
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
