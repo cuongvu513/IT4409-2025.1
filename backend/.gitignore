@@ -51,3 +51,5 @@ error.log*
 # Optional: nếu bạn có test hoặc coverage
 # =========================
 coverage/
+
+/src/generated/prisma
