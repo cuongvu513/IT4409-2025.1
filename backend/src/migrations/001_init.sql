@@ -12,6 +12,7 @@ CREATE TABLE "user" (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
+  bio  TEXT,
   password_hash TEXT NOT NULL,
   role_id UUID NOT NULL REFERENCES auth_role(id) ON DELETE RESTRICT,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -20,6 +21,18 @@ CREATE TABLE "user" (
   last_login_at TIMESTAMP WITH TIME ZONE
 );
 CREATE INDEX idx_user_role ON "user"(role_id);
+
+CREATE TABLE IF NOT EXISTS refresh_token (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  ip INET,
+  revoked BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX idx_refresh_token_user ON refresh_token(user_id);
+CREATE INDEX idx_refresh_token_expires ON refresh_token(expires_at);
 
 -- 02. Classes (course)
 CREATE TABLE class (

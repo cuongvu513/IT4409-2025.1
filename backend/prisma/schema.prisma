@@ -295,6 +295,7 @@ model user {
   created_at                                              DateTime             @default(now()) @db.Timestamptz(6)
   updated_at                                              DateTime             @default(now()) @db.Timestamptz(6)
   last_login_at                                           DateTime?            @db.Timestamptz(6)
+  bio                                                     String?
   accommodation                                           accommodation[]
   audit_log                                               audit_log[]
   Renamedclass                                            Renamedclass[]
@@ -306,12 +307,27 @@ model user {
   grade_override                                          grade_override[]
   notification                                            notification[]
   question                                                question[]
+  refresh_token                                           refresh_token[]
   roster_import                                           roster_import[]
   session_flag                                            session_flag[]
   submission                                              submission[]
   auth_role                                               auth_role            @relation(fields: [role_id], references: [id], onUpdate: NoAction)
 
   @@index([role_id], map: "idx_user_role")
+}
+
+model refresh_token {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String   @db.Uuid
+  token_hash String   @unique
+  ip         String?  @db.Inet
+  revoked    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  expires_at DateTime @db.Timestamptz(6)
+  user       user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "idx_refresh_token_expires")
+  @@index([user_id], map: "idx_refresh_token_user")
 }
 
 enum difficulty_level {
