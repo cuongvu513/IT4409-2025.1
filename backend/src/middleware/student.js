@@ -13,6 +13,9 @@ module.exports = async function authMiddleware(req, res, next) {
     const user = await userService.getUserById(payload.id);
     if (!user) return res.status(401).json({ error: "Không có quyền truy cập" });
     req.user = user;
+    if (user.role_name !== "student" && user.role_name !== "admin") {
+      return res.status(403).json({ error: "Chỉ dành cho sinh viên" });
+    }
     next();
   } catch (err) {
     next(err);
