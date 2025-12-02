@@ -22,7 +22,7 @@ CREATE TABLE "user" (
 );
 CREATE INDEX idx_user_role ON "user"(role_id);
 
-CREATE TABLE IF NOT EXISTS refresh_token (
+CREATE TABLE refresh_token (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL UNIQUE,
