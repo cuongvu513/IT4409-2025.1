@@ -25,5 +25,18 @@ module.exports = {
             err.status = 400;
             next(err);
         }
+    },
+    // Rời lớp học
+    async leaveClass(req, res, next) {
+        try {
+            const studentId = req.user.id;
+            const classId = req.params.id;
+            await studentService.leaveClass(studentId, classId);
+            res.status(204).end();
+        } catch (error) {
+            const err = new Error("Rời lớp học thất bại");
+            err.status = 400;
+            next(err);
+        }
     }
 };

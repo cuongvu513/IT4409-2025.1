@@ -36,5 +36,12 @@ module.exports =  {
         });
         const classes = enrollments.map(enrollment => enrollment.Renamedclass);
         return classes;
-    }   
+    },   
+    // Rời lớp học
+    async leaveClass(studentId, classId) {
+        await prisma.enrollment_request.deleteMany({
+            where: { student_id: studentId, class_id: classId, status: "approved" },
+        });
+        return;
+    }
 };
