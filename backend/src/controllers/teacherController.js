@@ -124,15 +124,17 @@ module.exports = {
     */
     async addQuestion(req, res, next) {
         try {
-            const classId = req.body.id;
-            const checkClass = await teacherService.getClassById(classId);
-            if (!checkClass) {
-                return res.status(404).json({ error: "Lớp không tồn tại hoặc không có quyền truy cập" });
-            }
-
+            const teacherId = req.user.id;
+            
             const questionData = req.body || {};
+            const questionFields = { ...questionData };
+            if (!questionFields.text || typeof questionFields.text !== "string" || questionFields.text.trim().length === 0) {
+                const err = new Error("Nội dung câu hỏi là bắt buộc");
+                err.status = 400;
+                throw err;
+            }
             const { text, choices } = questionData;
-            if (!text || typeof text !== "string" || !Array.isArray(choices) || choices.length < 2) {
+            if (!text ||                                                                                                                                 typeof text !== "string" || !Array.isArray(choices) || choices.length < 2) {
                 return res.status(400).json({ error: "Câu hỏi phải có nội dung và ít nhất 2 lựa chọn là bắt buộc" });
             }
             if (!choices.some(c => !!c.is_correct)) {
@@ -142,7 +144,7 @@ module.exports = {
             // console.log("Question data:", questionData);
             // console.log("User:", req.user);
             // res.status(501).json({ message: "Chức năng thêm câu hỏi chưa được triển khai" });
-            const newQuestion = await teacherService.addQuestion(classId, questionData, req.user.id);
+            const newQuestion = await teacherService.addQuestion( questionData, teacherId);
             res.status(201).json({ newQuestion, message: "Câu hỏi đã được thêm thành công" });
         } catch (error) {
             next(Object.assign(new Error("Thêm câu hỏi thất bại"), { status: 400, cause: error }));
@@ -160,4 +162,34 @@ module.exports = {
             next(err);
         }
     },
+    // Chỉnh sửa câu hỏi - chưa xong
+    async updateQuestion(req, res, next) {
+        try {
+            const questionId = req.params.id;
+            const updateData = req.body || {};
+            const questionFields = { ...updateData };
+            if (!questionFields.text || typeof questionFields.text !== "string" || questionFields.text.trim().length === 0) {
+                const err = new Error("Nội dung câu hỏi là bắt buộc");
+                err.status = 400;
+                throw err;
+            }
+            const { text, choices } = updateData;
+            if (!text || typeof text !== "string" || !Array.isArray(choices) || choices.length < 2) {
+                return res.status(400).json({ error: "Câu hỏi phải có nội dung và ít nhất 2 lựa chọn là bắt buộc" });
+            }
+            if (!choices.some(c => !!c.is_correct)) {
+                return res.status(400).json({ error: "Ít nhất một lựa chọn phải có is_correct=true" });
+            }
+            console.log("Updating questionId:", questionId);
+            console.log("Update data:", updateData);
+            console.log("User:", req.user);
+            const updatedQuestion = await teacherService.updateQuestion(questionId, updateData);
+            res.json({ /*updatedQuestion,*/ message: "Cập nhật câu hỏi thành công" });
+        } catch (error) {
+            const err = new Error('Cập nhật câu hỏi thất bại');
+            err.status = 400;
+            next(err);
+        }
+
+    }
 };
