@@ -64,37 +64,14 @@ module.exports = {
         return request;
     },
     // Tạo thêm câu hỏi
-    async addQuestion(classId, questionData, actorId) {
-        if (!classId) {
-            const err = new Error("ID lớp học là bắt buộc");
-            err.status = 400;
-            throw err;
-        }
+    async addQuestion( questionData, actorId) {
 
         const { choices = [], ...questionFields } = questionData;
 
         return await prisma.$transaction(async (tx) => {
             // Kiểm tra lớp học tồn tại và quyền của giáo viên
-            const cls = await tx.Renamedclass.findUnique({ where: { id: classId } });
-            if (!cls) {
-                const err = new Error("Lớp không tồn tại");
-                err.status = 404;
-                throw err;
-            }
-
-            // kiểm tra quyền 
-            if (actorId && cls.teacher_id && cls.teacher_id !== actorId) {
-                const err = new Error("Bạn không có quyền thêm câu hỏi vào lớp học này");
-                err.status = 403;
-                throw err;
-            }
 
             // kiểm tra trường câu hỏi
-            if (!questionFields.text || typeof questionFields.text !== "string" || questionFields.text.trim().length === 0) {
-                const err = new Error("Nội dung câu hỏi là bắt buộc");
-                err.status = 400;
-                throw err;
-            }
 
             // 1. Tạo câu hỏi
             const createData = {
@@ -155,5 +132,98 @@ module.exports = {
             orderBy: { created_at: "desc" }
         });
         return questions;
+    },
+    // Cập nhật câu hỏi
+    async updateQuestion(questionId, updateData) {
+        const { choices = [], ...questionFields } = updateData;
+
+        return await prisma.$transaction(async (tx) => {
+            // Lấy question hiện tại kèm choices
+            const existing = await tx.question.findFirst({
+                where: { id: questionId },
+                include: { question_choice: true }
+            });
+
+            if (!existing) {
+                const err = new Error("Question not found");
+                err.status = 404;
+                throw err;
+            }
+
+            // Chuẩn bị dữ liệu cập nhật cho question
+            const qUpdate = { updated_at: new Date() };
+            if (questionFields.text !== undefined) qUpdate.text = questionFields.text?.trim();
+            if (Object.prototype.hasOwnProperty.call(questionFields, "explanation")) qUpdate.explanation = questionFields.explanation ?? null;
+            if (Object.prototype.hasOwnProperty.call(questionFields, "tags")) qUpdate.tags = Array.isArray(questionFields.tags) ? questionFields.tags : [];
+            if (Object.prototype.hasOwnProperty.call(questionFields, "difficulty")) qUpdate.difficulty = questionFields.difficulty ?? "medium";
+
+            await tx.question.update({
+                where: { id: questionId },
+                data: qUpdate,
+            });
+
+            // Xử lý choices: update existing, create new, delete đã bị remove
+            const existingChoices = existing.question_choice || [];
+            const existingById = new Map(existingChoices.map(c => [c.id, c]));
+            const providedIds = new Set();
+
+            for (let i = 0; i < choices.length; i++) {
+                const c = choices[i];
+                const order = c.order ?? i;
+
+                if (c.id) {
+                    // Nếu id được cung cấp phải thuộc question này
+                    if (!existingById.has(c.id)) {
+                        const err = new Error(`Invalid choice id: ${c.id}`);
+                        err.status = 400;
+                        throw err;
+                    }
+                    providedIds.add(c.id);
+                    await tx.question_choice.update({
+                        where: { id: c.id },
+                        data: {
+                            label: c.label ?? null,
+                            order,
+                            text: c.text ?? "",
+                            is_correct: !!c.is_correct,
+                        }
+                    });
+                } else {
+                    // Tạo mới choice
+                    await tx.question_choice.create({
+                        data: {
+                            question_id: questionId,
+                            label: c.label ?? null,
+                            order,
+                            text: c.text ?? "",
+                            is_correct: !!c.is_correct,
+                        }
+                    });
+                }
+            }
+
+            // Xóa các choice không còn trong payload
+            const idsToDelete = existingChoices
+                .map(c => c.id)
+                .filter(id => !providedIds.has(id));
+
+            if (idsToDelete.length > 0) {
+                await tx.question_choice.deleteMany({
+                    where: { id: { in: idsToDelete } }
+                });
+            }
+
+            // Trả về question kèm choices đã sắp xếp
+            const result = await tx.question.findUnique({
+                where: { id: questionId },
+                include: {
+                    question_choice: {
+                        orderBy: { order: "asc" }
+                    }
+                }
+            });
+
+            return result;
+        });
     }
 };

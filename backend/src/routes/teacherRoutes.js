@@ -11,5 +11,5 @@ router.get("/classes/:id/enrollment-requests", teacherController.getEnrollmentRe
 router.post("/enrollment-requests/approve", teacherController.approveEnrollmentRequest); // Phê duyệt hoặc từ chối yêu cầu tham gia lớp học
 router.post("/questions", teacherController.addQuestion); // Tạo câu hỏi 
 router.get("/questions", teacherController.getQuestionsbyTeacher); // Lấy danh sách câu hỏi theo lớp học
-
+router.put("/questions/:id", teacherController.updateQuestion); // Cập nhật câu hỏi
 module.exports = router;
