@@ -225,5 +225,34 @@ module.exports = {
 
             return result;
         });
+    },
+
+    // Xóa câu hỏi
+    async deleteQuestion(questionID, teacherId) {
+        await prisma.$transaction(async (tx) => {
+            //xóa các đáp án liên quan đến câu hỏi
+            await tx.question_choice.deleteMany({
+                where: { question_id: questionID },
+            });
+            // console.log("da toi day");
+            await tx.question.delete({
+                where: { id: questionID, owner_id: teacherId },
+            });
+        });
+        return;
+    },
+
+    // lấy chi tiết câu hỏi theo ID
+    async getQuestionById(questionId, teacherId) {
+        const question = await prisma.question.findFirst({
+            where: { id: questionId, owner_id: teacherId },
+            include: {
+                question_choice: {
+                    orderBy: { order: "asc" }
+                }
+            }
+        });
+        return question;
     }
 };
+
