@@ -20,4 +20,6 @@ router.post("/exam-templates", teacherController.createExamTemplate); // Tạo m
 router.get("/exam-templates", teacherController.getExamTemplatesByTeacher); // Lấy danh sách mẫu đề thi của giáo viên
 router.put("/exam-templates", teacherController.updateExamTemplate); // Cập nhật mẫu đề thi
 
+router.post("/exam-instances", teacherController.createExamInstance); // Tạo instance đề thi
+
 module.exports = router;
