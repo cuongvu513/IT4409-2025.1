@@ -12,6 +12,12 @@ router.post("/enrollment-requests/approve", teacherController.approveEnrollmentR
 router.post("/questions", teacherController.addQuestion); // Tạo câu hỏi 
 router.get("/questions", teacherController.getQuestionsbyTeacher); // Lấy danh sách câu hỏi theo lớp học
 router.put("/questions/:id", teacherController.updateQuestion); // Cập nhật câu hỏi
+
 router.delete("/questions/:id", teacherController.deleteQuestion); // Xóa câu hỏi
 router.get("/questions/:id", teacherController.getQuestionById); // Lấy thông tin câu hỏi theo ID
+
+router.post("/exam-templates", teacherController.createExamTemplate); // Tạo mẫu đề thi
+router.get("/exam-templates", teacherController.getExamTemplatesByTeacher); // Lấy danh sách mẫu đề thi của giáo viên
+router.put("/exam-templates", teacherController.updateExamTemplate); // Cập nhật mẫu đề thi
+
 module.exports = router;
