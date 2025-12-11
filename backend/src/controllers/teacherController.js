@@ -125,7 +125,7 @@ module.exports = {
     async addQuestion(req, res, next) {
         try {
             const teacherId = req.user.id;
-            
+
             const questionData = req.body || {};
             const questionFields = { ...questionData };
             if (!questionFields.text || typeof questionFields.text !== "string" || questionFields.text.trim().length === 0) {
@@ -134,7 +134,7 @@ module.exports = {
                 throw err;
             }
             const { text, choices } = questionData;
-            if (!text ||                                                                                                                                 typeof text !== "string" || !Array.isArray(choices) || choices.length < 2) {
+            if (!text || typeof text !== "string" || !Array.isArray(choices) || choices.length < 2) {
                 return res.status(400).json({ error: "Câu hỏi phải có nội dung và ít nhất 2 lựa chọn là bắt buộc" });
             }
             if (!choices.some(c => !!c.is_correct)) {
@@ -144,7 +144,7 @@ module.exports = {
             // console.log("Question data:", questionData);
             // console.log("User:", req.user);
             // res.status(501).json({ message: "Chức năng thêm câu hỏi chưa được triển khai" });
-            const newQuestion = await teacherService.addQuestion( questionData, teacherId);
+            const newQuestion = await teacherService.addQuestion(questionData, teacherId);
             res.status(201).json({ newQuestion, message: "Câu hỏi đã được thêm thành công" });
         } catch (error) {
             next(Object.assign(new Error("Thêm câu hỏi thất bại"), { status: 400, cause: error }));
@@ -193,19 +193,18 @@ module.exports = {
 
     },
 
-    // Xóa câu hỏi
+    // Xóa câu hỏi 
     async deleteQuestion(req, res, next) {
         try {
-            const questionID = req.params.id;
+            const questionId = req.params.id;
             const teacherId = req.user.id;
-            await teacherService.deleteQuestion(questionID, teacherId);
+            await teacherService.deleteQuestion(questionId, teacherId);
             res.status(204).end();
-        } catch (error){
+        } catch (error) {
             const err = new Error('Xóa câu hỏi thất bại');
             err.status = 400;
             next(err);
         }
-
     },
 
     // lấy chi tiết câu hỏi theo ID cau hỏi
@@ -216,6 +215,94 @@ module.exports = {
             res.json(question);
         } catch (error) {
             const err = new Error("Lấy chi tiết câu hỏi thất bại");
+                        err.status = 400;
+            next(err);
+        }
+    },
+
+    async createExamTemplate(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            let { title, description, class_id, duration_seconds, shuffle_questions, passing_score } = req.body;
+
+            // Convert kiểu dữ liệu
+            if (duration_seconds) {
+                duration_seconds = parseInt(duration_seconds, 10);
+            }
+            if (typeof shuffle_questions === 'string') {
+                shuffle_questions = shuffle_questions.toLowerCase() === 'true';
+            }
+            if (passing_score) {
+                passing_score = parseFloat(passing_score);
+            }
+            if (!title || typeof title !== "string" || title.trim().length === 0) {
+                const err = new Error("Tiêu đề mẫu đề thi là bắt buộc");
+                err.status = 400;
+                throw err;
+            }
+            if (!class_id) {
+                const err = new Error("Cần có mã lớp học để tạo mẫu đề thi");
+                err.status = 400;
+                throw err;
+            }
+            else {
+                const classData = await teacherService.getClassById(class_id);
+                console.log("Class data for validation:", classData);
+                console.log("Teacher ID for validation:", teacherId,  classData.classInfo.teacher_id);
+                if (!classData || classData.classInfo.teacher_id !== teacherId) {
+                    const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền thêm đề thi vào lớp này");
+                    err.status = 403;
+                    throw err;
+                }
+            }
+            if (duration_seconds && (isNaN(duration_seconds) || duration_seconds <= 0)) {
+                const err = new Error("Thời gian làm bài phải là số dương");
+                err.status = 400;
+                throw err;
+            }
+            if (passing_score && (isNaN(passing_score) || passing_score < 0 || passing_score > 100)) {
+                const err = new Error("Điểm đạt phải là số từ 0 đến 100");
+                err.status = 400;
+                throw err;
+            }
+
+            const templateData = { title, description, class_id, duration_seconds, shuffle_questions, passing_score };
+            console.log("Creating exam template with data:", templateData);
+            console.log("Teacher ID:", teacherId);
+            const newTemplate = await teacherService.createExamTemplate(templateData, class_id, teacherId);
+            res.status(201).json({ newTemplate, message: "Mẫu đề thi đã được tạo thành công" });
+        } catch (error) {
+            console.error("createExamTemplate error:", error);
+            console.error("Error stack:", error.stack);
+
+            const err = new Error("Tạo mẫu đề thi thất bại");
+            err.status = error.status || 400;
+            err.cause = error.message;  // Gắn lỗi gốc vào
+            next(err);
+        }
+    },
+    async getExamTemplatesByTeacher(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const templates = await teacherService.getExamTemplate(teacherId);
+            res.json(templates);
+        } catch (error) {
+            const err = new Error("Lấy danh sách mẫu đề thi thất bại");
+            err.status = 400;
+            next(err);
+        }
+    },
+    // Cập nhật template 
+    async updateExamTemplate(req, res, next) {
+        try {
+            const templateId = req.body.id;
+            const updateData = req.body || {};
+            const updatedTemplate = await teacherService.updateExamTemplate(templateId, updateData);
+            res.json({ updatedTemplate, message: "Cập nhật mẫu đề thi thành công" });
+        } catch (error) {
+            console.error("updateExamTemplate error:", error);
+            console.error("Error stack:", error.stack);
+            const err = new Error("Cập nhật mẫu đề thi thất bại");
             err.status = 400;
             next(err);
         }

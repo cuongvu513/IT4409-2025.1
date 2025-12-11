@@ -115,7 +115,7 @@ module.exports = {
             return result;
         });
     },
-    // Lấy danh sách câu hỏi theo lớp học
+    // Lấy danh sách câu hỏi theo giáo viên
     async getQuestionsbyTeacher(teacherId) {
         if (!teacherId) {
             const err = new Error("Vui lòng nhập mã giáo viên");
@@ -226,6 +226,7 @@ module.exports = {
             return result;
         });
     },
+<<<<<<< HEAD
 
     // Xóa câu hỏi
     async deleteQuestion(questionID, teacherId) {
@@ -237,10 +238,23 @@ module.exports = {
             // console.log("da toi day");
             await tx.question.delete({
                 where: { id: questionID, owner_id: teacherId },
+=======
+    // Xóa câu hỏi 
+    async deleteQuestion(questionId) {
+
+        await prisma.question.$transaction(async (tx) => {
+            // Xóa các choices liên quan
+            await tx.question_choice.deleteMany({
+                where: { question_id: questionId }
+            });
+            await tx.question.delete({
+                where: { id: questionId }
+>>>>>>> BackEnd
             });
         });
         return;
     },
+<<<<<<< HEAD
 
     // lấy chi tiết câu hỏi theo ID
     async getQuestionById(questionId, teacherId) {
@@ -254,5 +268,98 @@ module.exports = {
         });
         return question;
     }
+=======
+    // Tạo template đề thi
+    async createExamTemplate(templateData, class_id, actorId) {
+        const { questions = [], ...templateFields } = templateData;
+        return await prisma.$transaction(async (tx) => {
+            // Kiểm tra lớp học tồn tại và quyền của giáo viên
+            const classInfo = await tx.Renamedclass.findFirst({
+                where: { id: class_id }
+            }); 
+            console.log("classInfo in createExamTemplate:", classInfo);
+            if (!classInfo) {
+                const err = new Error("Lớp học không tồn tại");
+                err.status = 404;
+                throw err;
+            }
+            // Tạo template câu hỏi
+            const createData = {
+                title: templateFields.title?.trim() ,
+                description: templateFields.description ?? null,
+                Renamedclass: { connect: { id: class_id } },
+                duration_seconds: templateFields.duration_seconds || null,
+                shuffle_questions: templateFields.shuffle_questions || false,
+                passing_score: templateFields.passing_score || null,
+                user: { connect: { id: actorId } }
+            };
+            const newTemplate = await tx.exam_template.create({
+                data: createData,
+            });
+        });
+    },
+    // Sửa template câu hỏi
+    async updateExamTemplate(templateId, updateData) {
+        return await prisma.$transaction(async (tx) => {
+            // Lấy template hiện tại
+            const existing = await tx.exam_template.findFirst({
+                where: { id: templateId }
+            });
+            if (!existing) {
+                const err = new Error("Template not found or access denied");
+                err.status = 404;
+                throw err;
+            }
+            // Chuẩn bị dữ liệu cập nhật
+            const tUpdate = {};
+            if (updateData.title !== undefined) tUpdate.title = updateData.title?.trim();
+            if (updateData.description !== undefined) tUpdate.description = updateData.description ?? null;
+            if (updateData.duration_seconds !== undefined) tUpdate.duration_seconds = updateData.duration_seconds || null;
+            if (updateData.shuffle_questions !== undefined) tUpdate.shuffle_questions = updateData.shuffle_questions || false;
+            if (updateData.passing_score !== undefined) tUpdate.passing_score = updateData.passing_score || null;
+            // Cập nhật template
+            const updatedTemplate = await tx.exam_template.update({
+                where: { id: templateId },
+                data: tUpdate,
+            });
+            return updatedTemplate;
+        });
+    },
+    // Xóa template câu hỏi
+    async deleteExamTemplate(templateId, actorId) {
+        return await prisma.$transaction(async (tx) => {
+            // Kiểm tra quyền sở hữu template
+            const existing = await tx.exam_template.findFirst({
+                where: { id: templateId, owner_id: actorId }
+            });
+            if (!existing) {
+                const err = new Error("Template not found or access denied");
+                err.status = 404;
+                throw err;
+            }
+            // Xóa template
+            await tx.exam_template.delete({
+                where: { id: templateId }
+            });
+            return;
+        });
+    },
+    // Lấy danh sách template đề thi theo giáo viên
+    async getExamTemplate(teacherId) {
+        if (!teacherId) {
+            const err = new Error("Vui lòng nhập mã giáo viên");
+            err.status = 400;
+            throw err;
+        }
+        const templates = await prisma.exam_template.findMany({
+            where: { created_by: teacherId },
+            orderBy: { created_at: "desc" }
+        });
+        return templates;
+    },
+    // Đọc template cấu trúc 
+    // async getExamTemplateById(templateId, actorId) {
+    //     const template = await prisma.exam_template.findFirst({
+>>>>>>> BackEnd
 };
 
