@@ -191,5 +191,33 @@ module.exports = {
             next(err);
         }
 
+    },
+
+    // Xóa câu hỏi
+    async deleteQuestion(req, res, next) {
+        try {
+            const questionID = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.deleteQuestion(questionID, teacherId);
+            res.status(204).end();
+        } catch (error){
+            const err = new Error('Xóa câu hỏi thất bại');
+            err.status = 400;
+            next(err);
+        }
+
+    },
+
+    // lấy chi tiết câu hỏi theo ID cau hỏi
+    async getQuestionById(req, res, next) {
+        try {
+            const questionId = req.params.id;
+            const question = await teacherService.getQuestionById(questionId);
+            res.json(question);
+        } catch (error) {
+            const err = new Error("Lấy chi tiết câu hỏi thất bại");
+            err.status = 400;
+            next(err);
+        }
     }
 };
