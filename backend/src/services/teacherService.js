@@ -226,22 +226,9 @@ module.exports = {
             return result;
         });
     },
-<<<<<<< HEAD
 
-    // Xóa câu hỏi
-    async deleteQuestion(questionID, teacherId) {
-        await prisma.$transaction(async (tx) => {
-            //xóa các đáp án liên quan đến câu hỏi
-            await tx.question_choice.deleteMany({
-                where: { question_id: questionID },
-            });
-            // console.log("da toi day");
-            await tx.question.delete({
-                where: { id: questionID, owner_id: teacherId },
-=======
     // Xóa câu hỏi 
     async deleteQuestion(questionId) {
-
         await prisma.question.$transaction(async (tx) => {
             // Xóa các choices liên quan
             await tx.question_choice.deleteMany({
@@ -249,12 +236,10 @@ module.exports = {
             });
             await tx.question.delete({
                 where: { id: questionId }
->>>>>>> BackEnd
             });
         });
         return;
     },
-<<<<<<< HEAD
 
     // lấy chi tiết câu hỏi theo ID
     async getQuestionById(questionId, teacherId) {
@@ -267,8 +252,8 @@ module.exports = {
             }
         });
         return question;
-    }
-=======
+    },
+
     // Tạo template đề thi
     async createExamTemplate(templateData, class_id, actorId) {
         const { questions = [], ...templateFields } = templateData;
@@ -323,7 +308,7 @@ module.exports = {
                 data: tUpdate,
             });
             return updatedTemplate;
-        });
+                });
     },
     // Xóa template câu hỏi
     async deleteExamTemplate(templateId, actorId) {
@@ -354,12 +339,67 @@ module.exports = {
         const templates = await prisma.exam_template.findMany({
             where: { created_by: teacherId },
             orderBy: { created_at: "desc" }
-        });
+            });
         return templates;
     },
     // Đọc template cấu trúc 
     // async getExamTemplateById(templateId, actorId) {
     //     const template = await prisma.exam_template.findFirst({
->>>>>>> BackEnd
+
+    // const createData = {
+    //             title: templateFields.title?.trim() ,
+    //             description: templateFields.description ?? null,
+    //             Renamedclass: { connect: { id: class_id } },
+    //             duration_seconds: templateFields.duration_seconds || null,
+    //             shuffle_questions: templateFields.shuffle_questions || false,
+    //             passing_score: templateFields.passing_score || null,
+    //             user: { connect: { id: actorId } }
+    //         };
+
+    //tạo instance đề thi
+    async addExam_instance(instanceData, teacher_id) {
+        const { questions = [], ... instanceFields} = instanceData;
+
+        return await prisma.$transaction(async (tx) => {
+            const createData = {
+                starts_at: new Date(instanceFields.starts_at),
+                ends_at: new Date(instanceFields.ends_at),
+                template_id: instanceFields.templateId,
+                // exam_template: {connect: { id: instanceFields.templateId } },
+                published: instanceFields.published ?? false,
+                created_by: teacher_id,
+                created_at: new Date()
+            }
+            const newExamInstance = await tx.exam_instance.create({
+                data: createData,
+            });
+            
+            console.log("newExamInstance:", newExamInstance);
+
+            if (Array.isArray(questions) && questions.length > 0) {
+                const mapped = questions.map((q, i) => ({
+                    exam_instance_id: newExamInstance.id,
+                    question_id: q.question_id,
+                    ordinal: q.ordinal ?? i,
+                    points: q.points,
+                }));
+                await tx.exam_question.createMany({
+                    data: mapped,
+                    skipDuplicates: true,
+                });
+            }
+
+            const result = await tx.exam_instance.findUnique({
+                where: { id: newExamInstance.id },
+                include: {
+                    exam_question: {
+                        orderBy: { ordinal: "asc" }
+                    }
+                }
+            });
+            return result;
+        });
+    }
+
 };
 

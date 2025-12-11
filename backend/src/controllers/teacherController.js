@@ -193,7 +193,7 @@ module.exports = {
 
     },
 
-    // Xóa câu hỏi 
+    // Xóa câu hỏi - Dat
     async deleteQuestion(req, res, next) {
         try {
             const questionId = req.params.id;
@@ -207,7 +207,7 @@ module.exports = {
         }
     },
 
-    // lấy chi tiết câu hỏi theo ID cau hỏi
+    // lấy chi tiết câu hỏi theo ID cau hỏi - Dat
     async getQuestionById(req, res, next) {
         try {
             const questionId = req.params.id;
@@ -215,7 +215,7 @@ module.exports = {
             res.json(question);
         } catch (error) {
             const err = new Error("Lấy chi tiết câu hỏi thất bại");
-                        err.status = 400;
+            err.status = 400;
             next(err);
         }
     },
@@ -306,5 +306,50 @@ module.exports = {
             err.status = 400;
             next(err);
         }
-    }
+    },
+
+    // const questionData = req.body || {};
+    // const questionFields = { ...questionData };
+    // const newQuestion = await teacherService.addQuestion(questionData, teacherId);
+    //         res.status(201).json({ newQuestion, message: "Câu hỏi đã được thêm thành công" });
+    //     } catch (error) {
+    //         next(Object.assign(new Error("Thêm câu hỏi thất bại"), { status: 400, cause: error }));
+    //     }
+    // }
+
+    //tạo instance đề thi
+    async createExamInstance(req, res, next) { {
+        try {
+            const teacherId = req.user.id;
+            let { templateId, starts_at, ends_at, published } = req.body || {};
+
+            // Convert kiểu dữ liệu
+            if (typeof published === 'string') {
+                published = published.toLowerCase() === 'true';
+            }
+            if (!templateId) {
+                const err = new Error("Cần có mã mẫu đề thi để tạo đề thi");
+                err.status = 400;
+                throw err;
+            }
+            if (!starts_at || !ends_at) {
+                const err = new Error("Thiếu thời gian bắt đầu hoặc kết thúc bài thi");
+                err.status = 400;
+                throw err;
+            }
+            const startDate = new Date(starts_at);
+            const endDate = new Date(ends_at);
+            if (startDate >= endDate) {
+                const err = new Error("Thời gian bắt đầu phải trước thời gian kết thúc");
+                err.status = 400;
+                throw err;
+            }
+            const instanceData = req.body || {};
+            const newInstance = await teacherService.addExam_instance(instanceData, teacherId);
+            res.status(201).json({ newInstance, message: "Đề thi đã được tạo thành công" });
+        } catch (error) {
+            next(error);
+        }
+    }}
+
 };
