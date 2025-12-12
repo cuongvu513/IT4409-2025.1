@@ -226,9 +226,9 @@ module.exports = {
             return result;
         });
     },
+
     // Xóa câu hỏi 
     async deleteQuestion(questionId) {
-
         await prisma.question.$transaction(async (tx) => {
             // Xóa các choices liên quan
             await tx.question_choice.deleteMany({
@@ -240,6 +240,20 @@ module.exports = {
         });
         return;
     },
+
+    // lấy chi tiết câu hỏi theo ID
+    async getQuestionById(questionId, teacherId) {
+        const question = await prisma.question.findFirst({
+            where: { id: questionId, owner_id: teacherId },
+            include: {
+                question_choice: {
+                    orderBy: { order: "asc" }
+                }
+            }
+        });
+        return question;
+    },
+
     // Tạo template đề thi
     async createExamTemplate(templateData, class_id, actorId) {
         const { questions = [], ...templateFields } = templateData;
@@ -294,7 +308,7 @@ module.exports = {
                 data: tUpdate,
             });
             return updatedTemplate;
-        });
+                });
     },
     // Xóa template câu hỏi
     async deleteExamTemplate(templateId, actorId) {
@@ -330,8 +344,68 @@ module.exports = {
         const templates = await prisma.exam_template.findMany({
             where: { created_by: teacherId },
             orderBy: { created_at: "desc" }
-        });
+            });
         return templates;
     },
 
+    // Đọc template cấu trúc 
+    // async getExamTemplateById(templateId, actorId) {
+    //     const template = await prisma.exam_template.findFirst({
+
+    // const createData = {
+    //             title: templateFields.title?.trim() ,
+    //             description: templateFields.description ?? null,
+    //             Renamedclass: { connect: { id: class_id } },
+    //             duration_seconds: templateFields.duration_seconds || null,
+    //             shuffle_questions: templateFields.shuffle_questions || false,
+    //             passing_score: templateFields.passing_score || null,
+    //             user: { connect: { id: actorId } }
+    //         };
+
+    //tạo instance đề thi
+    async addExam_instance(instanceData, teacher_id) {
+        const { questions = [], ... instanceFields} = instanceData;
+
+        return await prisma.$transaction(async (tx) => {
+            const createData = {
+                starts_at: new Date(instanceFields.starts_at),
+                ends_at: new Date(instanceFields.ends_at),
+                template_id: instanceFields.templateId,
+                // exam_template: {connect: { id: instanceFields.templateId } },
+                published: instanceFields.published ?? false,
+                created_by: teacher_id,
+                created_at: new Date()
+            }
+            const newExamInstance = await tx.exam_instance.create({
+                data: createData,
+            });
+            
+            console.log("newExamInstance:", newExamInstance);
+
+            if (Array.isArray(questions) && questions.length > 0) {
+                const mapped = questions.map((q, i) => ({
+                    exam_instance_id: newExamInstance.id,
+                    question_id: q.question_id,
+                    ordinal: q.ordinal ?? i,
+                    points: q.points,
+                }));
+                await tx.exam_question.createMany({
+                    data: mapped,
+                    skipDuplicates: true,
+                });
+            }
+
+            const result = await tx.exam_instance.findUnique({
+                where: { id: newExamInstance.id },
+                include: {
+                    exam_question: {
+                        orderBy: { ordinal: "asc" }
+                    }
+                }
+            });
+            return result;
+        });
+    }
+
 };
+
