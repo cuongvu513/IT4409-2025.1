@@ -291,5 +291,22 @@ module.exports = {
             err.status = 400;
             next(err);
         }
+    },
+    // Xóa template đề thi
+    async deleteExamTemplate(req, res, next) {
+        try {
+            const templateId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.deleteExamTemplate(templateId, teacherId);
+            res.json({ message: "Xóa mẫu đề thi thành công" });
+            res.status(200).end();
+        } catch (error)
+        {
+            // console.error("deleteExamTemplate error:", error);
+            // console.error("Error stack:", error.stack);
+            // // const err = new Error("Xóa mẫu đề thi thất bại");
+            // err.status = 400;
+            next(error);
+        }
     }
 };

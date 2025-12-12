@@ -301,11 +301,16 @@ module.exports = {
         return await prisma.$transaction(async (tx) => {
             // Kiểm tra quyền sở hữu template
             const existing = await tx.exam_template.findFirst({
-                where: { id: templateId, owner_id: actorId }
+                where: { id: templateId}
             });
             if (!existing) {
-                const err = new Error("Template not found or access denied");
-                err.status = 404;
+                const err = new Error("Vui lòng nhập mã chính xác");
+                err.status = 400;
+                throw err;
+            }
+            if (existing.created_by !== actorId) {
+                const err = new Error("Không có quyền xóa template này");
+                err.status = 403;
                 throw err;
             }
             // Xóa template
@@ -328,7 +333,5 @@ module.exports = {
         });
         return templates;
     },
-    // Đọc template cấu trúc 
-    // async getExamTemplateById(templateId, actorId) {
-    //     const template = await prisma.exam_template.findFirst({
+
 };
