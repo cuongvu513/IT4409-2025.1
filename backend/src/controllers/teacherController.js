@@ -363,6 +363,13 @@ module.exports = {
                 err.status = 400;
                 throw err;
             }
+            // kiểm tra thời gian là tương lai không
+            const now = new Date();
+            if (startDate <= now) {
+                const err = new Error("Thời gian bắt đầu phải là tương lai");
+                err.status = 400;
+                throw err;
+            }
             const instanceData = req.body || {};
             const newInstance = await teacherService.addExam_instance(instanceData, teacherId);
             res.status(201).json({ newInstance, message: "Đề thi đã được tạo thành công" });
@@ -391,6 +398,19 @@ module.exports = {
             const teacherId = req.user.id;
             const instances = await teacherService.getExamInstancesByTemplate(templateId, teacherId);
             res.json(instances);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // sửa instance đề thi
+    async updateExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const updateData = req.body || {};
+            const teacherId = req.user.id;
+            const updatedInstance = await teacherService.updateExamInstance(instanceId, teacherId, updateData);
+            res.json({ updatedInstance, message: "Cập nhật đề thi thành công" });   
         } catch (error) {
             next(error);
         }

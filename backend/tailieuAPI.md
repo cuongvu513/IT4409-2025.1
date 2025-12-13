@@ -923,11 +923,11 @@ Implementation options:
 
 ## Endpoint 21 — xóa đề thi  ( Dành cho giáo viên)
 
-**DELETE`/api/teacher/exam-instances/id:`**
+**DELETE`/api/teacher/exam-instances/:id`**
 
 - **Mô tả: Giáo viên xóa đề thi**
 - **HTTP: DELETE**
-- **URL:** **`/api/teacher/exam-instances/id:`**
+- **URL:** **`/api/teacher/exam-instances/:id`**
 - **Headers:** `Authorization: Bearer <access_token>`
 
 - **Response body:**
@@ -959,11 +959,11 @@ Implementation options:
 
 ## Endpoint 22 — lấy danh sách đề thi theo template  ( Dành cho giáo viên)
 
-**GET`/api/teacher/exam-instances/id:`**
+**GET`/api/teacher/exam-instances/:id`**
 
 - **Mô tả: Giáo viên xóa đề thi**
 - **HTTP: GET**
-- **URL:** **`/api/teacher/exam-instances/id:`**
+- **URL:** **`/api/teacher/exam-instances/:id`**
 - **Headers:** `Authorization: Bearer <access_token>`
 
 - **Response body:**
@@ -1007,5 +1007,64 @@ Implementation options:
 ```json
 {
     "error": "Template đề thi không tồn tại hoăc không có quyền truy cập"
+}
+```
+
+## Endpoint 23 — sửa đề thi theo id  ( Dành cho giáo viên)
+
+**PUT`/api/teacher/exam-instances/:id`**
+
+- **Mô tả: Giáo viên xóa đề thi**
+- **HTTP: PUT**
+- **URL:** **`/api/teacher/exam-instances/:id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+```jsx
+{        
+  "starts_at": "2025-12-15T08:00:00+07:00",     
+  "ends_at": "2025-12-15T09:30:00+07:00",          
+  "published": true,
+  "questions": [
+    {
+        "question_id":"d9e64199-f9f1-454a-a641-97e67e011bb9"
+    }
+  ]                    
+}
+```
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+{
+    "updatedInstance": {
+        "id": "7d19364a-f5ae-4f81-bcec-bd405f4a9460",
+        "template_id": "c0b39423-8d22-42ae-b50f-48d4ee0923cf",
+        "starts_at": "2025-12-15T01:00:00.000Z",
+        "ends_at": "2025-12-15T02:30:00.000Z",
+        "published": true,
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "created_at": "2025-12-13T08:48:24.824Z",
+        "exam_question": [
+            {
+                "id": "95e29541-616f-496f-8f81-1912d644373e",
+                "exam_instance_id": "7d19364a-f5ae-4f81-bcec-bd405f4a9460",
+                "question_id": "d9e64199-f9f1-454a-a641-97e67e011bb9",
+                "ordinal": 0,
+                "points": "1"
+            }
+        ]
+    },
+    "message": "Cập nhật đề thi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
 }
 ```
