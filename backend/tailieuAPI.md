@@ -561,21 +561,26 @@ Implementation options:
 }
 ```
 
-## Endpoint 14 — Tham gia lớp học bằng mã lớp ( Dành cho học sinh)
+## Endpoint 15 — Tạo câu hỏi ( Dành cho giáo viên)
 
-**POST`/api/student/enroll`**
+**POST`/api/teacher/questions`**
 
-- **Mô tả: Tham gia lớp học bằng mã lớp**
+- **Mô tả: Giáo viên tạo ngân hàng câu hỏi cho mình**
 - **HTTP: POST**
-- **URL:** **`/api/student/enroll`**
+- **URL:** **`/api/teacher/questions`**
 - **Headers:** `Authorization: Bearer <access_token>`
 - **Request body:**
 
 ```jsx
 {
-    "classCode": "5ebscqj6",
-    "note": "xin cô vào lớp"
-
+    "text": "2 + 2 = ?",
+    "tags": ["math"],
+    "difficulty": "easy",
+    "explanation": "Cộng 2 và 2",
+    "choices": [
+        { "order": 1,  "text": "3", "is_correct": false },
+        { "order": 2,  "text": "4", "is_correct": true }
+    ]
 }
 ```
 
@@ -584,53 +589,202 @@ Implementation options:
     **201 Created**
     
 
-```jsx
+```json
 {
-    "enrollmentRequest": {
-        "id": "72935d82-c151-4ee5-b46d-6c88ba0fa27f",
-        "class_id": "8409b373-5deb-43c0-9a23-dfc0cc162f84",
-        "student_id": "92a15ea0-3b9a-4cf4-9a13-ff26597aa53d",
-        "status": "pending",
-        "note": "xin cô vào lớp",
-        "requested_at": "2025-12-06T15:19:31.916Z",
-        "reviewed_at": null,
-        "reviewed_by": null
+    "newQuestion": {
+        "id": "a8573bc2-7586-4fdc-9af3-db3ba88bfc84",
+        "owner_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "text": "2 + 2 = ?",
+        "explanation": "Cộng 2 và 2",
+        "tags": [
+            "math"
+        ],
+        "difficulty": "easy",
+        "created_at": "2025-12-13T01:38:48.043Z",
+        "updated_at": "2025-12-13T01:38:48.043Z",
+        "question_choice": [
+            {
+                "id": "1060eca9-cb40-43d1-a692-9e4db0ac1e2e",
+                "question_id": "a8573bc2-7586-4fdc-9af3-db3ba88bfc84",
+                "label": null,
+                "order": 1,
+                "text": "3",
+                "is_correct": false
+            },
+            {
+                "id": "3b0d447e-8ecd-4e38-bc9d-54849523d087",
+                "question_id": "a8573bc2-7586-4fdc-9af3-db3ba88bfc84",
+                "label": null,
+                "order": 2,
+                "text": "4",
+                "is_correct": true
+            }
+        ]
     },
-    "message": "Yêu cầu tham gia lớp học đã được gửi"
+    "message": "Câu hỏi đã được thêm thành công"
 }
 ```
 
-**400 Bad Request**
+- **401 Unauthorized** (missing/invalid token)
 
-```jsx
+```json
 {
-    "error": "Tham gia lớp học thất bại: Lớp học không tồn tại"
+    "error": "Unauthorized"
 }
 ```
+## Endpoint 16 — Lấy danh sách câu hỏi ( Dành cho giáo viên)
 
-## Endpoint 15 — Lấy danh sách lớp học đã tham gia ( Dành cho học sinh)
+**GET`/api/teacher/questions`**
 
-**GET`/api/student/classes`**
-
-- **Mô tả:** Lấy danh sách lớp học đã tham gia
+- **Mô tả: Giáo viên lấy ngân hàng câu hỏi của mình**
 - **HTTP: GET**
-- **URL:** **`/api/student/classes`**
+- **URL:** **`/api/teacher/questions`**
 - **Headers:** `Authorization: Bearer <access_token>`
+
 - **Response body:**
     
     **200 OK**
     
 
-```jsx
+```json
 [
+    
     {
-        "id": "8409b373-5deb-43c0-9a23-dfc0cc162f84",
-        "teacher_id": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
-        "name": "Tin học đại cương",
-        "code": "5ebscqj6",
-        "description": "Học lâp trình vào sáng t6",
-        "created_at": "2025-12-06T15:06:17.459Z",
-        "updated_at": "2025-12-06T15:06:17.459Z"
+        "id": "b8ff6f0f-2433-495d-b6fc-a79f2350402c",
+        "owner_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "text": "2 + 2 = ?",
+        "explanation": "Cộng 2 và 2",
+        "tags": [
+            "math"
+        ],
+        "difficulty": "easy",
+        "created_at": "2025-12-05T13:52:38.380Z",
+        "updated_at": "2025-12-05T13:52:38.380Z",
+        "question_choice": [
+            {
+                "id": "e5894dcf-adbf-4886-becc-019a422fceeb",
+                "question_id": "b8ff6f0f-2433-495d-b6fc-a79f2350402c",
+                "label": null,
+                "order": 1,
+                "text": "3",
+                "is_correct": false
+            },
+            {
+                "id": "fde3addc-44d4-4317-90a1-f599c2cd7234",
+                "question_id": "b8ff6f0f-2433-495d-b6fc-a79f2350402c",
+                "label": null,
+                "order": 2,
+                "text": "4",
+                "is_correct": true
+            }
+        ]
+    },
+    {
+        "id": "69466a53-87a1-46fd-b79e-c3adeb44efd0",
+        "owner_id": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "text": "2 + 2 = ?",
+        "explanation": "Cộng 2 và 2",
+        "tags": [
+            "math"
+        ],
+        "difficulty": "easy",
+        "created_at": "2025-12-05T13:50:54.612Z",
+        "updated_at": "2025-12-05T13:50:54.612Z",
+        "question_choice": [
+            {
+                "id": "12f92c68-0b10-47ed-ae4c-828e0df05d8d",
+                "question_id": "69466a53-87a1-46fd-b79e-c3adeb44efd0",
+                "label": null,
+                "order": 1,
+                "text": "3",
+                "is_correct": false
+            },
+            {
+                "id": "e4964087-78ae-4b46-81f3-244e3bb904b7",
+                "question_id": "69466a53-87a1-46fd-b79e-c3adeb44efd0",
+                "label": null,
+                "order": 2,
+                "text": "4",
+                "is_correct": true
+            }
+        ]
     }
 ]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 17 — Chỉnh sửa câu hỏi ( Dành cho giáo viên)
+
+**PUT`/api/teacher/questions/:id`**
+
+- **Mô tả: Giáo viên chỉnh sửa câu hỏi đã thêm vào ngân hàng câu hỏi. Trường nào muốn thay đổi thì sẽ thêm vào**
+- **HTTP: PUT**
+- **URL:** **`/api/teacher/questions/:id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+```jsx
+{
+    "text": "4 + 100 = ?",
+    "tags": ["math"],
+    "difficulty": "easy",
+    "explanation": "Cộng 2 và 2",
+    "choices": [
+        { "order": 1,  "text": "102", "is_correct": true },
+        { "order": 2,  "text": "4", "is_correct": false }
+    ]
+}
+```
+
+- **Response body:**
+    
+    **200 Created**
+    
+
+```json
+{
+    "message": "Cập nhật câu hỏi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+## Endpoint 18 — Xóa câu hỏi ( Dành cho giáo viên)
+
+**DELETE`/api/teacher/questions/:id`**
+
+- **Mô tả: Giáo viên chỉnh sửa câu hỏi đã thêm vào ngân hàng câu hỏi. Trường nào muốn thay đổi thì sẽ thêm vào**
+- **HTTP: DELETE**
+- **URL:** **`/api/teacher/questions/:id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 Created**
+    
+
+```json
+{
+    "message": "Cập nhật câu hỏi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
 ```
