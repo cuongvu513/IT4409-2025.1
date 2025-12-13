@@ -198,6 +198,8 @@ module.exports = {
         try {
             const questionId = req.params.id;
             const teacherId = req.user.id;
+            console.log("Deleting questionId:", questionId);
+            console.log("teacherid:", teacherId);
             await teacherService.deleteQuestion(questionId, teacherId);
             res.status(200).json({ message: "Xóa câu hỏi thành công" });
         } catch (error) {

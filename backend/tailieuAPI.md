@@ -765,7 +765,7 @@ Implementation options:
 
 **DELETE`/api/teacher/questions/:id`**
 
-- **Mô tả: Giáo viên chỉnh sửa câu hỏi đã thêm vào ngân hàng câu hỏi. Trường nào muốn thay đổi thì sẽ thêm vào**
+- **Mô tả: Giáo viên xóa câu hỏi mà giáo viên đã từng thêm**
 - **HTTP: DELETE**
 - **URL:** **`/api/teacher/questions/:id`**
 - **Headers:** `Authorization: Bearer <access_token>`
@@ -778,6 +778,67 @@ Implementation options:
 ```json
 {
     "message": "Cập nhật câu hỏi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 19 — Lấy chi tiết câu hỏi theo ID ( Dành cho giáo viên)
+
+**GET`/api/teacher/questions/:id`**
+
+- **Mô tả: Giáo viên chỉnh sửa câu hỏi theo ID câu hỏi**
+- **HTTP: GET**
+- **URL:** **`/api/teacher/questions/:id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 Ok**
+    
+
+```json
+{
+    [
+    {
+        "id": "d9e64199-f9f1-454a-a641-97e67e011bb9",
+        "owner_id": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "text": "TCP có phải là giao thức hướng kết nối không?",
+        "explanation": "TCP thực hiện quá trình bắt tay 3 bước để tạo kết nối trước khi truyền dữ liệu.",
+        "tags": [
+            "network",
+            "tcp",
+            "protocol"
+        ],
+        "difficulty": "medium",
+        "created_at": "2025-12-10T17:29:54.796Z",
+        "updated_at": "2025-12-10T17:29:54.796Z",
+        "question_choice": [
+            {
+                "id": "3eac3622-fb65-4cad-99f3-3e89ea08058f",
+                "question_id": "d9e64199-f9f1-454a-a641-97e67e011bb9",
+                "label": "A",
+                "order": 0,
+                "text": "Đúng",
+                "is_correct": true
+            },
+            {
+                "id": "4354609e-d05e-47b2-8c25-fbeb9656c967",
+                "question_id": "d9e64199-f9f1-454a-a641-97e67e011bb9",
+                "label": "B",
+                "order": 1,
+                "text": "Sai",
+                "is_correct": false
+            }
+        ]
+    }
+]
 }
 ```
 
