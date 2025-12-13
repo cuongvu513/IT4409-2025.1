@@ -382,7 +382,18 @@ module.exports = {
         } catch (error) {
             next(error);
         }
-    }
+    },
 
+    // lấy danh sách instance đề thi theo template - Dat
+    async getExamInstancesByTemplate(req, res, next) {
+        try {
+            const templateId = req.params.id;
+            const teacherId = req.user.id;
+            const instances = await teacherService.getExamInstancesByTemplate(templateId, teacherId);
+            res.json(instances);
+        } catch (error) {
+            next(error);
+        }
+    }
 };
 
