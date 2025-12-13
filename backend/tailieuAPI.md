@@ -956,3 +956,56 @@ Implementation options:
     "error": "Không tìm thấy instance đề thi hoặc không có quyền xóa"
 }
 ```
+
+## Endpoint 22 — lấy danh sách đề thi theo template  ( Dành cho giáo viên)
+
+**GET`/api/teacher/exam-instances/id:`**
+
+- **Mô tả: Giáo viên xóa đề thi**
+- **HTTP: GET**
+- **URL:** **`/api/teacher/exam-instances/id:`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+[
+    {
+        "id": "e7978e1d-41ec-4850-9005-b200f0f22cb4",
+        "template_id": "c0b39423-8d22-42ae-b50f-48d4ee0923cf",
+        "starts_at": "2025-12-15T01:00:00.000Z",
+        "ends_at": "2025-12-15T02:30:00.000Z",
+        "published": false,
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "created_at": "2025-12-13T04:57:12.643Z"
+    },
+    {
+        "id": "fde5e3a2-6d68-4639-a456-08bc22f23617",
+        "template_id": "c0b39423-8d22-42ae-b50f-48d4ee0923cf",
+        "starts_at": "2025-12-15T01:00:00.000Z",
+        "ends_at": "2025-12-15T02:30:00.000Z",
+        "published": false,
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "created_at": "2025-12-13T04:51:19.411Z"
+    }
+]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+    
+- **500 Internal Server Error** (id đề thi sai, ko đúng quyền)
+
+```json
+{
+    "error": "Template đề thi không tồn tại hoăc không có quyền truy cập"
+}
+```
