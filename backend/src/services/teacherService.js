@@ -228,18 +228,53 @@ module.exports = {
     },
 
     // Xóa câu hỏi 
-    async deleteQuestion(questionId) {
-        return await prisma.$transaction(async (tx) => {
+    // async deleteQuestion(questionId) {
+    //     return await prisma.$transaction(async (tx) => {
             
+    //         await tx.question_choice.deleteMany({
+    //             where: { question_id: questionId }
+    //         });
+
+    //         await tx.question.delete({
+    //             where: { id: questionId }
+    //         });
+
+    //         return;
+    //     });
+    // },
+    
+    //xóa câu hỏi - dat
+    async deleteQuestion(questionId, teacherId) {
+        return await prisma.$transaction(async (tx) => {
+
+            // 1. Check quyền sở hữu 
+            const question = await tx.question.findFirst({
+                where: {
+                    id: questionId,
+                    owner_id: teacherId
+                }
+            });
+
+            if (!question) {
+                throw new Error("Không tìm thấy câu hỏi hoặc không có quyền xóa");
+            }
+
+            // 2. XÓA liên kết đề thi - câu hỏi (nếu câu hỏi đang ở trong 1 đề thi nào đó)
+            await tx.exam_question.deleteMany({
+                where: { question_id: questionId }
+            });
+
+            // 3. Xóa đáp án
             await tx.question_choice.deleteMany({
                 where: { question_id: questionId }
             });
 
+            // 4. Xóa câu hỏi
             await tx.question.delete({
                 where: { id: questionId }
             });
 
-            return;
+            return true;
         });
     },
 
