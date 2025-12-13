@@ -23,6 +23,7 @@ router.put("/exam-templates", teacherController.updateExamTemplate); // Cập nh
 router.delete("/exam-templates/:id", teacherController.deleteExamTemplate); // Xóa mẫu đề thi
 
 router.post("/exam-instances", teacherController.createExamInstance); // Tạo instance đề thi
+router.delete("/exam-instances/:id", teacherController.deleteExamInstance); // Xóa instance đề thi
 
 
 

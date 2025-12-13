@@ -849,3 +849,110 @@ Implementation options:
     "error": "Unauthorized"
 }
 ```
+
+## Endpoint 20 — Tạo đề thi  ( Dành cho giáo viên)
+
+**POST`/api/teacher/exam-instances`**
+
+- **Mô tả: Giáo viên tạo đề thi**
+- **HTTP: POST**
+- **URL:** **`/api/teacher/exam-instances`**
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+```jsx
+{
+  "templateId": "c0b39423-8d22-42ae-b50f-48d4ee0923cf",         
+  "starts_at": "2025-12-15T08:00:00+07:00",     
+  "ends_at": "2025-12-15T09:30:00+07:00",          
+  "published": false,
+  "questions": [
+    {
+        "question_id":"6257fb70-767d-455e-b0a9-c4cad3403fec"
+    },
+    {
+        "question_id":"d9e64199-f9f1-454a-a641-97e67e011bb9"
+    }
+  ]                    
+}
+```
+
+- **Response body:**
+    
+    **201 Created**
+    
+
+```json
+{
+    "newInstance": {
+        "id": "fde5e3a2-6d68-4639-a456-08bc22f23617",
+        "template_id": "c0b39423-8d22-42ae-b50f-48d4ee0923cf",
+        "starts_at": "2025-12-15T01:00:00.000Z",
+        "ends_at": "2025-12-15T02:30:00.000Z",
+        "published": false,
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "created_at": "2025-12-13T04:51:19.411Z",
+        "exam_question": [
+            {
+                "id": "27cf31c3-0c3a-48da-83c0-f18479f674b0",
+                "exam_instance_id": "fde5e3a2-6d68-4639-a456-08bc22f23617",
+                "question_id": "6257fb70-767d-455e-b0a9-c4cad3403fec",
+                "ordinal": 0,
+                "points": "1"
+            },
+            {
+                "id": "19cc116b-7d23-4f2c-8bf4-d5dc6062d557",
+                "exam_instance_id": "fde5e3a2-6d68-4639-a456-08bc22f23617",
+                "question_id": "d9e64199-f9f1-454a-a641-97e67e011bb9",
+                "ordinal": 1,
+                "points": "1"
+            }
+        ]
+    },
+    "message": "Đề thi đã được tạo thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 21 — xóa đề thi  ( Dành cho giáo viên)
+
+**DELETE`/api/teacher/exam-instances/id:`**
+
+- **Mô tả: Giáo viên xóa đề thi**
+- **HTTP: DELETE**
+- **URL:** **`/api/teacher/exam-instances/id:`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+{
+    "message": "Xóa đề thi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+    
+- **500 Internal Server Error** (id đề thi sai, ko đúng quyền)
+
+```json
+{
+    "error": "Không tìm thấy instance đề thi hoặc không có quyền xóa"
+}
+```

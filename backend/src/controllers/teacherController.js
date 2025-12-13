@@ -198,8 +198,6 @@ module.exports = {
         try {
             const questionId = req.params.id;
             const teacherId = req.user.id;
-            console.log("Deleting questionId:", questionId);
-            console.log("teacherid:", teacherId);
             await teacherService.deleteQuestion(questionId, teacherId);
             res.status(200).json({ message: "Xóa câu hỏi thành công" });
         } catch (error) {
@@ -371,7 +369,20 @@ module.exports = {
         } catch (error) {
             next(error);
         }
-    }}
+    }},
+
+    // Xóa instace đề thi
+    async deleteExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.deleteExam_instance(instanceId, teacherId);
+            res.json({ message: "Xóa đề thi thành công" });
+            res.status(200).end();
+        } catch (error) {
+            next(error);
+        }
+    }
 
 };
 

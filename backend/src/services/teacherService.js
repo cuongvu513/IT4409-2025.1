@@ -443,6 +443,31 @@ module.exports = {
             });
             return result;
         });
+    },
+
+    // xóa instance đề thi
+    async deleteExam_instance(instanceId, teacherId) {
+        return await prisma.$transaction(async (tx) => {
+            // Kiểm tra quyền sở hữu 
+            const instance = await tx.exam_instance.findFirst({
+                where: {
+                    id: instanceId,
+                    created_by: teacherId
+                }
+            });
+            if (!instance) {
+                throw new Error("Không tìm thấy instance đề thi hoặc không có quyền xóa");
+            }
+            // XÓA liên kết đề thi - câu hỏi
+            await tx.exam_question.deleteMany({
+                where: { exam_instance_id: instanceId }
+            }); 
+            // Xóa instance đề thi
+            await tx.exam_instance.delete({
+                where: { id: instanceId }
+            });
+            return true;
+        });
     }
 
 };
