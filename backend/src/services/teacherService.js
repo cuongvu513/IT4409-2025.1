@@ -229,16 +229,18 @@ module.exports = {
 
     // Xóa câu hỏi 
     async deleteQuestion(questionId) {
-        await prisma.question.$transaction(async (tx) => {
-            // Xóa các choices liên quan
+        return await prisma.$transaction(async (tx) => {
+            
             await tx.question_choice.deleteMany({
                 where: { question_id: questionId }
             });
+
             await tx.question.delete({
                 where: { id: questionId }
             });
+
+            return;
         });
-        return;
     },
 
     // lấy chi tiết câu hỏi theo ID
@@ -248,6 +250,7 @@ module.exports = {
             include: {
                 question_choice: {
                     orderBy: { order: "asc" }
+                    
                 }
             }
         });
@@ -291,7 +294,7 @@ module.exports = {
                 where: { id: templateId }
             });
             if (!existing) {
-                const err = new Error("Template not found or access denied");
+                const err = new Error("Template không tồn tại");
                 err.status = 404;
                 throw err;
             }

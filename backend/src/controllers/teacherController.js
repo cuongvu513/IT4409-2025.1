@@ -199,9 +199,10 @@ module.exports = {
             const questionId = req.params.id;
             const teacherId = req.user.id;
             await teacherService.deleteQuestion(questionId, teacherId);
-            res.status(204).end();
+            res.status(200).json({ message: "Xóa câu hỏi thành công" });
         } catch (error) {
             const err = new Error('Xóa câu hỏi thất bại');
+            console.error("Error stack:", error.stack);
             err.status = 400;
             next(err);
         }
