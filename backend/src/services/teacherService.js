@@ -485,6 +485,100 @@ module.exports = {
             orderBy: { created_at: "desc" }
         });
         return instances;
+    },
+
+    // chinh sua instance de thi
+    async updateExamInstance(instanceId, teacher_id, updateData) {
+        return await prisma.$transaction(async (tx) => {
+            // Lấy instance hiện tại và kiểm tra quyền
+            const instance = await tx.exam_instance.findFirst({
+                where: { id: instanceId, created_by: teacher_id },
+            });
+            if (!instance) {
+                const err = new Error("Instance đề thi không tồn tại hoặc không có quyền sửa");
+                err.status = 404;
+                throw err;
+            }
+
+            // kiểm tra dữ liệu thời gian trước khi cập nhập
+            if (updateData.starts_at && updateData.ends_at) {
+                const startDate = new Date(updateData.starts_at);
+                const endDate = new Date(updateData.ends_at);
+                if (startDate >= endDate) {
+                    const err = new Error("Thời gian kết thúc phải sau thời gian bắt đầu");
+                    err.status = 400;
+                    throw err;
+                }
+                if (startDate <= new Date()) {
+                    const err = new Error("Thời gian bắt đầu phải là tương lai");
+                    err.status = 400;
+                    throw err;
+                }
+            }
+            else if (updateData.starts_at) {
+                const startDate = new Date(updateData.starts_at);
+                const endDate = instance.ends_at;   
+                if (startDate >= endDate) {
+                    const err = new Error("Thời gian bắt đầu mới phải trước thời gian kết thúc cũ");
+                    err.status = 400;
+                    throw err;
+                }
+                if (startDate <= new Date()) {
+                    const err = new Error("Thời gian bắt đầu phải là tương lai");
+                    err.status = 400;
+                    throw err;
+                }
+            }
+            else if (updateData.ends_at) {
+                const startDate = instance.starts_at;
+                const endDate = new Date(updateData.ends_at);
+                if (startDate >= endDate) {
+                    const err = new Error("Thời gian kết thúc mới phải sau thời gian bắt đầu cũ");
+                    err.status = 400;
+                    throw err;
+                }
+            }
+
+            // Chuẩn bị dữ liệu cập nhật
+            const iUpdate = {};
+            if (updateData.starts_at !== undefined) iUpdate.starts_at = new Date(updateData.starts_at);
+            if (updateData.ends_at !== undefined) iUpdate.ends_at = new Date(updateData.ends_at);
+            if (updateData.published !== undefined) iUpdate.published = updateData.published;
+            // Cập nhật instance
+            const updatedInstance = await tx.exam_instance.update({
+                where: { id: instanceId },
+                data: iUpdate,
+            });
+
+            // xóa hết câu hỏi cũ
+            await tx.exam_question.deleteMany({
+                where: { exam_instance_id: instanceId }
+            });
+            // thêm câu hỏi mới
+            const { questions = [] } = updateData;
+            if (Array.isArray(questions) && questions.length > 0) {
+                const mapped = questions.map((q, i) => ({
+                    exam_instance_id: instanceId,
+                    question_id: q.question_id,
+                    ordinal: q.ordinal ?? i,
+                    points: q.points,
+                }));
+                await tx.exam_question.createMany({
+                    data: mapped,
+                    skipDuplicates: true,
+                });
+            }
+
+            const result = await tx.exam_instance.findUnique({
+                where: { id: updatedInstance.id },
+                include: {
+                    exam_question: {
+                        orderBy: { ordinal: "asc" }
+                    }
+                }
+            });
+            return result;
+        });
     }
 
 };
