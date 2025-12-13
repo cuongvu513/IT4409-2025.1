@@ -468,6 +468,23 @@ module.exports = {
             });
             return true;
         });
+    },
+
+    // Lấy danh sách instance đề thi theo template  
+    async getExamInstancesByTemplate(templateId, teacherId) {  
+        const template = await prisma.exam_template.findFirst({
+            where: { id: templateId, created_by: teacherId },
+        });
+        if (!template) {
+            const err = new Error("Template đề thi không tồn tại hoăc không có quyền truy cập");
+            err.status = 404;
+            throw err;
+        }
+        const instances = await prisma.exam_instance.findMany({
+            where: { template_id: templateId },
+            orderBy: { created_at: "desc" }
+        });
+        return instances;
     }
 
 };
