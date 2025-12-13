@@ -579,6 +579,19 @@ module.exports = {
             });
             return result;
         });
+    },
+
+    // lấy chi tiết instance đề thi theo ID
+    async getExamInstanceById(instanceId, teacherId) {
+        const instance = await prisma.exam_instance.findFirst({
+            where: { id: instanceId, created_by: teacherId },
+            include: {
+                exam_question: {
+                    orderBy: { ordinal: "asc" }
+                }
+            }
+        });
+        return instance;
     }
 
 };

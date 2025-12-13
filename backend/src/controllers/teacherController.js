@@ -414,6 +414,18 @@ module.exports = {
         } catch (error) {
             next(error);
         }
+    },
+
+    // lấy instance đề thi theo ID 
+    async getExamInstanceById(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            const instance = await teacherService.getExamInstanceById(instanceId, teacherId);
+            res.json(instance);
+        } catch (error) {
+            next(error);
+        }
     }
 };
 
