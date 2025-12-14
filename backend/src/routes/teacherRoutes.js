@@ -27,6 +27,7 @@ router.delete("/exam-instances/:id", teacherController.deleteExamInstance); // X
 router.get("/exam-templates/:templateId/exam-instances", teacherController.getExamInstancesByTemplate); // Lấy danh sách instance đề thi theo template  
 router.put("/exam-instances/:id", teacherController.updateExamInstance); // Cập nhật instance đề thi
 router.get("/exam-instances/:id", teacherController.getExamInstanceById); // Lấy thông tin instance đề thi theo ID
+router.get("/classes/:classId/students",teacherController.searchStudentsInClass); // Tìm kiếm sinh viên trong lớp học theo tên
 
 
 

@@ -592,7 +592,45 @@ module.exports = {
             }
         });
         return instance;
+    },
+
+    // tìm kiếm sinh viên theo tên hoặc email trong lớp học
+    async searchStudentsInClass(teacherId, classId, keyword) {
+        if (!keyword || keyword.trim() === "") {
+            return [];
+        }
+
+        const students = await prisma.enrollment_request.findMany({
+            where: {
+                class_id: classId,
+                status: "approved",
+                Renamedclass: {
+                    teacher_id: teacherId
+                },
+                user_enrollment_request_student_idTouser: {
+                    name: {
+                        contains: keyword,
+                        mode: "insensitive"
+                    }
+                }
+            },
+            select: {
+                user_enrollment_request_student_idTouser: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        return students.map(s => s.user_enrollment_request_student_idTouser);
     }
+
+
+
+
 
 };
 

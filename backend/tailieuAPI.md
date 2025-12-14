@@ -1111,3 +1111,35 @@ Implementation options:
     "error": "Unauthorized"
 }
 ```
+
+## Endpoint 25 — Tìm kiếm sinh viên trong lớp học theo tên  ( Dành cho giáo viên)
+
+**GET`/api/teacher//classes/:classId/students`**
+
+- **Mô tả: Giáo viên xóa đề thi**
+- **HTTP: PUT**
+- **URL:** **`/api/teacher//classes/:classId/students`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+[
+    {
+        "id": "92a15ea0-3b9a-4cf4-9a13-ff26597aa53d",
+        "name": "student11",
+        "email": "student1@gmail.com"
+    }
+]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```

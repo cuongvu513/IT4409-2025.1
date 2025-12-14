@@ -426,6 +426,19 @@ module.exports = {
         } catch (error) {
             next(error);
         }
-    }
+    },
+
+    // tìm kiếm sinh viên trong lớp học theo tên
+    async searchStudentsInClass(req, res, next) { {
+        try {
+            const classId = req.params.classId;
+            const keyword = req.query.keyword;
+            const teacherId = req.user.id;
+            const students = await teacherService.searchStudentsInClass(teacherId, classId, keyword);
+            res.json(students);
+        } catch (error) {
+            next(error);
+        }
+    }}
 };
 
