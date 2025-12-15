@@ -1,0 +1,147 @@
+/* src/pages/Student/StudentDashboardPage.module.scss */
+@use '../../styles/variables' as *;
+
+.container {
+    min-height: 100vh;
+    background-color: #f5f7fa;
+    font-family: $primary-font;
+}
+
+.header {
+    background-color: $white-color;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.brand {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: $primary-color;
+}
+
+.userSection {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.userInfo {
+    text-align: right;
+
+    .userName {
+        display: block;
+        font-weight: bold;
+        color: $text-color;
+    }
+
+    .userRole {
+        font-size: 0.8rem;
+        color: $secondary-text-color;
+    }
+}
+
+.logoutBtn {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+
+    &:hover {
+        background-color: #ffcdd2;
+    }
+}
+
+.main {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.welcomeBanner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+    h1 {
+        margin: 0 0 10px 0;
+    }
+
+    p {
+        margin: 0;
+        opacity: 0.9;
+    }
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+
+    h3 {
+        font-size: 2rem;
+        margin: 0;
+        color: $primary-color;
+    }
+
+    p {
+        margin: 5px 0 0;
+        color: $secondary-text-color;
+    }
+}
+
+.contentSection {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+
+    h2 {
+        margin-top: 0;
+        color: $text-color;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+    }
+}
+
+.emptyState {
+    text-align: center;
+    padding: 40px 0;
+    color: $secondary-text-color;
+}
+
+.primaryBtn {
+    margin-top: 15px;
+    background-color: $primary-color;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+
+    &:hover {
+        background-color: $primary-color-dark;
+    }
+}
