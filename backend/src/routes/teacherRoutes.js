@@ -19,8 +19,10 @@ router.get("/questions/:id", teacherController.getQuestionById); // Lấy thông
 
 router.post("/exam-templates", teacherController.createExamTemplate); // Tạo mẫu đề thi
 router.get("/exam-templates", teacherController.getExamTemplatesByTeacher); // Lấy danh sách mẫu đề thi của giáo viên
-router.put("/exam-templates", teacherController.updateExamTemplate); // Cập nhật mẫu đề thi
+router.put("/exam-templates/:id", teacherController.updateExamTemplate); // Cập nhật mẫu đề thi
 router.delete("/exam-templates/:id", teacherController.deleteExamTemplate); // Xóa mẫu đề thi
+router.get("/exam-templates/search", teacherController.searchExamTemplates); // Tìm kiếm mẫu đề thi theo từ khóa
+router.get("/exam-templates/:id", teacherController.getExamTemplateById); // Lấy thông tin mẫu đề thi theo ID
 
 router.post("/exam-instances", teacherController.createExamInstance); // Tạo instance đề thi
 router.delete("/exam-instances/:id", teacherController.deleteExamInstance); // Xóa instance đề thi

@@ -296,7 +296,7 @@ module.exports = {
     // Cập nhật template 
     async updateExamTemplate(req, res, next) {
         try {
-            const templateId = req.body.id;
+            const templateId = req.params.id;
             const updateData = req.body || {};
             const updatedTemplate = await teacherService.updateExamTemplate(templateId, updateData);
             res.json({ updatedTemplate, message: "Cập nhật mẫu đề thi thành công" });
@@ -322,6 +322,31 @@ module.exports = {
             // console.error("Error stack:", error.stack);
             // // const err = new Error("Xóa mẫu đề thi thất bại");
             // err.status = 400;
+            next(error);
+        }
+    },
+
+    // tìm kiếm template theo từ khóa trong tiêu đề 
+    async searchExamTemplates(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const keyword = req.query.keyword || "";
+            const templates = await teacherService.searchExamTemplates(teacherId, keyword);
+            res.json(templates);
+        } catch (error) {
+            // const err = new Error("Tìm kiếm mẫu đề thi thất bại");
+            // err.status = 400;
+            next(error);
+        }
+    },
+    // tìm kiếm template theo ID
+    async getExamTemplateById(req, res, next){
+        try {
+            const teacherId = req.user.id;
+            const templateId = req.params.id;
+            const templates = await teacherService.getExamTemplateById(teacherId,templateId);
+            res.json(templates);
+        } catch (error){
             next(error);
         }
     },

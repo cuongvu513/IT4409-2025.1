@@ -959,11 +959,11 @@ Implementation options:
 
 ## Endpoint 22 — lấy danh sách đề thi theo template  ( Dành cho giáo viên)
 
-**GET`/api/teacher//exam-templates/:templateId/exam-instances`**
+**GET`/api/teacher/exam-templates/:templateId/exam-instances`**
 
 - **Mô tả: Giáo viên xóa đề thi**
 - **HTTP: GET**
-- **URL:** **`/api/teacher//exam-templates/:templateId/exam-instances`**
+- **URL:** **`/api/teacher/exam-templates/:templateId/exam-instances`**
 - **Headers:** `Authorization: Bearer <access_token>`
 
 - **Response body:**
@@ -1114,7 +1114,7 @@ Implementation options:
 
 ## Endpoint 25 — Tìm kiếm sinh viên trong lớp học theo tên  ( Dành cho giáo viên)
 
-**GET`/api/teacher//classes/:classId/students`**
+**GET`/api/teacher/classes/:classId/students`**
 
 - **Mô tả: Giáo viên xóa đề thi**
 - **HTTP: PUT**
@@ -1132,6 +1132,209 @@ Implementation options:
         "id": "92a15ea0-3b9a-4cf4-9a13-ff26597aa53d",
         "name": "student11",
         "email": "student1@gmail.com"
+    }
+]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 26 — Tạo template  ( Dành cho giáo viên)
+
+**POST`/api/teacher/exam-templates`**
+
+- **Mô tả: Giáo viên tạo đề thi**
+- **HTTP: POST**
+- **URL:** **`/api/teacher/exam-templates`**
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+```jsx
+{
+    "title":"Kỳ thi cuối học kỳ 1 Môn Toán",
+    "description":"Kỳ học 1234",
+    "class_id":"a03cc090-d543-4474-96d5-1589d91f6027",
+    "duration_seconds":3600,
+    "shuffle_questions":false,
+    "passing_score":30
+}
+```
+
+- **Response body:**
+    
+    **201 Created**
+    
+
+```json
+{
+    "message": "Mẫu đề thi đã được tạo thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+## Endpoint 27 — Lấy toàn bộ template của 1 giáo viên  ( Dành cho giáo viên)
+
+**GET`/api/teacher/exam-templates`**
+
+- **Mô tả: Giáo viên lấy toàn bộ danh sách template**
+- **HTTP: GET**
+- **URL:** **`/api/teacher/exam-templates`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+[
+    {
+        "id": "8519b687-237a-412d-8e04-e54b46a922cd",
+        "class_id": "a03cc090-d543-4474-96d5-1589d91f6027",
+        "title": "Kỳ thi cuối học kỳ 1 Môn Toán",
+        "description": "Kỳ học 1234",
+        "duration_seconds": 3600,
+        "shuffle_questions": false,
+        "passing_score": "30",
+        "created_by": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "created_at": "2025-12-16T01:24:53.979Z"
+    },
+    {
+        "id": "b6b4f31c-8aec-41b8-8752-df165e6915ce",
+        "class_id": "a03cc090-d543-4474-96d5-1589d91f6027",
+        "title": "Kỳ thi cuối học kỳ 1 Môn Toán",
+        "description": "Kỳ học 1234",
+        "duration_seconds": 3600,
+        "shuffle_questions": false,
+        "passing_score": "30",
+        "created_by": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "created_at": "2025-12-12T10:22:39.245Z"
+    }
+]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 28 — Chỉnh template  ( Dành cho giáo viên)
+
+**PUT`/api/teacher/exam-templates/:id`**
+
+- **Mô tả: Giáo viên chỉnh sửa template theo các trường trong request gửi đi**
+- **HTTP: PUT**
+- **URL:** **`/api/teacher/exam-templates/:id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+```jsx
+{
+    "title":"Đã thay đổi",
+    "description":"Đã thay đổi",
+    "duration_seconds":1000,
+    "shuffle_questions": true,
+    "passing_score": 51
+}
+```
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+{
+    "updatedTemplate": {
+        "id": "c7f33454-df9d-4b10-b0f8-d643abf2d13f",
+        "class_id": "a03cc090-d543-4474-96d5-1589d91f6027",
+        "title": "Đã thay đổi",
+        "description": "Đã thay đổi",
+        "duration_seconds": 1000,
+        "shuffle_questions": true,
+        "passing_score": "51",
+        "created_by": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "created_at": "2025-12-12T10:18:04.360Z"
+    },
+    "message": "Cập nhật mẫu đề thi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+## Endpoint 29 — Xóa template theo id  ( Dành cho giáo viên)
+
+**DELETE `/api/teacher/exam-templates/:id`**
+
+- **Mô tả: Giáo viên xóa template**
+- **HTTP: DELETE**
+- **URL:** **`/api/teacher/exam-templates/:id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+{
+    "message": "Xóa mẫu đề thi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 30 — Lấy toàn bộ template của 1 giáo viên theo keyword  ( Dành cho giáo viên)
+
+**GET`/api/teacher/exam-templates/search`**
+
+- **Mô tả: Giáo viên lấy toàn bộ danh sách template**
+- **HTTP: GET**
+- **URL:** **`/api/teacher/exam-templates/search?keyword={params}`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+[
+    {
+        "id": "9d97c0f9-8b8a-4c66-aaea-4259cae79e6c",
+        "class_id": "a03cc090-d543-4474-96d5-1589d91f6027",
+        "title": "Đã thay đổi",
+        "description": "Đã thay đổi",
+        "duration_seconds": 1000,
+        "shuffle_questions": true,
+        "passing_score": "51",
+        "created_by": "2f5d4ab2-d9a9-43f7-9175-9ec7f1ccc37c",
+        "created_at": "2025-12-12T10:18:06.726Z"
     }
 ]
 ```
