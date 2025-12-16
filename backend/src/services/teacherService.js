@@ -385,6 +385,35 @@ module.exports = {
             });
         return templates;
     },
+    // lấy template đề thi theo keyword
+    async searchExamTemplates(teacherId, keyword) {
+        if (!keyword || keyword.trim() === "") {
+            return [];
+        }   
+        const templates = await prisma.exam_template.findMany({
+            where: {
+                created_by: teacherId,
+                title: {
+                    contains: keyword,
+                    mode: "insensitive"
+                }
+            },  
+            orderBy: { created_at: "desc" }
+        });
+        return templates;
+    },  
+    // lấy template theo id 
+    async getExamTemplateById(teacherId,templateId){
+        const template = await prisma.exam_template.findFirst({
+            where: { id: templateId, created_by: teacherId },
+        });
+        if(!template){
+            const err = new Error("Template đề thi không tồn tại hoăc không có quyền truy cập");
+            err.status = 400;
+            throw err;
+        }
+        return template;
+    },
 
     // Đọc template cấu trúc 
     // async getExamTemplateById(templateId, actorId) {
