@@ -11,6 +11,11 @@ import RegisterPage from './pages/Auth/RegisterPage';
 import StudentDashboardPage from './pages/Student/StudentDashboardPage';
 import TeacherDashboardPage from './pages/Teacher/TeacherDashboardPage';
 
+//trang danhsachlop
+import TeacherClassesPage from './pages/Teacher/TeacherClassesPage';
+//chitiettunglop
+import ClassDetailPage from './pages/Teacher/ClassDetailPage';
+
 function App() {
   return (
     <BrowserRouter>
@@ -25,6 +30,10 @@ function App() {
 
           {/* Đường dẫn cho Giáo viên */}
           <Route path="/teacher/dashboard" element={<TeacherDashboardPage />} />
+
+          <Route path="/teacher/classes" element={<TeacherClassesPage />} />
+
+          <Route path="/teacher/classes/:id" element={<ClassDetailPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
