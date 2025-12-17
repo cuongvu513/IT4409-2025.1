@@ -99,7 +99,7 @@ module.exports = {
             const { status, requestId } = req.body; // 'approved' hoặc 'rejected'
             // const teacherId = req.user.id;
             const result = await teacherService.approveEnrollmentRequest(requestId, status);
-            res.json({ result, message: "Cập nhật trạng thái yêu cầu thành công" });
+            res.json({ message: "Cập nhật trạng thái yêu cầu thành công" });
         } catch (error) {
             const err = new Error("Cập nhật trạng thái yêu cầu thất bại");
             err.status = 400;

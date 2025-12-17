@@ -533,7 +533,7 @@ Implementation options:
 
 ```jsx
 {
-    "status": "approved", 
+    "status": "approved", // Hoặc rejected nếu từ chối 
     "requestId": "72935d82-c151-4ee5-b46d-6c88ba0fa27f"
 
 }
