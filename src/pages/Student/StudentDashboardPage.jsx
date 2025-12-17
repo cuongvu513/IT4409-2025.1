@@ -2,8 +2,10 @@
 import React, { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import styles from './StudentDashboardPage.module.scss';
+import { useNavigate, Outlet } from 'react-router-dom';
 
 const StudentDashboardPage = () => {
+    const navigate = useNavigate();
     const { user, logout } = useContext(AuthContext);
 
     // Hàm lấy tên hiển thị
@@ -60,6 +62,12 @@ const StudentDashboardPage = () => {
                         <button className={styles.primaryBtn}>Tham gia lớp mới</button>
                     </div>
                 </section>
+                <button
+                    className={styles.primaryBtn}
+                    onClick={() => navigate('/student/exam')}
+                >
+                    📝 Làm bài test thử
+                </button>
             </main>
         </div>
     );
