@@ -19,20 +19,22 @@ const ClassDetailPage = () => {
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationRef = useRef(null); // Để xử lý click ra ngoài
 
-    // 1. Gọi API lấy chi tiết lớp (Endpoint 9)
+
+    // --- 1. Hàm load chi tiết lớp (Tách ra để tái sử dụng) ---
+    const fetchClassData = async () => {
+        try {
+            const res = await teacherService.getClassDetail(id);
+            setClassData(res.data);
+        } catch (err) {
+            setError('Lỗi tải lớp học');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Load lần đầu
     useEffect(() => {
-        const fetchDetail = async () => {
-            try {
-                const res = await teacherService.getClassDetail(id);
-                setClassData(res.data); // data gồm: { classInfo, listStudent }
-            } catch (err) {
-                setError('Không thể tải thông tin lớp học.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDetail();
+        fetchClassData();
     }, [id]);
 
     // 2. Gọi API lấy danh sách yêu cầu tham gia (Endpoint 12)
@@ -58,6 +60,29 @@ const ClassDetailPage = () => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    const handleProcessRequest = async (requestId, status) => {
+        // status: 'approved' hoặc 'rejected'
+        try {
+            // Gọi API
+            const res = await teacherService.respondToEnrollment(requestId, status);
+
+            // Thông báo
+            alert(res.data.message);
+
+            // Cập nhật giao diện ngay lập tức:
+            // 1. Xóa request vừa xử lý khỏi danh sách chờ (trong chuông)
+            setRequests(prev => prev.filter(req => req.id !== requestId));
+
+            // 2. Nếu là DUYỆT, tải lại danh sách lớp để thấy sinh viên mới vào bảng chính
+            if (status === 'approved') {
+                fetchClassData();
+            }
+
+        } catch (error) {
+            alert(error.response?.data?.error || "Xử lý thất bại");
+        }
+    };
 
     // --- Render ---
     if (loading) return <div className={styles.loading}>Đang tải dữ liệu...</div>;
@@ -143,10 +168,21 @@ const ClassDetailPage = () => {
                                                             </span>
                                                         </div>
                                                         <div className={styles.reqActions}>
-                                                            <button className={styles.btnApprove} title="Duyệt">
+                                                            {/* NÚT DUYỆT */}
+                                                            <button
+                                                                className={styles.btnApprove}
+                                                                title="Duyệt"
+                                                                onClick={() => handleProcessRequest(req.id, 'approved')}
+                                                            >
                                                                 <i className="fa-solid fa-check"></i>
                                                             </button>
-                                                            <button className={styles.btnReject} title="Từ chối">
+
+                                                            {/* NÚT TỪ CHỐI */}
+                                                            <button
+                                                                className={styles.btnReject}
+                                                                title="Từ chối"
+                                                                onClick={() => handleProcessRequest(req.id, 'rejected')}
+                                                            >
                                                                 <i className="fa-solid fa-xmark"></i>
                                                             </button>
                                                         </div>
