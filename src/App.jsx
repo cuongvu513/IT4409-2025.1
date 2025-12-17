@@ -15,6 +15,8 @@ import TeacherDashboardPage from './pages/Teacher/TeacherDashboardPage';
 import TeacherClassesPage from './pages/Teacher/TeacherClassesPage';
 //chitiettunglop
 import ClassDetailPage from './pages/Teacher/ClassDetailPage';
+// ngân hàng câu hỏi
+import TeacherQuestionsPage from './pages/Teacher/TeacherQuestionsPage';
 
 function App() {
   return (
@@ -34,6 +36,8 @@ function App() {
           <Route path="/teacher/classes" element={<TeacherClassesPage />} />
 
           <Route path="/teacher/classes/:id" element={<ClassDetailPage />} />
+
+          <Route path="/teacher/questions" element={<TeacherQuestionsPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

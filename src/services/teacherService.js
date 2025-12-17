@@ -138,6 +138,125 @@ const teacherService = {
         // });
     },
 
+    // --- ENDPOINT 15: TẠO CÂU HỎI ---
+    createQuestion(data) {
+        // --- KHI CÓ BACKEND: Bỏ comment dòng này ---
+        // return axiosClient.post('/api/teacher/questions', data);
+
+        // --- MOCK DATA ---
+        return Promise.resolve({
+            status: 201,
+            data: {
+                message: "Câu hỏi đã được thêm thành công",
+                newQuestion: {
+                    id: "new-q-" + Date.now(),
+                    owner_id: "teacher-123",
+                    text: data.text,
+                    explanation: data.explanation,
+                    tags: data.tags,
+                    difficulty: data.difficulty,
+                    created_at: new Date().toISOString(),
+                    question_choice: data.choices.map((c, index) => ({
+                        id: "choice-" + index,
+                        order: c.order,
+                        text: c.text,
+                        is_correct: c.is_correct
+                    }))
+                }
+            }
+        });
+    },
+
+    // --- ENDPOINT 16: LẤY DANH SÁCH CÂU HỎI ---
+    getQuestions() {
+        // --- KHI CÓ BACKEND: Bỏ comment dòng này ---
+        // return axiosClient.get('/api/teacher/questions');
+
+        // --- MOCK DATA ---
+        return Promise.resolve({
+            status: 200,
+            data: [
+                {
+                    "id": "b8ff6f0f-2433-495d-b6fc-a79f2350402c",
+                    "owner_id": "2f5d4ab2",
+                    "text": "2 + 2 = ?",
+                    "explanation": "Cộng 2 và 2",
+                    "tags": ["math"],
+                    "difficulty": "easy",
+                    "created_at": "2025-12-05T13:52:38.380Z",
+                    "question_choice": [
+                        { "id": "c1", "order": 1, "text": "3", "is_correct": false },
+                        { "id": "c2", "order": 2, "text": "4", "is_correct": true }
+                    ]
+                },
+                {
+                    "id": "69466a53-87a1-46fd-b79e-c3adeb44efd0",
+                    "owner_id": "2f5d4ab2",
+                    "text": "Thủ đô của Việt Nam là gì?",
+                    "explanation": "Kiến thức địa lý cơ bản",
+                    "tags": ["dia-ly", "viet-nam"],
+                    "difficulty": "medium",
+                    "created_at": "2025-12-05T13:50:54.612Z",
+                    "question_choice": [
+                        { "id": "c3", "order": 1, "text": "Hồ Chí Minh", "is_correct": false },
+                        { "id": "c4", "order": 2, "text": "Hà Nội", "is_correct": true }
+                    ]
+                }
+            ]
+        });
+    },
+
+    // --- THÊM MỚI: ENDPOINT 17 (SỬA CÂU HỎI) ---
+    updateQuestion(id, data) {
+        // --- KHI CÓ BACKEND: Bỏ comment dòng này ---
+        // return axiosClient.put(`/api/teacher/questions/${id}`, data);
+
+        // --- MOCK DATA ---
+        return Promise.resolve({
+            status: 200,
+            data: { message: "Cập nhật câu hỏi thành công" }
+        });
+    },
+
+    // --- THÊM MỚI: ENDPOINT 18 (XÓA CÂU HỎI) ---
+    deleteQuestion(id) {
+        // --- KHI CÓ BACKEND: Bỏ comment dòng này ---
+        // return axiosClient.delete(`/api/teacher/questions/${id}`);
+
+        // --- MOCK DATA ---
+        return Promise.resolve({
+            status: 200,
+            data: { message: "Xóa câu hỏi thành công" }
+        });
+    },
+
+    // --- ENDPOINT 19: LẤY CHI TIẾT CÂU HỎI ---
+    getQuestionDetail(id) {
+        // --- KHI CÓ BACKEND: Bỏ comment dòng này ---
+        // return axiosClient.get(`/api/teacher/questions/${id}`);
+
+        // --- MOCK DATA (Giả lập theo Response body bạn cung cấp) ---
+        return Promise.resolve({
+            status: 200,
+            data: [ // API trả về mảng chứa 1 object
+                {
+                    "id": id,
+                    "owner_id": "teacher-123",
+                    "text": "TCP có phải là giao thức hướng kết nối không?",
+                    "explanation": "TCP thực hiện quá trình bắt tay 3 bước để tạo kết nối trước khi truyền dữ liệu.",
+                    "tags": ["network", "tcp", "protocol"],
+                    "difficulty": "medium",
+                    "created_at": "2025-12-10T17:29:54.796Z",
+                    "updated_at": "2025-12-10T17:29:54.796Z",
+                    "question_choice": [
+                        { "id": "c1", "label": "A", "order": 0, "text": "Đúng", "is_correct": true },
+                        { "id": "c2", "label": "B", "order": 1, "text": "Sai", "is_correct": false }
+                    ]
+                }
+            ]
+        });
+    },
+
     // (Các API khác như lấy danh sách lớp, thống kê... sẽ thêm sau)
     getDashboardData() {
         // Giả lập hoặc gọi API thật nếu có
