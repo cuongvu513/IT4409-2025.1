@@ -30,6 +30,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           {/* Đường dẫn cho Học sinh */}
           <Route path="/student/dashboard" element={<StudentDashboardPage />}/>
+          {/* Duong dan cho lam bai va ket qua nam ben trong StudentDashboardPage */}
           <Route path="/student/exam" element={<ExamPage />} />
           <Route path="/student/result/:examId" element={<ResultPage />} />
           {/* Đường dẫn cho Giáo viên */}
