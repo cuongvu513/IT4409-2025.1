@@ -9,6 +9,8 @@ import RegisterPage from './pages/Auth/RegisterPage';
 
 // Import 2 trang Dashboard mới
 import StudentDashboardPage from './pages/Student/StudentDashboardPage';
+import ExamPage from './pages/Student/ExamPage';
+import ResultPage from './pages/Student/ResultPage';
 import TeacherDashboardPage from './pages/Teacher/TeacherDashboardPage';
 
 //trang danhsachlop
@@ -26,10 +28,10 @@ function App() {
           <Route path="/" element={<OutsidePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-
           {/* Đường dẫn cho Học sinh */}
-          <Route path="/student/dashboard" element={<StudentDashboardPage />} />
-
+          <Route path="/student/dashboard" element={<StudentDashboardPage />}/>
+          <Route path="/student/exam" element={<ExamPage />} />
+          <Route path="/student/result/:examId" element={<ResultPage />} />
           {/* Đường dẫn cho Giáo viên */}
           <Route path="/teacher/dashboard" element={<TeacherDashboardPage />} />
 
