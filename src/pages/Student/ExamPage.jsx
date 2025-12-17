@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ExamPage.module.scss';
 
+// Cau hoi Mau
 const examQuestions = [
   {
     id: 'q1',
@@ -47,6 +48,7 @@ const examQuestions = [
   },
 ];
 
+// Dap An mai
 const correctAnswers = {
   q1: 'jujutsu',
   q2: 'option2',
@@ -56,6 +58,7 @@ const correctAnswers = {
 
 const MAX_TIME = 900;
 
+// Trang mau bao gom co dong ho dem nguoc submit va tu dong navigate sang trang Result
 export default function ExamPage() {
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(MAX_TIME);

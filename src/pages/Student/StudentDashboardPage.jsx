@@ -62,6 +62,7 @@ const StudentDashboardPage = () => {
                         <button className={styles.primaryBtn}>Tham gia lớp mới</button>
                     </div>
                 </section>
+                {/* Button de vao lam bai test */}
                 <button
                     className={styles.primaryBtn}
                     onClick={() => navigate('/student/exam')}

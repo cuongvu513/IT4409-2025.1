@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import styles from './ResultPage.module.scss';
 
+//Demo Hien thi ket qua
 const ResultPage = () => {
     const { examId } = useParams();
     const location = useLocation();
