@@ -38,5 +38,19 @@ module.exports = {
             err.status = 400;
             next(err);
         }
+    },
+
+    // Lấy danh sách đề thi theo lớp học
+    async getExamsByClass(req, res, next) {
+        try {
+            const studentId = req.user.id;
+            const classId = req.params.id;
+            const exams = await studentService.getExamsByClass(studentId, classId);
+            res.json(exams);
+        } catch (error) {
+            const err = new Error("Lấy danh sách đề thi thất bại: " + error.message);
+            err.status = 400;
+            next(err);
+        }
     }
 };

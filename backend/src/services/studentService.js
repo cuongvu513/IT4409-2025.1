@@ -43,5 +43,60 @@ module.exports =  {
             where: { student_id: studentId, class_id: classId, status: "approved" },
         });
         return;
+    },
+
+    // lấy danh sách đề thi của sinh viên theo lớp học
+    async getExamsByClass(studentId, classId) {
+        const enrollments = await prisma.enrollment_request.findFirst({
+            where: { student_id: studentId, class_id: classId, status: "approved" },
+        });
+        if (!enrollments) {
+            throw new Error("Sinh viên không tham gia lớp học này");
+        }   
+        const exams = await prisma.exam_instance.findMany({
+            where: { 
+                published: true,
+                exam_template: {
+                    class_id: classId,
+                },
+            },
+            select: {
+                id: true,
+                starts_at: true,
+                ends_at: true,
+                exam_template: {
+                    select: {
+                        title: true,
+                        duration_seconds: true,
+                        passing_score: true,
+                    },
+                },
+            },
+        });
+
+        const now = new Date();
+        const examsWithStatus = exams.map(exam => {
+            let status;
+
+            if (now < exam.starts_at) {
+                status = "upcoming";
+            } else if (now > exam.ends_at) {
+                status = "ended";
+            } else {
+                status = "ongoing";
+            }
+
+            return {
+                id: exam.id,
+                title: exam.exam_template.title,
+                starts_at: exam.starts_at,
+                ends_at: exam.ends_at,
+                duration: exam.exam_template.duration_seconds,
+                passing_score: exam.exam_template.passing_score,
+                status,
+            };
+        });
+        
+        return examsWithStatus;
     }
 };
