@@ -1346,3 +1346,32 @@ Implementation options:
     "error": "Unauthorized"
 }
 ```
+
+
+## Endpoint 30 — Giáo viên công bố đề thi  ( Dành cho giáo viên)
+
+**POST`/api/teacher/exam-instances/:id/publish`**
+
+- **Mô tả: Giáo viên công bố đề thi cho sinh viên thấy**
+- **HTTP: POST**
+- **URL:** **`/api/teacher/exam-instances/:id/publish`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+{
+    "message": "Công bố đề thi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```

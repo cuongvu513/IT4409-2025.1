@@ -655,8 +655,16 @@ module.exports = {
         });
 
         return students.map(s => s.user_enrollment_request_student_idTouser);
-    }
+    },
 
+    // công bố đề thi
+    async publishExamInstance(instanceId, teacherId) {
+        const updatedInstance = await prisma.exam_instance.updateMany({
+            where: { id: instanceId, created_by: teacherId },
+            data: { published: true },
+        });
+        return updatedInstance;
+    }
 
 
 
