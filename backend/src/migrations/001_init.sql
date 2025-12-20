@@ -97,6 +97,7 @@ CREATE TABLE exam_template (
   class_id UUID NOT NULL REFERENCES class(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
+  show_answers BOOLEAN NOT NULL DEFAULT FALSE,
   duration_seconds INTEGER NOT NULL, -- total seconds allowed
   shuffle_questions BOOLEAN NOT NULL DEFAULT FALSE,
   passing_score NUMERIC(5,2), -- optional
@@ -170,6 +171,7 @@ CREATE TABLE answer (
   question_id UUID NOT NULL REFERENCES question(id) ON DELETE RESTRICT,
   choice_id UUID REFERENCES question_choice(id),
   answered_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  selected_choice_ids UUID[] NOT NULL DEFAULT '{}'::uuid[],
   UNIQUE (exam_session_id, question_id)
 );
 CREATE INDEX idx_answer_session ON answer(exam_session_id);
