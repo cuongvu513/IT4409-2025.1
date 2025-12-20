@@ -206,8 +206,7 @@ Implementation options:
 ```json
 {
     "name":"HEELLO",
-    "bio":"UPDATE BIO",
-    "password":"123"
+    "bio":"UPDATE BIO"
 }
 ```
 

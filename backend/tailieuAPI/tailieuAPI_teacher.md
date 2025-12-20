@@ -619,6 +619,7 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
   "starts_at": "2025-12-15T08:00:00+07:00",     
   "ends_at": "2025-12-15T09:30:00+07:00",          
   "published": false,
+  "show_answers": false,
   "questions": [
     {
         "question_id":"6257fb70-767d-455e-b0a9-c4cad3403fec"
@@ -824,10 +825,10 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ## Endpoint 24 — lấy chi tiết đề thi theo id  ( Dành cho giáo viên)
 
-**PUT`/api/teacher/exam-instances/:id`**
+**GET`/api/teacher/exam-instances/:id`**
 
 - **Mô tả: Giáo viên xóa đề thi**
-- **HTTP: PUT**
+- **HTTP: GET**
 - **URL:** **`/api/teacher/exam-instances/:id`**
 - **Headers:** `Authorization: Bearer <access_token>`
 
