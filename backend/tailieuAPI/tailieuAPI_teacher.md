@@ -1099,3 +1099,66 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
     "error": "Unauthorized"
 }
 ```
+## Endpoint 31 — Giáo viên công bố đề thi  ( Dành cho giáo viên)
+
+**POST`/api/teacher/exam-instances/:id/publish`**
+
+- **Mô tả: Giáo viên công bố đề thi cho sinh viên thấy**
+- **HTTP: POST**
+- **URL:** **`/api/teacher/exam-instances/:id/publish`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+{
+    "message": "Công bố đề thi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 32 — Sinh viên lấy danh sách đề thi trong lớp học  ( Dành cho sinh viên)
+
+**GET`/api/student/exams/classes/id`**
+
+- **Mô tả: Sinh viên lấy danh sách đề thi trong lớp học theo id của lớp**
+- **HTTP: POST**
+- **URL:** **`/api/student/exams/classes/id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+[
+    {
+        "id": "7d19364a-f5ae-4f81-bcec-bd405f4a9460",
+        "title": "Kỳ thi giữa kỳ môn Toán lớp 10A1",
+        "starts_at": "2025-12-15T01:00:00.000Z",
+        "ends_at": "2025-12-15T02:30:00.000Z",
+        "duration": 3600,
+        "passing_score": "5",
+        "status": "ended"
+    }
+]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```

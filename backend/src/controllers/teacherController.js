@@ -464,6 +464,18 @@ module.exports = {
         } catch (error) {
             next(error);
         }
-    }}
+    }},
+
+    // công bố đề thi
+    async publishExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.publishExamInstance(instanceId, teacherId);
+            res.json({ message: "Công bố đề thi thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
 };
 

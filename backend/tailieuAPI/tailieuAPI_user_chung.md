@@ -169,7 +169,7 @@ Implementation options:
 
 - **Mô tả:** Trả về thông tin user đang xác thực.
 - **HTTP:** `GET`
-- **URL:** **`/auth/users/me`**
+- **URL:** **`/api/users/me`**
 - **Headers:** `Authorization: Bearer <access_token>`
 - **Responses:**
     - **200 OK**
