@@ -24,7 +24,7 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ---
 
-## Endpoint - Xin gia nhập lớp
+## Endpoint 1 - Xin gia nhập lớp
 
 **POST `/api/student/enroll`**
 
@@ -65,7 +65,7 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
     "error": "Unauthorized"
 }
 ```
-## Endpoint - Xem danh sách lớp có trạng thái [approved,pending]
+## Endpoint 2 - Xem danh sách lớp có trạng thái [approved,pending]
 
 **GET `/api/student/classes?status=approved`**
 
@@ -86,6 +86,42 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
         "description": "Học lâp trình vào sáng t6",
         "created_at": "2025-12-05T11:33:34.257Z",
         "updated_at": "2025-12-05T11:33:34.257Z"
+    }
+]
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 3 — Sinh viên lấy danh sách đề thi trong lớp học  ( Dành cho sinh viên)
+
+**GET`/api/student/exams/classes/id`**
+
+- **Mô tả: Sinh viên lấy danh sách đề thi trong lớp học theo id của lớp**
+- **HTTP: POST**
+- **URL:** **`/api/student/exams/classes/id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+[
+    {
+        "id": "7d19364a-f5ae-4f81-bcec-bd405f4a9460",
+        "title": "Kỳ thi giữa kỳ môn Toán lớp 10A1",
+        "starts_at": "2025-12-15T01:00:00.000Z",
+        "ends_at": "2025-12-15T02:30:00.000Z",
+        "duration": 3600,
+        "passing_score": "5",
+        "status": "ended"
     }
 ]
 ```
