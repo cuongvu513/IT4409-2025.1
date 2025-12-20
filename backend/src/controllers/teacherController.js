@@ -419,7 +419,7 @@ module.exports = {
     // lấy danh sách instance đề thi theo template - Dat
     async getExamInstancesByTemplate(req, res, next) {
         try {
-            const templateId = req.params.id;
+            const templateId = req.params.templateId;
             const teacherId = req.user.id;
             const instances = await teacherService.getExamInstancesByTemplate(templateId, teacherId);
             res.json(instances);

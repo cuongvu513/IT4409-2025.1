@@ -98,7 +98,30 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 }
 ```
 
-## Endpoint 3 — Sinh viên lấy danh sách đề thi trong lớp học  ( Dành cho sinh viên)
+
+## Endpoint 3 — Sinh viên rời lớp học  ( Dành cho sinh viên)
+
+**DELETE`/api/student/classes/id`**
+
+- **Mô tả: Sinh viên rời lớp học theo id của lớp**
+- **HTTP: DELETE**
+- **URL:** **`/api/student/classes/id`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **204 No Content**
+
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 4 — Sinh viên lấy danh sách đề thi trong lớp học  ( Dành cho sinh viên)
 
 **GET`/api/student/exams/classes/id`**
 
