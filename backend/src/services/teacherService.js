@@ -664,10 +664,16 @@ module.exports = {
             data: { published: true },
         });
         return updatedInstance;
+    },
+
+    // hủy công bố đề thi
+    async unpublishExamInstance(instanceId, teacherId) {
+        const updatedInstance = await prisma.exam_instance.updateMany({
+            where: { id: instanceId, created_by: teacherId },
+            data: { published: false },
+        });
+        return updatedInstance;
     }
-
-
-
 
 };
 
