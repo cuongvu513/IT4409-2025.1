@@ -145,3 +145,118 @@
         background-color: $primary-color-dark;
     }
 }
+
+.userSection {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative; // <-- Dòng này rất quan trọng
+}
+
+/* --- CSS CHO DROPDOWN PROFILE --- */
+.profileDropdown {
+    position: absolute;
+    top: 50px;
+    /* Đẩy xuống dưới header */
+    right: 0;
+    /* Căn lề phải */
+    width: 300px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid #eee;
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+
+    // Mũi tên nhọn chỉ lên trên
+    &::before {
+        content: '';
+        position: absolute;
+        top: -6px;
+        right: 60px;
+        /* Căn chỉnh vị trí mũi tên cho thẳng tên user */
+        width: 12px;
+        height: 12px;
+        background: white;
+        transform: rotate(45deg);
+        border-top: 1px solid #eee;
+        border-left: 1px solid #eee;
+    }
+}
+
+.dropdownHeader {
+    background-color: #f8f9fa;
+    padding: 12px 20px;
+    font-weight: bold;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+}
+
+.dropdownBody {
+    padding: 15px 20px;
+}
+
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+
+    .label {
+        color: #666;
+        font-weight: 500;
+    }
+
+    .value {
+        color: #333;
+        font-weight: 600;
+        text-align: right;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis; // Cắt bớt nếu dài quá
+        white-space: nowrap;
+    }
+}
+
+.dropdownFooter {
+    padding: 10px 20px 15px;
+    border-top: 1px solid #eee;
+}
+
+.logoutBtnFull {
+    width: 100%;
+    padding: 10px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+        background-color: #ffcdd2;
+    }
+
+    i {
+        margin-right: 8px;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

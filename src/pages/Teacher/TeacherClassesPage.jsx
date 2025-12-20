@@ -1,28 +1,29 @@
 // src/pages/Teacher/TeacherClassesPage.jsx
 import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
+import TopHeader from '../../components/TopHeader'; // Component Header dùng chung
+import { AuthContext } from '../../context/AuthContext'; // Cần Context để lấy hàm logout cho Sidebar
 import teacherService from '../../services/teacherService';
 import styles from './TeacherClassesPage.module.scss';
-import { Link } from 'react-router-dom';
 
 const TeacherClassesPage = () => {
-    const { user, logout } = useContext(AuthContext);
+    // Lấy hàm logout để dùng cho nút Đăng xuất ở Sidebar
+    const { logout } = useContext(AuthContext);
 
-    // State dữ liệu
+    // --- STATE DỮ LIỆU ---
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // State cho Modal Tạo lớp
+    // --- STATE MODAL ---
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // --- 1. LẤY DANH SÁCH LỚP (Endpoint 8) ---
+    // 1. LẤY DANH SÁCH LỚP
     useEffect(() => {
         const fetchClasses = async () => {
             try {
                 const res = await teacherService.getClasses();
-                // Sắp xếp lớp mới nhất lên đầu (nếu API chưa sắp xếp)
                 const sortedClasses = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 setClasses(sortedClasses);
             } catch (error) {
@@ -34,53 +35,38 @@ const TeacherClassesPage = () => {
         fetchClasses();
     }, []);
 
-    // --- 2. XỬ LÝ NHẬP LIỆU FORM ---
+    // 2. XỬ LÝ NHẬP LIỆU
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // --- 3. GỌI API TẠO LỚP (Endpoint 7) ---
+    // 3. TẠO LỚP MỚI
     const handleCreateClass = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
             const res = await teacherService.createClass(formData);
-
-            // API trả về: { newClass: {...}, message: "..." }
             const newClass = res.data.newClass;
-
-            // Cập nhật giao diện ngay lập tức (Thêm vào đầu danh sách)
             setClasses([newClass, ...classes]);
-
-            // Thông báo và Reset
             alert(res.data.message || "Tạo lớp thành công!");
             setFormData({ name: '', description: '' });
             setShowModal(false);
-
         } catch (error) {
             alert(error.response?.data?.error || "Tạo lớp thất bại!");
         } finally {
             setIsSubmitting(false);
         }
     };
-    // ---4.  Xóa lớp (Endpoint 11)
+
+    // 4. XÓA LỚP
     const handleDeleteClass = async (classId) => {
-        // 1. Xác nhận trước khi xóa
-        if (!window.confirm("Bạn có chắc chắn muốn xóa lớp học này không? Hành động này không thể hoàn tác.")) {
-            return;
-        }
-
+        if (!window.confirm("Bạn có chắc chắn muốn xóa lớp học này không?")) return;
         try {
-            // 2. Gọi API Xóa (Endpoint 11)
             await teacherService.deleteClass(classId);
-
-            // 3. Cập nhật giao diện: Lọc bỏ lớp vừa xóa khỏi danh sách hiện tại
             setClasses((prevClasses) => prevClasses.filter(cls => cls.id !== classId));
-
             alert("Xóa lớp học thành công!");
         } catch (error) {
-            console.error(error);
-            alert(error.response?.data?.error || "Xóa lớp học thất bại");
+            alert("Xóa lớp học thất bại");
         }
     };
 
@@ -91,37 +77,30 @@ const TeacherClassesPage = () => {
 
     return (
         <div className={styles.layout}>
-            {/* SIDEBAR */}
+            {/* --- 1. THANH SIDEBAR BÊN TRÁI (ĐÃ KHÔI PHỤC) --- */}
             <aside className={styles.sidebar}>
                 <div className={styles.logo}>EduTest <span>GV</span></div>
                 <nav className={styles.nav}>
                     <Link to="/teacher/dashboard">Tổng quan</Link>
+                    {/* Active menu này */}
                     <Link to="/teacher/classes" className={styles.active}>Quản lý Lớp học</Link>
                     <Link to="/teacher/questions">Ngân hàng câu hỏi</Link>
-                    <Link to="/teacher/exams">Bài kiểm tra</Link>
+                    <Link to="/teacher/exam-templates">Mẫu đề thi</Link>
                 </nav>
                 <div className={styles.sidebarFooter}>
                     <button onClick={logout}>Đăng xuất</button>
                 </div>
             </aside>
 
-            {/* MAIN CONTENT */}
+            {/* --- 2. NỘI DUNG CHÍNH BÊN PHẢI --- */}
             <div className={styles.mainContent}>
-                <header className={styles.topHeader}>
-                    <h3>Quản lý Lớp học</h3>
-                    <div className={styles.profile}>
-                        <div style={{ textAlign: 'right' }}>
-                            <span style={{ display: 'block' }}>Xin chào, <strong>{user?.name}</strong></span>
-                            <span style={{ fontSize: '0.8rem', color: '#666' }}>{user?.email}</span>
-                        </div>
-                        <div className={styles.avatar}>GV</div>
-                    </div>
-                </header>
+
+                {/* HEADER DÙNG CHUNG */}
+                <TopHeader title="Quản lý Lớp học" />
 
                 <div className={styles.contentBody}>
                     <div className={styles.pageHeader}>
                         <h2>Danh sách lớp học của tôi</h2>
-                        {/* NÚT MỞ MODAL */}
                         <button className={styles.createBtn} onClick={() => setShowModal(true)}>
                             + Tạo lớp mới
                         </button>
@@ -147,7 +126,6 @@ const TeacherClassesPage = () => {
                                         <tr key={cls.id}>
                                             <td>{index + 1}</td>
                                             <td className={styles.className}>
-                                                {/* Bấm vào tên lớp -> Chuyển trang */}
                                                 <Link to={`/teacher/classes/${cls.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                                     {cls.name}
                                                 </Link>
@@ -179,7 +157,7 @@ const TeacherClassesPage = () => {
                 </div>
             </div>
 
-            {/* --- MODAL (POPUP) TẠO LỚP --- */}
+            {/* --- MODAL (POPUP) --- */}
             {showModal && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modalContent}>

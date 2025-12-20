@@ -398,3 +398,213 @@
         opacity: 1;
     }
 }
+
+.userInfo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: opacity 0.2s;
+
+    &:hover {
+        opacity: 0.8;
+    }
+
+    .userName {
+        display: block;
+        font-weight: bold;
+        color: $text-color;
+    }
+
+    .userRole {
+        font-size: 0.8rem;
+        color: $secondary-text-color;
+    }
+
+    .avatar {
+        background: linear-gradient(135deg, $primary-color, $primary-color-dark);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+}
+
+// Wrapper để định vị dropdown
+.profileWrapper {
+    position: relative;
+}
+
+/* --- DROPDOWN STYLE --- */
+.profileDropdown {
+    position: absolute;
+    top: 55px;
+    /* Đẩy xuống dưới avatar */
+    right: 0;
+    width: 300px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+    border: 1px solid #eee;
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+
+    // Mũi tên nhọn
+    &::before {
+        content: '';
+        position: absolute;
+        top: -6px;
+        right: 15px;
+        width: 12px;
+        height: 12px;
+        background: white;
+        transform: rotate(45deg);
+        border-top: 1px solid #eee;
+        border-left: 1px solid #eee;
+    }
+}
+
+.dropdownHeader {
+    background-color: #f8f9fa;
+    padding: 15px 20px;
+    font-weight: bold;
+    color: #333;
+    border-bottom: 1px solid #eee;
+}
+
+.dropdownBody {
+    padding: 15px 20px;
+}
+
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+
+    .label {
+        color: $secondary-text-color;
+        font-weight: 500;
+    }
+
+    .value {
+        color: $text-color;
+        font-weight: 600;
+        text-align: right;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.dropdownFooter {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    background-color: #fff;
+}
+
+.logoutBtnFull {
+    width: 100%;
+    padding: 10px;
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+        background-color: #ffcdd2;
+    }
+
+    i {
+        margin-right: 8px;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.welcomeHero {
+    // Màu nền Gradient hiện đại (Xanh dương -> Tím nhẹ)
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    // Hoặc thử màu này nếu thích tông trầm hơn: 
+    // background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+    border-radius: 15px;
+    padding: 30px 40px;
+    margin-bottom: 30px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgba(0, 198, 255, 0.3); // Đổ bóng nhẹ
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px); // Hiệu ứng nổi lên khi di chuột
+    }
+}
+
+.heroContent {
+    z-index: 2; // Nổi lên trên icon chìm
+
+    h2 {
+        margin: 0 0 10px 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    p {
+        margin: 0;
+        font-size: 1.1rem;
+        opacity: 0.9;
+        font-weight: 500;
+    }
+}
+
+.heroIcon {
+    font-size: 6rem; // Icon to
+    color: rgba(255, 255, 255, 0.2); // Màu trắng mờ
+    position: absolute;
+    right: 20px;
+    bottom: -15px;
+    transform: rotate(-15deg); // Nghiêng nhẹ cho nghệ thuật
+    z-index: 1;
+}
+
+/* Responsive cho màn hình nhỏ */
+@media (max-width: 768px) {
+    .welcomeHero {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .heroIcon {
+        display: none; // Ẩn icon trên mobile cho đỡ chật
+    }
+}
