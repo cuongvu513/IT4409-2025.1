@@ -18,12 +18,11 @@ module.exports = {
     async getEnrolledClasses(req, res, next) {
         try {
             const studentId = req.user.id;
-            const classes = await studentService.getEnrolledClasses(studentId);
+            const status = req.query.status;
+            const classes = await studentService.getEnrolledClasses(studentId, status);
             res.json(classes);
         } catch (error) {
-            const err = new Error("Lấy danh sách lớp học thất bại");
-            err.status = 400;
-            next(err);
+            next(error);
         }
     },
     // Rời lớp học
@@ -36,6 +35,21 @@ module.exports = {
         } catch (error) {
             const err = new Error("Rời lớp học thất bại");
             err.status = 400;
+            next(err);
+        }
+    },
+
+    // Lấy danh sách đề thi đã publish theo lớp
+    async getClassExams(req, res, next) {
+        try {
+            const studentId = req.user.id;
+            const classId = req.params.id;
+            const exams = await studentService.getStudentExams(studentId, classId);
+            res.json(exams);
+        } catch (error) {
+            const status = error.status || 400;
+            const err = new Error("Lấy danh sách đề thi thất bại: " + error.message);
+            err.status = status;
             next(err);
         }
     }

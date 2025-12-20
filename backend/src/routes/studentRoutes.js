@@ -4,5 +4,6 @@ const router = express.Router();
 
 router.post("/enroll", studentController.joinClass);
 router.get("/classes", studentController.getEnrolledClasses);
+router.get("/classes/:id/exams", studentController.getClassExams);
 
 module.exports = router;
