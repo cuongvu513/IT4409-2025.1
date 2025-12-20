@@ -1127,3 +1127,30 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 }
 ```
 
+## Endpoint 32 — Giáo viên hủy công bố đề thi  ( Dành cho giáo viên)
+
+**POST`/api/teacher/exam-instances/:id/unpublish`**
+
+- **Mô tả: Giáo viên hủy công bố đề thi không cho sinh viên thấy**
+- **HTTP: POST**
+- **URL:** **`/api/teacher/exam-instances/:id/unpublish`**
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+    
+    **200 OK**
+    
+
+```json
+{
+    "message": "Hủy công bố đề thi thành công"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```

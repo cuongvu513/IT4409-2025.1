@@ -31,6 +31,7 @@ router.put("/exam-instances/:id", teacherController.updateExamInstance); // Cậ
 router.get("/exam-instances/:id", teacherController.getExamInstanceById); // Lấy thông tin instance đề thi theo ID
 router.get("/classes/:classId/students",teacherController.searchStudentsInClass); // Tìm kiếm sinh viên trong lớp học theo tên
 router.post("/exam-instances/:id/publish", teacherController.publishExamInstance); // Công bố đề thi
+router.post("/exam-instances/:id/unpublish", teacherController.unpublishExamInstance); // Hủy công bố đề thi
 
 
 

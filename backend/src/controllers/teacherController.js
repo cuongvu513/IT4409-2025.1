@@ -477,5 +477,17 @@ module.exports = {
             next(error);
         }
     },
+
+    // hủy công bố đề thi
+    async unpublishExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.unpublishExamInstance(instanceId, teacherId);
+            res.json({ message: "Hủy công bố đề thi thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
 };
 
