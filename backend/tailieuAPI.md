@@ -961,7 +961,7 @@ Implementation options:
 
 **GET`/api/teacher/exam-templates/:templateId/exam-instances`**
 
-- **Mô tả: Giáo viên xóa đề thi**
+- **Mô tả: lấy danh sách đề thi theo template**
 - **HTTP: GET**
 - **URL:** **`/api/teacher/exam-templates/:templateId/exam-instances`**
 - **Headers:** `Authorization: Bearer <access_token>`
@@ -1014,7 +1014,7 @@ Implementation options:
 
 **PUT`/api/teacher/exam-instances/:id`**
 
-- **Mô tả: Giáo viên xóa đề thi**
+- **Mô tả: sửa đề thi theo id**
 - **HTTP: PUT**
 - **URL:** **`/api/teacher/exam-instances/:id`**
 - **Headers:** `Authorization: Bearer <access_token>`
@@ -1073,7 +1073,7 @@ Implementation options:
 
 **PUT`/api/teacher/exam-instances/:id`**
 
-- **Mô tả: Giáo viên xóa đề thi**
+- **Mô tả: lấy chi tiết đề thi theo id**
 - **HTTP: PUT**
 - **URL:** **`/api/teacher/exam-instances/:id`**
 - **Headers:** `Authorization: Bearer <access_token>`
@@ -1116,7 +1116,7 @@ Implementation options:
 
 **GET`/api/teacher/classes/:classId/students`**
 
-- **Mô tả: Giáo viên xóa đề thi**
+- **Mô tả: Tìm kiếm sinh viên trong lớp học theo tên**
 - **HTTP: PUT**
 - **URL:** **`/api/teacher//classes/:classId/students`**
 - **Headers:** `Authorization: Bearer <access_token>`
