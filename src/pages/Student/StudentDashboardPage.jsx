@@ -1,12 +1,16 @@
 // src/pages/Student/StudentDashboardPage.jsx
 import React, { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import TopHeader from '../../components/TopHeader'; // 1. Import TopHeader
 import { AuthContext } from '../../context/AuthContext';
 import styles from './StudentDashboardPage.module.scss';
-import { useNavigate, Outlet } from 'react-router-dom';
 
 const StudentDashboardPage = () => {
     const navigate = useNavigate();
-    const { user, logout } = useContext(AuthContext);
+
+    // Chỉ cần lấy user để hiển thị ở Banner chào mừng
+    // (TopHeader đã tự lấy user và xử lý logout bên trong nó rồi)
+    const { user } = useContext(AuthContext);
 
     // Hàm lấy tên hiển thị
     const getFirstName = (name) => {
@@ -17,18 +21,8 @@ const StudentDashboardPage = () => {
 
     return (
         <div className={styles.container}>
-            {/* HEADER */}
-            <header className={styles.header}>
-                <div className={styles.brand}>EduTest - Học Sinh</div>
-                <div className={styles.userSection}>
-                    <div className={styles.userInfo}>
-                        {/* Kiểm tra user tồn tại trước khi render */}
-                        <span className={styles.userName}>{user?.name || 'Đang tải...'}</span>
-                        <span className={styles.userRole}>Học sinh</span>
-                    </div>
-                    <button onClick={logout} className={styles.logoutBtn}>Đăng xuất</button>
-                </div>
-            </header>
+            {/* 2. SỬ DỤNG TOPHEADER (Thay thế toàn bộ thẻ header cũ) */}
+            <TopHeader title="EduTest - Học Sinh" />
 
             {/* NỘI DUNG CHÍNH */}
             <main className={styles.main}>
@@ -62,10 +56,12 @@ const StudentDashboardPage = () => {
                         <button className={styles.primaryBtn}>Tham gia lớp mới</button>
                     </div>
                 </section>
-                {/* Button de vao lam bai test */}
+
+                {/* Button làm bài test */}
                 <button
                     className={styles.primaryBtn}
                     onClick={() => navigate('/student/exam')}
+                    style={{ marginTop: '20px' }}
                 >
                     📝 Làm bài test thử
                 </button>

@@ -4,26 +4,25 @@ import { AuthContext } from '../../context/AuthContext';
 import teacherService from '../../services/teacherService';
 import styles from './TeacherQuestionsPage.module.scss';
 import { Link } from 'react-router-dom';
+import TopHeader from '../../components/TopHeader'; // 1. Import TopHeader
 
 const TeacherQuestionsPage = () => {
-    const { user, logout } = useContext(AuthContext);
+    // Chỉ cần lấy logout cho Sidebar
+    const { logout } = useContext(AuthContext);
 
+    // State data
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // State Modal
     const [showModal, setShowModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // State để xác định đang sửa câu hỏi nào (null = tạo mới)
-    const [editingQuestion, setEditingQuestion] = useState(null);
-
-    const [viewQuestion, setViewQuestion] = useState(null);
+    const [editingQuestion, setEditingQuestion] = useState(null); // null = tạo mới
+    const [viewQuestion, setViewQuestion] = useState(null); // Để xem chi tiết
 
     const initialFormState = {
-        text: '',
-        difficulty: 'easy',
-        tags: '',
-        explanation: '',
+        text: '', difficulty: 'easy', tags: '', explanation: '',
         choices: [
             { order: 1, text: '', is_correct: false },
             { order: 2, text: '', is_correct: false },
@@ -31,7 +30,6 @@ const TeacherQuestionsPage = () => {
             { order: 4, text: '', is_correct: false }
         ]
     };
-
     const [formData, setFormData] = useState(initialFormState);
 
     // 1. Load danh sách
@@ -46,14 +44,13 @@ const TeacherQuestionsPage = () => {
         fetchQuestions();
     }, []);
 
-    // Helper: Reset form
     const resetForm = () => {
         setFormData(initialFormState);
         setEditingQuestion(null);
         setShowModal(false);
     };
 
-    // --- XỬ LÝ FORM (Nhập liệu) ---
+    // --- LOGIC FORM ---
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -72,81 +69,56 @@ const TeacherQuestionsPage = () => {
         setFormData({ ...formData, choices: newChoices });
     };
 
-    // --- LOGIC MỞ MODAL ĐỂ TẠO MỚI ---
+    // --- CÁC HÀM XỬ LÝ (Create/Edit/Delete/View) ---
     const handleOpenCreate = () => {
-        setEditingQuestion(null); // Chế độ tạo mới
+        setEditingQuestion(null);
         setFormData(initialFormState);
         setShowModal(true);
     };
 
-    // --- LOGIC MỞ MODAL ĐỂ SỬA (Endpoint 17) ---
     const handleEditClick = (question) => {
-        setEditingQuestion(question); // Lưu câu hỏi đang sửa
-
-        // Map dữ liệu từ API vào Form
-        // Lưu ý: tags từ API là mảng ["math", "ly"], Form cần chuỗi "math, ly"
-        // question_choice từ API cần map sang choices của Form
+        setEditingQuestion(question);
         setFormData({
             text: question.text,
             difficulty: question.difficulty,
             explanation: question.explanation || '',
             tags: question.tags.join(', '),
             choices: question.question_choice.map(c => ({
-                order: c.order,
-                text: c.text,
-                is_correct: c.is_correct
+                order: c.order, text: c.text, is_correct: c.is_correct
             }))
         });
-
         setShowModal(true);
     };
 
-    // --- LOGIC XÓA (Endpoint 18) ---
     const handleDeleteClick = async (id) => {
         if (!window.confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) return;
-
         try {
             await teacherService.deleteQuestion(id);
-            // Cập nhật UI: Lọc bỏ câu vừa xóa
             setQuestions(prev => prev.filter(q => q.id !== id));
             alert("Xóa thành công!");
-        } catch (error) {
-            alert("Xóa thất bại!");
-        }
+        } catch (error) { alert("Xóa thất bại!"); }
     };
 
-    // --- SUBMIT FORM (Tạo mới HOẶC Cập nhật) ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Chuẩn bị payload
         const payload = {
             ...formData,
             tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
             choices: formData.choices.filter(c => c.text.trim() !== '')
         };
 
-        // Validate
-        if (payload.choices.length < 2) {
-            alert("Cần ít nhất 2 đáp án!"); setIsSubmitting(false); return;
-        }
-        if (!payload.choices.some(c => c.is_correct)) {
-            alert("Cần chọn đáp án đúng!"); setIsSubmitting(false); return;
-        }
+        if (payload.choices.length < 2) { alert("Cần ít nhất 2 đáp án!"); setIsSubmitting(false); return; }
+        if (!payload.choices.some(c => c.is_correct)) { alert("Cần chọn đáp án đúng!"); setIsSubmitting(false); return; }
 
         try {
             if (editingQuestion) {
-                // --- TRƯỜNG HỢP SỬA (Endpoint 17) ---
                 await teacherService.updateQuestion(editingQuestion.id, payload);
-
-                // Cập nhật lại UI (thay thế câu hỏi cũ bằng dữ liệu mới)
                 setQuestions(prev => prev.map(q => {
                     if (q.id === editingQuestion.id) {
                         return {
-                            ...q,
-                            ...payload,
-                            // Map lại structure choice để hiển thị ngay không cần F5
+                            ...q, ...payload,
                             question_choice: payload.choices.map((c, i) => ({
                                 id: `updated-${i}`, order: c.order, text: c.text, is_correct: c.is_correct
                             }))
@@ -156,55 +128,49 @@ const TeacherQuestionsPage = () => {
                 }));
                 alert("Cập nhật thành công!");
             } else {
-                // --- TRƯỜNG HỢP TẠO MỚI (Endpoint 15) ---
                 const res = await teacherService.createQuestion(payload);
                 setQuestions([res.data.newQuestion, ...questions]);
                 alert("Tạo mới thành công!");
             }
             resetForm();
-        } catch (error) {
-            alert("Có lỗi xảy ra!");
-        } finally {
-            setIsSubmitting(false);
-        }
+        } catch (error) { alert("Có lỗi xảy ra!"); }
+        finally { setIsSubmitting(false); }
     };
 
     const handleViewDetail = async (id) => {
         try {
             const res = await teacherService.getQuestionDetail(id);
-            // API trả về mảng [Obj], nên ta lấy phần tử đầu tiên
-            const detail = res.data[0];
-            setViewQuestion(detail);
-        } catch (error) {
-            alert("Không thể tải chi tiết câu hỏi.");
-        }
+            // Xử lý an toàn nếu API trả về mảng hay object
+            let detail = null;
+            if (Array.isArray(res.data) && res.data.length > 0) detail = res.data[0];
+            else if (res.data && !Array.isArray(res.data)) detail = res.data;
+
+            if (detail) setViewQuestion(detail);
+            else alert("Không tìm thấy dữ liệu.");
+        } catch (error) { alert("Lỗi tải chi tiết."); }
     };
 
     return (
         <div className={styles.layout}>
-            {/* Sidebar giữ nguyên */}
+            {/* SIDEBAR (GIỮ NGUYÊN) */}
             <aside className={styles.sidebar}>
                 <div className={styles.logo}>EduTest <span>GV</span></div>
                 <nav className={styles.nav}>
                     <Link to="/teacher/dashboard">Tổng quan</Link>
                     <Link to="/teacher/classes">Quản lý Lớp học</Link>
                     <Link to="/teacher/questions" className={styles.active}>Ngân hàng câu hỏi</Link>
-                    <Link to="/teacher/exams">Bài kiểm tra</Link>
+                    <Link to="/teacher/exam-templates">Mẫu đề thi</Link>
                 </nav>
-                <div className={styles.sidebarFooter}><button onClick={logout}>Đăng xuất</button></div>
+                <div className={styles.sidebarFooter}>
+                    <button onClick={logout}>Đăng xuất</button>
+                </div>
             </aside>
 
-            {/* Main Content */}
+            {/* MAIN CONTENT */}
             <div className={styles.mainContent}>
-                <header className={styles.topHeader}>
-                    <h3>Ngân hàng câu hỏi</h3>
-                    <div className={styles.profile}>
-                        <div style={{ textAlign: 'right' }}>
-                            <span>Xin chào, <strong>{user?.name}</strong></span>
-                        </div>
-                        <div className={styles.avatar}>GV</div>
-                    </div>
-                </header>
+
+                {/* DÙNG TOPHEADER */}
+                <TopHeader title="Ngân hàng câu hỏi" />
 
                 <div className={styles.contentBody}>
                     <div className={styles.pageHeader}>
@@ -224,27 +190,14 @@ const TeacherQuestionsPage = () => {
                                             <span className={`${styles.badge} ${styles[q.difficulty]}`}>{q.difficulty}</span>
                                         </div>
 
-                                        {/* --- NÚT SỬA / XÓA --- */}
                                         <div className={styles.actionButtons}>
-                                            <button
-                                                className={styles.btnView}
-                                                onClick={() => handleViewDetail(q.id)}
-                                                title="Xem chi tiết"
-                                            >
+                                            <button className={styles.btnView} onClick={() => handleViewDetail(q.id)} title="Xem chi tiết">
                                                 Chi tiết
                                             </button>
-                                            <button
-                                                className={styles.btnEdit}
-                                                onClick={() => handleEditClick(q)}
-                                                title="Chỉnh sửa"
-                                            >
+                                            <button className={styles.btnEdit} onClick={() => handleEditClick(q)} title="Sửa">
                                                 <i className="fa-solid fa-pen"></i>
                                             </button>
-                                            <button
-                                                className={styles.btnDelete}
-                                                onClick={() => handleDeleteClick(q.id)}
-                                                title="Xóa"
-                                            >
+                                            <button className={styles.btnDelete} onClick={() => handleDeleteClick(q.id)} title="Xóa">
                                                 <i className="fa-solid fa-trash"></i>
                                             </button>
                                         </div>
@@ -254,9 +207,6 @@ const TeacherQuestionsPage = () => {
                                     <div className={styles.qTags}>
                                         {q.tags.map((t, idx) => <span key={idx}>#{t}</span>)}
                                     </div>
-                                    <div className={styles.qFooter}>
-                                        <span>Đáp án đúng: <strong>{q.question_choice.find(c => c.is_correct)?.text}</strong></span>
-                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -264,17 +214,15 @@ const TeacherQuestionsPage = () => {
                 </div>
             </div>
 
-            {/* --- MODAL (DÙNG CHUNG CHO TẠO VÀ SỬA) --- */}
+            {/* --- MODAL TẠO/SỬA --- */}
             {showModal && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modalContent}>
                         <div className={styles.modalHeader}>
-                            {/* Đổi tiêu đề dựa theo chế độ */}
                             <h3>{editingQuestion ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi mới'}</h3>
                             <button onClick={resetForm}>&times;</button>
                         </div>
                         <form onSubmit={handleSubmit} className={styles.formScroll}>
-                            {/* ... (Phần Form giữ nguyên như cũ) ... */}
                             <div className={styles.formGroup}>
                                 <label>Nội dung câu hỏi *</label>
                                 <textarea name="text" value={formData.text} onChange={handleInputChange} required rows="2" />
@@ -332,7 +280,7 @@ const TeacherQuestionsPage = () => {
                 </div>
             )}
 
-            {/* --- NEW: MODAL XEM CHI TIẾT (Endpoint 19) --- */}
+            {/* --- MODAL XEM CHI TIẾT --- */}
             {viewQuestion && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modalContent}>
@@ -340,39 +288,34 @@ const TeacherQuestionsPage = () => {
                             <h3>Chi tiết câu hỏi</h3>
                             <button onClick={() => setViewQuestion(null)}>&times;</button>
                         </div>
-
                         <div className={styles.detailBody}>
                             <div className={styles.detailRow}>
                                 <span className={styles.label}>Nội dung:</span>
                                 <p className={styles.content}>{viewQuestion.text}</p>
                             </div>
-
                             <div className={styles.detailRow}>
                                 <span className={styles.label}>Độ khó:</span>
                                 <span className={`${styles.badge} ${styles[viewQuestion.difficulty]}`}>
                                     {viewQuestion.difficulty}
                                 </span>
                             </div>
-
                             <div className={styles.detailRow}>
                                 <span className={styles.label}>Tags:</span>
                                 <div className={styles.qTags}>
-                                    {viewQuestion.tags.map((t, i) => <span key={i}>#{t}</span>)}
+                                    {viewQuestion.tags?.map((t, i) => <span key={i}>#{t}</span>)}
                                 </div>
                             </div>
-
                             <div className={styles.detailRow}>
                                 <span className={styles.label}>Các lựa chọn:</span>
                                 <ul className={styles.choiceList}>
-                                    {viewQuestion.question_choice.map((c) => (
-                                        <li key={c.id} className={c.is_correct ? styles.correct : ''}>
+                                    {viewQuestion.question_choice?.map((c) => (
+                                        <li key={c.id || Math.random()} className={c.is_correct ? styles.correct : ''}>
                                             <strong>{c.label || '•'}</strong> {c.text}
                                             {c.is_correct && <i className="fa-solid fa-check-circle" style={{ marginLeft: '10px' }}></i>}
                                         </li>
                                     ))}
                                 </ul>
                             </div>
-
                             <div className={styles.detailRow}>
                                 <span className={styles.label}>Giải thích:</span>
                                 <p className={styles.explanation}>
@@ -380,7 +323,6 @@ const TeacherQuestionsPage = () => {
                                 </p>
                             </div>
                         </div>
-
                         <div className={styles.modalActions}>
                             <button className={styles.btnCancel} onClick={() => setViewQuestion(null)}>Đóng</button>
                         </div>

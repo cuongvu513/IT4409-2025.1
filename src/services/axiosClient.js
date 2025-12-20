@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Tạo instance
 const axiosClient = axios.create({
-    baseURL: 'https://api.example.com/', // Nhớ đổi thành URL backend thật của bạn
+    baseURL: 'http://localhost:3000', // Nhớ đổi thành URL backend thật của bạn
     headers: {
         'Content-Type': 'application/json',
     },
@@ -43,7 +43,7 @@ axiosClient.interceptors.response.use(
 
                 // Gọi API refresh (Dùng axios gốc để tránh lặp interceptor)
                 // Lưu ý: Phải dùng đúng baseURL như axiosClient
-                const res = await axios.post('https://api.example.com/api/auth/refresh', {
+                const res = await axios.post('http://localhost:3000', {
                     refreshToken: refreshToken
                 });
 

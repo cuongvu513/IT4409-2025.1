@@ -1,63 +1,64 @@
 // src/context/AuthContext.jsx
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import authService from '../services/authService'; // Import service vừa sửa
+import authService from '../services/authService';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true); // Biến quan trọng để đợi load dữ liệu
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    // --- HÀM GỌI API SỐ 4: LẤY THÔNG TIN USER ---
-    const fetchUserProfile = async () => {
+    // --- 1. Hàm này CHỈ DÙNG KHI F5 (Reload trang) ---
+    const fetchUserProfile = async (isReload = false) => {
         try {
-            // Gọi hàm từ service (đã cấu hình axiosClient tự gắn token)
             const response = await authService.getCurrentUser();
-
-            // Lưu thông tin user (id, name, email, role...) vào state
             setUser(response.data);
+            return response.data;
         } catch (error) {
-            console.error("Không thể lấy thông tin user:", error);
-            // Nếu token lỗi -> Xóa token và logout
-            logout();
+            console.error("Lỗi lấy thông tin user:", error);
+
+            // CHỈ LOGOUT KHI ĐANG RELOAD TRANG (F5) MÀ TOKEN HỎNG
+            if (isReload) {
+                logout();
+            } else {
+                // Nếu bấm vào tên mà lỗi thì ném lỗi ra để component xử lý (hiện alert)
+                throw error;
+            }
         } finally {
-            // Dù thành công hay thất bại cũng tắt loading
             setLoading(false);
         }
     };
 
-    // --- TỰ ĐỘNG GỌI API KHI F5 TRANG ---
+    // --- 2. Check token khi F5 ---
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (token) {
-            fetchUserProfile(); // Có token thì gọi API lấy thông tin
+            fetchUserProfile(); // Gọi API 4
         } else {
-            setLoading(false); // Không có token thì dừng loading
+            setLoading(false);
         }
     }, []);
 
-    // --- LOGIN ---
+    // --- 3. HÀM LOGIN (ĐÃ SỬA: KHÔNG GỌI API 4 NỮA) ---
     const login = async (email, password) => {
         try {
-            // 1. Gọi API Login
+            // Bước A: Gọi API Login (Endpoint 2)
             const response = await authService.login({ email, password });
-            const { token, refreshToken } = response.data;
 
-            // 2. Lưu token
+            // API trả về: { message, user, token, refreshToken }
+            const { user: userData, token, refreshToken } = response.data;
+
+            // Bước B: Lưu token
             localStorage.setItem('accessToken', token);
             localStorage.setItem('refreshToken', refreshToken);
 
-            // 3. Gọi ngay API lấy thông tin chi tiết (để lấy name, role...)
-            // Tại sao không dùng user từ response login? 
-            // -> Vì đôi khi API login trả về ít thông tin hơn API /me
-            const userResponse = await authService.getCurrentUser();
-            const userData = userResponse.data;
-
+            // Bước C: LƯU NGAY DATA TỪ API LOGIN VÀO STATE
+            // (Không gọi fetchUserProfile() ở đây nữa -> Tránh request thừa "me")
             setUser(userData);
 
-            // 4. Điều hướng
+            // Bước D: Điều hướng ngay lập tức
             if (userData.role_name === 'teacher') {
                 navigate('/teacher/dashboard');
             } else {
@@ -69,7 +70,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // --- LOGOUT ---
     const logout = () => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
@@ -77,10 +77,14 @@ export const AuthProvider = ({ children }) => {
         navigate('/login');
     };
 
-    // QUAN TRỌNG: Chỉ hiển thị giao diện khi đã tải xong thông tin user
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        // Export fetchUserProfile để dùng khi bấm vào Header (nếu cần)
+        <AuthContext.Provider value={{ user, login, logout, fetchUserProfile }}>
             {!loading && children}
         </AuthContext.Provider>
     );
+};
+
+export const useAuth = () => {
+    return useContext(AuthContext);
 };

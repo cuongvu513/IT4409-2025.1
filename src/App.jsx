@@ -19,6 +19,11 @@ import TeacherClassesPage from './pages/Teacher/TeacherClassesPage';
 import ClassDetailPage from './pages/Teacher/ClassDetailPage';
 // ngân hàng câu hỏi
 import TeacherQuestionsPage from './pages/Teacher/TeacherQuestionsPage';
+//template de thi
+import TeacherTemplatesPage from './pages/Teacher/TeacherTemplatesPage';
+// de thi
+import TeacherExamInstancesPage from './pages/Teacher/TeacherExamInstancesPage';
+
 
 function App() {
   return (
@@ -29,7 +34,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           {/* Đường dẫn cho Học sinh */}
-          <Route path="/student/dashboard" element={<StudentDashboardPage />}/>
+          <Route path="/student/dashboard" element={<StudentDashboardPage />} />
           {/* Duong dan cho lam bai va ket qua nam ben trong StudentDashboardPage */}
           <Route path="/student/exam" element={<ExamPage />} />
           <Route path="/student/result/:examId" element={<ResultPage />} />
@@ -41,6 +46,11 @@ function App() {
           <Route path="/teacher/classes/:id" element={<ClassDetailPage />} />
 
           <Route path="/teacher/questions" element={<TeacherQuestionsPage />} />
+
+          <Route path="/teacher/exam-templates" element={<TeacherTemplatesPage />} />
+
+          <Route path="/teacher/exam-templates/:templateId" element={<TeacherExamInstancesPage />} />
+
         </Routes>
       </AuthProvider>
     </BrowserRouter>

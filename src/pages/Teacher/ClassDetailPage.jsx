@@ -1,26 +1,26 @@
 // src/pages/Teacher/ClassDetailPage.jsx
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import TopHeader from '../../components/TopHeader'; // Import Header dùng chung
+import { AuthContext } from '../../context/AuthContext'; // Import Context để lấy logout cho Sidebar
 import teacherService from '../../services/teacherService';
 import styles from './ClassDetailPage.module.scss';
 
 const ClassDetailPage = () => {
-    const { id } = useParams(); // Lấy ID lớp từ URL
-    const { user, logout } = useContext(AuthContext);
+    const { id } = useParams();
+    const { logout } = useContext(AuthContext); // Lấy hàm logout cho Sidebar
 
-    // State dữ liệu chính
+    // --- State Dữ liệu ---
     const [classData, setClassData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // --- State cho chức năng Thông báo (Endpoint 12) ---
+    // --- State Thông báo (Requests) ---
     const [requests, setRequests] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
-    const notificationRef = useRef(null); // Để xử lý click ra ngoài
+    const notificationRef = useRef(null);
 
-
-    // --- 1. Hàm load chi tiết lớp (Tách ra để tái sử dụng) ---
+    // 1. Load chi tiết lớp
     const fetchClassData = async () => {
         try {
             const res = await teacherService.getClassDetail(id);
@@ -32,25 +32,24 @@ const ClassDetailPage = () => {
         }
     };
 
-    // Load lần đầu
     useEffect(() => {
         fetchClassData();
     }, [id]);
 
-    // 2. Gọi API lấy danh sách yêu cầu tham gia (Endpoint 12)
+    // 2. Load yêu cầu tham gia
     useEffect(() => {
         const fetchRequests = async () => {
             try {
                 const res = await teacherService.getEnrollmentRequests(id);
-                setRequests(res.data); // Lưu danh sách chờ duyệt
+                setRequests(res.data);
             } catch (err) {
-                console.error("Lỗi tải yêu cầu tham gia:", err);
+                console.error("Lỗi tải yêu cầu:", err);
             }
         };
         fetchRequests();
     }, [id]);
 
-    // 3. Xử lý đóng dropdown khi click ra ngoài
+    // 3. Click outside để đóng dropdown chuông
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (notificationRef.current && !notificationRef.current.contains(event.target)) {
@@ -61,30 +60,24 @@ const ClassDetailPage = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // 4. Xử lý Duyệt/Từ chối
     const handleProcessRequest = async (requestId, status) => {
-        // status: 'approved' hoặc 'rejected'
         try {
-            // Gọi API
             const res = await teacherService.respondToEnrollment(requestId, status);
-
-            // Thông báo
             alert(res.data.message);
 
-            // Cập nhật giao diện ngay lập tức:
-            // 1. Xóa request vừa xử lý khỏi danh sách chờ (trong chuông)
+            // Xóa khỏi danh sách chờ
             setRequests(prev => prev.filter(req => req.id !== requestId));
 
-            // 2. Nếu là DUYỆT, tải lại danh sách lớp để thấy sinh viên mới vào bảng chính
+            // Nếu duyệt -> Load lại lớp để thấy sinh viên mới
             if (status === 'approved') {
                 fetchClassData();
             }
-
         } catch (error) {
             alert(error.response?.data?.error || "Xử lý thất bại");
         }
     };
 
-    // --- Render ---
     if (loading) return <div className={styles.loading}>Đang tải dữ liệu...</div>;
     if (error) return <div className={styles.error}>{error} <Link to="/teacher/classes">Quay lại</Link></div>;
     if (!classData) return null;
@@ -93,32 +86,25 @@ const ClassDetailPage = () => {
 
     return (
         <div className={styles.layout}>
-            {/* SIDEBAR */}
+            {/* --- 1. SIDEBAR (ĐÃ KHÔI PHỤC) --- */}
             <aside className={styles.sidebar}>
                 <div className={styles.logo}>EduTest <span>GV</span></div>
                 <nav className={styles.nav}>
                     <Link to="/teacher/dashboard">Tổng quan</Link>
                     <Link to="/teacher/classes" className={styles.active}>Quản lý Lớp học</Link>
                     <Link to="/teacher/questions">Ngân hàng câu hỏi</Link>
-                    <Link to="/teacher/exams">Bài kiểm tra</Link>
+                    <Link to="/teacher/exam-templates">Mẫu đề thi</Link>
                 </nav>
                 <div className={styles.sidebarFooter}>
                     <button onClick={logout}>Đăng xuất</button>
                 </div>
             </aside>
 
-            {/* MAIN CONTENT */}
+            {/* --- 2. MAIN CONTENT --- */}
             <div className={styles.mainContent}>
-                <header className={styles.topHeader}>
-                    <h3>Chi tiết lớp học</h3>
-                    <div className={styles.profile}>
-                        <div style={{ textAlign: 'right' }}>
-                            <span style={{ display: 'block' }}>Xin chào, <strong>{user?.name}</strong></span>
-                            <span style={{ fontSize: '0.8rem', color: '#666' }}>{user?.email}</span>
-                        </div>
-                        <div className={styles.avatar}>GV</div>
-                    </div>
-                </header>
+
+                {/* TOP HEADER DÙNG CHUNG */}
+                <TopHeader title="Chi tiết lớp học" />
 
                 <div className={styles.contentBody}>
                     <div className={styles.backLink}>
@@ -133,7 +119,7 @@ const ClassDetailPage = () => {
                                 <span className={styles.codeTag}>{classInfo.code}</span>
                             </div>
 
-                            {/* --- CHUÔNG THÔNG BÁO (NOTIFICATION BELL) --- */}
+                            {/* --- CHUÔNG THÔNG BÁO --- */}
                             <div className={styles.notificationWrapper} ref={notificationRef}>
                                 <div
                                     className={styles.bellIcon}
@@ -141,13 +127,12 @@ const ClassDetailPage = () => {
                                     title="Yêu cầu tham gia"
                                 >
                                     <i className="fa-solid fa-bell"></i>
-                                    {/* Badge số lượng (Chỉ hiện khi có yêu cầu) */}
                                     {requests.length > 0 && (
                                         <span className={styles.badge}>{requests.length}</span>
                                     )}
                                 </div>
 
-                                {/* DROPDOWN DANH SÁCH */}
+                                {/* DROPDOWN DANH SÁCH CHỜ */}
                                 {showNotifications && (
                                     <div className={styles.dropdown}>
                                         <div className={styles.dropdownHeader}>
@@ -163,12 +148,8 @@ const ClassDetailPage = () => {
                                                             <strong>{req.studentInfo?.name || 'Học sinh'}</strong>
                                                             <span className={styles.reqEmail}>{req.studentInfo?.email}</span>
                                                             {req.note && <p className={styles.reqNote}>"{req.note}"</p>}
-                                                            <span className={styles.reqTime}>
-                                                                {new Date(req.requested_at).toLocaleDateString('vi-VN')}
-                                                            </span>
                                                         </div>
                                                         <div className={styles.reqActions}>
-                                                            {/* NÚT DUYỆT */}
                                                             <button
                                                                 className={styles.btnApprove}
                                                                 title="Duyệt"
@@ -176,8 +157,6 @@ const ClassDetailPage = () => {
                                                             >
                                                                 <i className="fa-solid fa-check"></i>
                                                             </button>
-
-                                                            {/* NÚT TỪ CHỐI */}
                                                             <button
                                                                 className={styles.btnReject}
                                                                 title="Từ chối"
@@ -193,7 +172,6 @@ const ClassDetailPage = () => {
                                     </div>
                                 )}
                             </div>
-                            {/* --- HẾT PHẦN CHUÔNG --- */}
                         </div>
 
                         <p className={styles.description}>{classInfo.description}</p>
