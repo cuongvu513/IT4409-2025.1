@@ -439,6 +439,7 @@ module.exports = {
                 ends_at: new Date(instanceFields.ends_at),
                 template_id: instanceFields.templateId,
                 // exam_template: {connect: { id: instanceFields.templateId } },
+                show_answers: instanceFields.show_answers ?? false,
                 published: instanceFields.published ?? false,
                 created_by: teacher_id,
                 created_at: new Date()

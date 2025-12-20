@@ -22,6 +22,7 @@ async function runSqlFile(client, filePath) {
 
   try {
     await runSqlFile(client, path.resolve(__dirname, '../migrations/001_init.sql'));
+    await runSqlFile(client, path.resolve(__dirname, '../migrations/002_add_show_answers.sql'));
     await runSqlFile(client, path.resolve(__dirname, '../seeds/001_seed_basic.sql'));
     console.log('Migrations & seeds applied successfully.');
   } catch (err) {

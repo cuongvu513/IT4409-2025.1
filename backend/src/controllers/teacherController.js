@@ -365,7 +365,7 @@ module.exports = {
     async createExamInstance(req, res, next) { {
         try {
             const teacherId = req.user.id;
-            let { templateId, starts_at, ends_at, published } = req.body || {};
+            let { templateId, starts_at, ends_at, published, show_answers } = req.body || {};
 
             // Convert kiểu dữ liệu
             if (typeof published === 'string') {
@@ -394,6 +394,9 @@ module.exports = {
                 const err = new Error("Thời gian bắt đầu phải là tương lai");
                 err.status = 400;
                 throw err;
+            }
+            if (typeof show_answers === 'string') {
+                show_answers = show_answers.toLowerCase() === 'true';
             }
             const instanceData = req.body || {};
             const newInstance = await teacherService.addExam_instance(instanceData, teacherId);
