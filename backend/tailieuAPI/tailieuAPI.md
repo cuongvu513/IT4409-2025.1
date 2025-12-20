@@ -546,9 +546,6 @@ Implementation options:
 
 ```jsx
 {
-    "result": {
-        "count": 1
-    },
     "message": "Cập nhật trạng thái yêu cầu thành công"
 }
 ```
