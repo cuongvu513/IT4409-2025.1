@@ -52,42 +52,60 @@ module.exports = {
         return;
     },
 
-    // Lấy danh sách đề thi đã publish của lớp học mà sinh viên đã được duyệt
-    async getStudentExams(studentId, classId) {
-        const enrollment = await prisma.enrollment_request.findFirst({
-            where: {
-                student_id: studentId,
-                class_id: classId,
-                status: "approved",
-            },
-        });
-        if (!enrollment) {
-            const err = new Error("Bạn chưa tham gia lớp này hoặc chưa được duyệt");
-            err.status = 403;
-            throw err;
-        }
 
+    // lấy danh sách đề thi của sinh viên theo lớp học
+    async getExamsByClass(studentId, classId) {
+        const enrollments = await prisma.enrollment_request.findFirst({
+            where: { student_id: studentId, class_id: classId, status: "approved" },
+        });
+        if (!enrollments) {
+            throw new Error("Sinh viên không tham gia lớp học này");
+        }   
         const exams = await prisma.exam_instance.findMany({
-            where: {
+            where: { 
+
                 published: true,
                 exam_template: {
                     class_id: classId,
                 },
             },
-            include: {
+            select: {
+                id: true,
+                starts_at: true,
+                ends_at: true,
                 exam_template: {
                     select: {
-                        id: true,
                         title: true,
-                        description: true,
                         duration_seconds: true,
-                        class_id: true,
+                        passing_score: true,
                     },
                 },
             },
-            orderBy: { starts_at: "asc" },
         });
 
-        return exams;
-    },
+        const now = new Date();
+        const examsWithStatus = exams.map(exam => {
+            let status;
+
+            if (now < exam.starts_at) {
+                status = "upcoming";
+            } else if (now > exam.ends_at) {
+                status = "ended";
+            } else {
+                status = "ongoing";
+            }
+
+            return {
+                id: exam.id,
+                title: exam.exam_template.title,
+                starts_at: exam.starts_at,
+                ends_at: exam.ends_at,
+                duration: exam.exam_template.duration_seconds,
+                passing_score: exam.exam_template.passing_score,
+                status,
+            };
+        });
+        
+        return examsWithStatus;
+    }
 };

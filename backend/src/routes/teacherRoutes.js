@@ -12,7 +12,7 @@ router.get("/classes/:id/enrollment-requests", teacherController.getEnrollmentRe
 router.post("/enrollment-requests/approve", teacherController.approveEnrollmentRequest); // Phê duyệt hoặc từ chối yêu cầu tham gia lớp học
 
 router.post("/questions", teacherController.addQuestion); // Tạo câu hỏi 
-router.get("/questions", teacherController.getQuestionsbyTeacher); // Lấy danh sách câu hỏi theo lớp học
+router.get("/questions", teacherController.getQuestionsbyTeacher); // Lấy danh sách câu hỏi theo id giáo viên
 router.put("/questions/:id", teacherController.updateQuestion); // Cập nhật câu hỏi
 router.delete("/questions/:id", teacherController.deleteQuestion); // Xóa câu hỏi
 router.get("/questions/:id", teacherController.getQuestionById); // Lấy thông tin câu hỏi theo ID
@@ -30,6 +30,7 @@ router.get("/exam-templates/:templateId/exam-instances", teacherController.getEx
 router.put("/exam-instances/:id", teacherController.updateExamInstance); // Cập nhật instance đề thi
 router.get("/exam-instances/:id", teacherController.getExamInstanceById); // Lấy thông tin instance đề thi theo ID
 router.get("/classes/:classId/students",teacherController.searchStudentsInClass); // Tìm kiếm sinh viên trong lớp học theo tên
+router.post("/exam-instances/:id/publish", teacherController.publishExamInstance); // Công bố đề thi
 
 
 
