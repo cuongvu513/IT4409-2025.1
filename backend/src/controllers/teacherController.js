@@ -99,7 +99,7 @@ module.exports = {
             const { status, requestId } = req.body; // 'approved' hoặc 'rejected'
             // const teacherId = req.user.id;
             const result = await teacherService.approveEnrollmentRequest(requestId, status);
-            res.json({ result, message: "Cập nhật trạng thái yêu cầu thành công" });
+            res.json({ message: "Cập nhật trạng thái yêu cầu thành công" });
         } catch (error) {
             const err = new Error("Cập nhật trạng thái yêu cầu thất bại");
             err.status = 400;
@@ -199,9 +199,10 @@ module.exports = {
             const questionId = req.params.id;
             const teacherId = req.user.id;
             await teacherService.deleteQuestion(questionId, teacherId);
-            res.status(204).end();
+            res.status(200).json({ message: "Xóa câu hỏi thành công" });
         } catch (error) {
             const err = new Error('Xóa câu hỏi thất bại');
+            console.error("Error stack:", error.stack);
             err.status = 400;
             next(err);
         }
@@ -295,7 +296,7 @@ module.exports = {
     // Cập nhật template 
     async updateExamTemplate(req, res, next) {
         try {
-            const templateId = req.body.id;
+            const templateId = req.params.id;
             const updateData = req.body || {};
             const updatedTemplate = await teacherService.updateExamTemplate(templateId, updateData);
             res.json({ updatedTemplate, message: "Cập nhật mẫu đề thi thành công" });
@@ -325,6 +326,31 @@ module.exports = {
         }
     },
 
+    // tìm kiếm template theo từ khóa trong tiêu đề 
+    async searchExamTemplates(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const keyword = req.query.keyword || "";
+            const templates = await teacherService.searchExamTemplates(teacherId, keyword);
+            res.json(templates);
+        } catch (error) {
+            // const err = new Error("Tìm kiếm mẫu đề thi thất bại");
+            // err.status = 400;
+            next(error);
+        }
+    },
+    // tìm kiếm template theo ID
+    async getExamTemplateById(req, res, next){
+        try {
+            const teacherId = req.user.id;
+            const templateId = req.params.id;
+            const templates = await teacherService.getExamTemplateById(teacherId,templateId);
+            res.json(templates);
+        } catch (error){
+            next(error);
+        }
+    },
+
 
     // const questionData = req.body || {};
     // const questionFields = { ...questionData };
@@ -339,7 +365,7 @@ module.exports = {
     async createExamInstance(req, res, next) { {
         try {
             const teacherId = req.user.id;
-            let { templateId, starts_at, ends_at, published } = req.body || {};
+            let { templateId, starts_at, ends_at, published, show_answers } = req.body || {};
 
             // Convert kiểu dữ liệu
             if (typeof published === 'string') {
@@ -362,13 +388,109 @@ module.exports = {
                 err.status = 400;
                 throw err;
             }
+            // kiểm tra thời gian là tương lai không
+            const now = new Date();
+            if (startDate <= now) {
+                const err = new Error("Thời gian bắt đầu phải là tương lai");
+                err.status = 400;
+                throw err;
+            }
+            if (typeof show_answers === 'string') {
+                show_answers = show_answers.toLowerCase() === 'true';
+            }
             const instanceData = req.body || {};
             const newInstance = await teacherService.addExam_instance(instanceData, teacherId);
             res.status(201).json({ newInstance, message: "Đề thi đã được tạo thành công" });
         } catch (error) {
             next(error);
         }
-    }}
+    }},
 
+    // Xóa instace đề thi
+    async deleteExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.deleteExam_instance(instanceId, teacherId);
+            res.json({ message: "Xóa đề thi thành công" });
+            res.status(200).end();
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // lấy danh sách instance đề thi theo template - Dat
+    async getExamInstancesByTemplate(req, res, next) {
+        try {
+            const templateId = req.params.templateId;
+            const teacherId = req.user.id;
+            const instances = await teacherService.getExamInstancesByTemplate(templateId, teacherId);
+            res.json(instances);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // sửa instance đề thi
+    async updateExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const updateData = req.body || {};
+            const teacherId = req.user.id;
+            const updatedInstance = await teacherService.updateExamInstance(instanceId, teacherId, updateData);
+            res.json({ updatedInstance, message: "Cập nhật đề thi thành công" });   
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // lấy instance đề thi theo ID 
+    async getExamInstanceById(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            const instance = await teacherService.getExamInstanceById(instanceId, teacherId);
+            res.json(instance);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // tìm kiếm sinh viên trong lớp học theo tên
+    async searchStudentsInClass(req, res, next) { {
+        try {
+            const classId = req.params.classId;
+            const keyword = req.query.keyword;
+            const teacherId = req.user.id;
+            const students = await teacherService.searchStudentsInClass(teacherId, classId, keyword);
+            res.json(students);
+        } catch (error) {
+            next(error);
+        }
+    }},
+
+    // công bố đề thi
+    async publishExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.publishExamInstance(instanceId, teacherId);
+            res.json({ message: "Công bố đề thi thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // hủy công bố đề thi
+    async unpublishExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.unpublishExamInstance(instanceId, teacherId);
+            res.json({ message: "Hủy công bố đề thi thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
 };
 

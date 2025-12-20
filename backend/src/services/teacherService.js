@@ -228,17 +228,54 @@ module.exports = {
     },
 
     // Xóa câu hỏi 
-    async deleteQuestion(questionId) {
-        await prisma.question.$transaction(async (tx) => {
-            // Xóa các choices liên quan
+    // async deleteQuestion(questionId) {
+    //     return await prisma.$transaction(async (tx) => {
+            
+    //         await tx.question_choice.deleteMany({
+    //             where: { question_id: questionId }
+    //         });
+
+    //         await tx.question.delete({
+    //             where: { id: questionId }
+    //         });
+
+    //         return;
+    //     });
+    // },
+    
+    //xóa câu hỏi - dat
+    async deleteQuestion(questionId, teacherId) {
+        return await prisma.$transaction(async (tx) => {
+
+            // 1. Check quyền sở hữu 
+            const question = await tx.question.findFirst({
+                where: {
+                    id: questionId,
+                    owner_id: teacherId
+                }
+            });
+
+            if (!question) {
+                throw new Error("Không tìm thấy câu hỏi hoặc không có quyền xóa");
+            }
+
+            // 2. XÓA liên kết đề thi - câu hỏi (nếu câu hỏi đang ở trong 1 đề thi nào đó)
+            await tx.exam_question.deleteMany({
+                where: { question_id: questionId }
+            });
+
+            // 3. Xóa đáp án
             await tx.question_choice.deleteMany({
                 where: { question_id: questionId }
             });
+
+            // 4. Xóa câu hỏi
             await tx.question.delete({
                 where: { id: questionId }
             });
+
+            return true;
         });
-        return;
     },
 
     // lấy chi tiết câu hỏi theo ID
@@ -248,6 +285,7 @@ module.exports = {
             include: {
                 question_choice: {
                     orderBy: { order: "asc" }
+                    
                 }
             }
         });
@@ -291,7 +329,7 @@ module.exports = {
                 where: { id: templateId }
             });
             if (!existing) {
-                const err = new Error("Template not found or access denied");
+                const err = new Error("Template không tồn tại");
                 err.status = 404;
                 throw err;
             }
@@ -347,6 +385,35 @@ module.exports = {
             });
         return templates;
     },
+    // lấy template đề thi theo keyword
+    async searchExamTemplates(teacherId, keyword) {
+        if (!keyword || keyword.trim() === "") {
+            return [];
+        }   
+        const templates = await prisma.exam_template.findMany({
+            where: {
+                created_by: teacherId,
+                title: {
+                    contains: keyword,
+                    mode: "insensitive"
+                }
+            },  
+            orderBy: { created_at: "desc" }
+        });
+        return templates;
+    },  
+    // lấy template theo id 
+    async getExamTemplateById(teacherId,templateId){
+        const template = await prisma.exam_template.findFirst({
+            where: { id: templateId, created_by: teacherId },
+        });
+        if(!template){
+            const err = new Error("Template đề thi không tồn tại hoăc không có quyền truy cập");
+            err.status = 400;
+            throw err;
+        }
+        return template;
+    },
 
     // Đọc template cấu trúc 
     // async getExamTemplateById(templateId, actorId) {
@@ -372,6 +439,7 @@ module.exports = {
                 ends_at: new Date(instanceFields.ends_at),
                 template_id: instanceFields.templateId,
                 // exam_template: {connect: { id: instanceFields.templateId } },
+                show_answers: instanceFields.show_answers ?? false,
                 published: instanceFields.published ?? false,
                 created_by: teacher_id,
                 created_at: new Date()
@@ -405,6 +473,207 @@ module.exports = {
             });
             return result;
         });
+    },
+
+    // xóa instance đề thi
+    async deleteExam_instance(instanceId, teacherId) {
+        return await prisma.$transaction(async (tx) => {
+            // Kiểm tra quyền sở hữu 
+            const instance = await tx.exam_instance.findFirst({
+                where: {
+                    id: instanceId,
+                    created_by: teacherId
+                }
+            });
+            if (!instance) {
+                throw new Error("Không tìm thấy instance đề thi hoặc không có quyền xóa");
+            }
+            // XÓA liên kết đề thi - câu hỏi
+            await tx.exam_question.deleteMany({
+                where: { exam_instance_id: instanceId }
+            }); 
+            // Xóa instance đề thi
+            await tx.exam_instance.delete({
+                where: { id: instanceId }
+            });
+            return true;
+        });
+    },
+
+    // Lấy danh sách instance đề thi theo template  
+    async getExamInstancesByTemplate(templateId, teacherId) {  
+        const template = await prisma.exam_template.findFirst({
+            where: { id: templateId, created_by: teacherId },
+        });
+        if (!template) {
+            const err = new Error("Template đề thi không tồn tại hoăc không có quyền truy cập");
+            err.status = 404;
+            throw err;
+        }
+        const instances = await prisma.exam_instance.findMany({
+            where: { template_id: templateId },
+            orderBy: { created_at: "desc" }
+        });
+        return instances;
+    },
+
+    // chinh sua instance de thi
+    async updateExamInstance(instanceId, teacher_id, updateData) {
+        return await prisma.$transaction(async (tx) => {
+            // Lấy instance hiện tại và kiểm tra quyền
+            const instance = await tx.exam_instance.findFirst({
+                where: { id: instanceId, created_by: teacher_id },
+            });
+            if (!instance) {
+                const err = new Error("Instance đề thi không tồn tại hoặc không có quyền sửa");
+                err.status = 404;
+                throw err;
+            }
+
+            // kiểm tra dữ liệu thời gian trước khi cập nhập
+            if (updateData.starts_at && updateData.ends_at) {
+                const startDate = new Date(updateData.starts_at);
+                const endDate = new Date(updateData.ends_at);
+                if (startDate >= endDate) {
+                    const err = new Error("Thời gian kết thúc phải sau thời gian bắt đầu");
+                    err.status = 400;
+                    throw err;
+                }
+                if (startDate <= new Date()) {
+                    const err = new Error("Thời gian bắt đầu phải là tương lai");
+                    err.status = 400;
+                    throw err;
+                }
+            }
+            else if (updateData.starts_at) {
+                const startDate = new Date(updateData.starts_at);
+                const endDate = instance.ends_at;   
+                if (startDate >= endDate) {
+                    const err = new Error("Thời gian bắt đầu mới phải trước thời gian kết thúc cũ");
+                    err.status = 400;
+                    throw err;
+                }
+                if (startDate <= new Date()) {
+                    const err = new Error("Thời gian bắt đầu phải là tương lai");
+                    err.status = 400;
+                    throw err;
+                }
+            }
+            else if (updateData.ends_at) {
+                const startDate = instance.starts_at;
+                const endDate = new Date(updateData.ends_at);
+                if (startDate >= endDate) {
+                    const err = new Error("Thời gian kết thúc mới phải sau thời gian bắt đầu cũ");
+                    err.status = 400;
+                    throw err;
+                }
+            }
+
+            // Chuẩn bị dữ liệu cập nhật
+            const iUpdate = {};
+            if (updateData.starts_at !== undefined) iUpdate.starts_at = new Date(updateData.starts_at);
+            if (updateData.ends_at !== undefined) iUpdate.ends_at = new Date(updateData.ends_at);
+            if (updateData.published !== undefined) iUpdate.published = updateData.published;
+            // Cập nhật instance
+            const updatedInstance = await tx.exam_instance.update({
+                where: { id: instanceId },
+                data: iUpdate,
+            });
+
+            // xóa hết câu hỏi cũ
+            await tx.exam_question.deleteMany({
+                where: { exam_instance_id: instanceId }
+            });
+            // thêm câu hỏi mới
+            const { questions = [] } = updateData;
+            if (Array.isArray(questions) && questions.length > 0) {
+                const mapped = questions.map((q, i) => ({
+                    exam_instance_id: instanceId,
+                    question_id: q.question_id,
+                    ordinal: q.ordinal ?? i,
+                    points: q.points,
+                }));
+                await tx.exam_question.createMany({
+                    data: mapped,
+                    skipDuplicates: true,
+                });
+            }
+
+            const result = await tx.exam_instance.findUnique({
+                where: { id: updatedInstance.id },
+                include: {
+                    exam_question: {
+                        orderBy: { ordinal: "asc" }
+                    }
+                }
+            });
+            return result;
+        });
+    },
+
+    // lấy chi tiết instance đề thi theo ID
+    async getExamInstanceById(instanceId, teacherId) {
+        const instance = await prisma.exam_instance.findFirst({
+            where: { id: instanceId, created_by: teacherId },
+            include: {
+                exam_question: {
+                    orderBy: { ordinal: "asc" }
+                }
+            }
+        });
+        return instance;
+    },
+
+    // tìm kiếm sinh viên theo tên hoặc email trong lớp học
+    async searchStudentsInClass(teacherId, classId, keyword) {
+        if (!keyword || keyword.trim() === "") {
+            return [];
+        }
+
+        const students = await prisma.enrollment_request.findMany({
+            where: {
+                class_id: classId,
+                status: "approved",
+                Renamedclass: {
+                    teacher_id: teacherId
+                },
+                user_enrollment_request_student_idTouser: {
+                    name: {
+                        contains: keyword,
+                        mode: "insensitive"
+                    }
+                }
+            },
+            select: {
+                user_enrollment_request_student_idTouser: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        return students.map(s => s.user_enrollment_request_student_idTouser);
+    },
+
+    // công bố đề thi
+    async publishExamInstance(instanceId, teacherId) {
+        const updatedInstance = await prisma.exam_instance.updateMany({
+            where: { id: instanceId, created_by: teacherId },
+            data: { published: true },
+        });
+        return updatedInstance;
+    },
+
+    // hủy công bố đề thi
+    async unpublishExamInstance(instanceId, teacherId) {
+        const updatedInstance = await prisma.exam_instance.updateMany({
+            where: { id: instanceId, created_by: teacherId },
+            data: { published: false },
+        });
+        return updatedInstance;
     }
 
 };
