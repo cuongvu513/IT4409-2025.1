@@ -149,6 +149,10 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 ]
 ```
 
+- upcoming: bài thi chưa bắt đầu
+- ongoing: bài thi đang diễn ra
+- ended: bài thi đã kết thúc
+
 - **401 Unauthorized** (missing/invalid token)
 
 ```json
@@ -295,5 +299,24 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 - Điểm tính tự động bằng cách so khớp tập `answer.selected_choice_ids` (hoặc `choice_id` cũ) với tập các lựa chọn `question_choice.is_correct = true`. Chỉ chấm đúng nếu khớp hoàn toàn (không thiếu, không thừa).
 - Trường `details` (chi tiết từng câu đúng/sai) chỉ hiển thị nếu giáo viên cấu hình `show_answers = true` trong `exam_template`.
 
+## Endpoint 10 — hủy yêu cầu tham gia lớp học
+
+**POST `/api/student//classes/:id/cancel-enrollment`**
+
+- **Mô tả:**  hủy yêu cầu tham gia lớp học.
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Body:** (không cần)
 
 
+- **Response body:**
+
+- **204 No Content** 
+
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```

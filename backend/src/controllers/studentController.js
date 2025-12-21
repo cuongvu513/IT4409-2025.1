@@ -138,5 +138,19 @@ module.exports = {
             err.status = error.status || 400;
             next(err);
         }
-    }
+    },
+
+    // hủy yêu cầu tham gia lớp học
+    async cancelEnrollmentRequest(req, res, next) {
+        try {
+            const studentId = req.user.id;
+            const classId = req.params.id;
+            await studentService.cancelEnrollmentRequest(studentId, classId);
+            res.status(204).end();
+        } catch (error) {
+            const err = new Error("Hủy yêu cầu tham gia lớp học thất bại: " + error.message);
+            err.status = 400;
+            next(err);
+        }
+    },
 };
