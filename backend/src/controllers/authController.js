@@ -3,6 +3,7 @@ const   tokenService = require("../services/tokenService");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "Password123!!!";
 
+
 module.exports = {
   async register(req, res, next) {
     try {
@@ -62,4 +63,30 @@ module.exports = {
       next(err);
     }
   },
+
+  // Quên mật khẩu
+  async forgotPassword(req, res, next) {
+    try {
+      const { email } = req.body;
+      const result = await authService.forgotPassword(email);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // Đặt lại mật khẩu với OTP
+  async resetPassword(req, res, next) {
+    try {
+      const { email, otp, newPassword } = req.body;
+      const result = await authService.resetPasswordWithOtp(
+        email,
+        otp,
+        newPassword
+      );
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
 };

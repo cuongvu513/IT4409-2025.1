@@ -1,7 +1,9 @@
 const jwt = require("jsonwebtoken");
 const prisma = require("../prisma");
 const userService = require("./userService");
-const { hashPassword, comparePassword } = require("../utils/hash");
+const { hashPassword, comparePassword, hashOtp, compareOtp } = require("../utils/hash");
+const { sendResetOtpEmail } = require("./emailService");
+const crypto = require("crypto");
 
 const JWT_SECRET = process.env.JWT_SECRET || "Password123!!!";
 
@@ -78,4 +80,70 @@ module.exports = {
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1d" });
     return { user, token };
   },
+
+  // Quên mật khẩu
+  async forgotPassword(email) {
+    const user = await userService.getUserByEmail(email);
+    if (!user) {
+      const err = new Error("Email not found");
+      err.status = 404;
+      throw err;
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpHash = await hashOtp(otp);
+    await prisma.user.update({
+      where: { email },
+      data: {
+        reset_otp_hash: otpHash,
+        reset_otp_expires: new Date(Date.now() + 5 * 60 * 1000),  // 5 phút từ bây giờ
+      },
+    });
+
+    console.log("Verifying OTP for email:", email);
+    console.log("OTP hash from request:", otpHash);
+    console.log("Current time:", new Date());
+
+    await sendResetOtpEmail(email, otp);
+      return {
+        message: "OTP has been sent to your email",
+    };
+    
+  },
+
+  // đặt lại mật khẩu
+  async resetPasswordWithOtp(email, otp, newPassword) {
+    const user = await prisma.user.findFirst({
+      where: {
+        email,
+        reset_otp_expires: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      const err = new Error("OTP invalid or expired");
+      err.status = 400;
+      throw err;
+    }
+
+    const isValid = await compareOtp(otp, user.reset_otp_hash);
+    if (!isValid) {
+      throw new Error("OTP invalid or expired");
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password_hash: hashedPassword,
+        reset_otp_hash: null,
+        reset_otp_expires: null,
+      },
+    });
+
+    return { message: "Password reset successfully" };
+  }
 };

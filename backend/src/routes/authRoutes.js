@@ -7,4 +7,7 @@ router.post("/login", authController.login);
 router.post("/refresh", authController.refresh);
 router.post("/logout", authController.logout); 
 
+router.post("/forgot-password", authController.forgotPassword); // quên mật khẩu
+router.post("/reset-password", authController.resetPassword);   // đặt lại mật khẩu
+
 module.exports = router;

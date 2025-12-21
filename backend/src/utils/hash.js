@@ -8,4 +8,12 @@ module.exports = {
   comparePassword(password, hash) {
     return bcrypt.compare(password, hash);
   },
+
+  hashOtp(otp) {
+    return bcrypt.hash(otp, 10);
+  },
+
+  compareOtp(otp, hash) {
+    return bcrypt.compare(otp, hash);
+  }
 };

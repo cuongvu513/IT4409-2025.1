@@ -264,4 +264,63 @@ Implementation options:
 }
 ```
 
+
+
+## Endpoint 7 — Quên mật khẩu
+
+**POST `/api/auth/forgot-password`**
+
+- **Mô tả:** Quên mật khẩu
+- **HTTP:** POST
+- **URL:** **`/api/auth/forgot-password`**
+- **Request body:**
+
+```json
+{
+    "email": "buixuandat1802@gmail.com"
+}
+```
+
+- **Response body**
+- **200 Ok** 
+
+```json
+{
+    "message": "OTP has been sent to your email"
+}
+```
+
+## Endpoint 8 — xác thực otp và đặt lại mật khẩu
+
+**POST `/api/auth/reset-password`**
+
+- **Mô tả:** xác thực otp và đặt lại mật khẩu mới
+- **HTTP:** POST
+- **URL:** **`/api/auth/reset-password`**
+- **Request body:**
+
+```json
+{
+    "email": "buixuandat1802@gmail.com",
+    "otp": "246346",
+    "newPassword": "P@ss3"
+}
+```
+
+- **Response body**
+- **200 Ok** 
+```json
+{
+    "message": "Password reset successfully"
+}
+```
+
+**400 Bad Request** 
+```json
+{
+    "error": "OTP invalid or expired"
+}
+```
+
+- gửi cả otp và mk mới luôn.
 ---
