@@ -316,6 +316,8 @@ model user {
   submission                                              submission[]
   auth_role                                               auth_role            @relation(fields: [role_id], references: [id], onUpdate: NoAction)
 
+  reset_otp_hash                                          String?
+  reset_otp_expires                                       DateTime?            @db.Timestamptz(6)
   @@index([role_id], map: "idx_user_role")
 }
 
