@@ -57,11 +57,22 @@ module.exports = {
     },
     // Phê duyệt hoặc từ chối yêu cầu tham gia lớp học
     async approveEnrollmentRequest(requestId, status) {
+        if (status !== "approved" && status !== "rejected") {
+            const err = new Error("Trạng thái không hợp lệ");
+            err.status = 400;
+            throw err;
+        }
+        if (status === "approved") {
         const request = await prisma.enrollment_request.updateMany({
             where: { id: requestId },
             data: { status: status },
         });
         return request;
+        } else {
+            await prisma.enrollment_request.deleteMany({
+                where: { id: requestId },
+            });
+        }
     },
     // Tạo thêm câu hỏi
     async addQuestion( questionData, actorId) {

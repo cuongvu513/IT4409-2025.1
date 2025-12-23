@@ -586,9 +586,8 @@ module.exports = {
 
     // hủy yêu cầu tham gia lớp học
     async cancelEnrollmentRequest(studentId, classId) {
-        await prisma.enrollment_request.updateMany({
-            where: { student_id: studentId, class_id: classId, status: "pending" },
-            data: { status: "cancelled" },
+        await prisma.enrollment_request.deleteMany({
+            where: { student_id: studentId, class_id: classId, status: "pending" }
         });
         return;
     }
