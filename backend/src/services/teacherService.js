@@ -676,6 +676,159 @@ module.exports = {
         return updatedInstance;
     },
 
+    // Danh sách flag của học sinh trong một lớp
+    async listFlaggedSessionsByClass(teacherId, classId) {
+        const klass = await prisma.Renamedclass.findFirst({
+            where: { id: classId, teacher_id: teacherId },
+            select: { id: true }
+        });
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        const flags = await prisma.session_flag.findMany({
+            where: {
+                exam_session: {
+                    exam_instance: {
+                        exam_template: {
+                            class_id: classId,
+                            Renamedclass: { teacher_id: teacherId }
+                        },
+                    },
+                },
+            },
+            include: {
+                exam_session: {
+                    select: {
+                        id: true,
+                        user: { select: { id: true, name: true, email: true } },
+                        exam_instance: {
+                            select: {
+                                id: true,
+                                exam_template: {
+                                    select: { id: true, title: true, class_id: true },
+                                },
+                            },
+                        },
+                    },
+                },
+                user: { select: { id: true, name: true, email: true } },
+            },
+            orderBy: { created_at: "desc" },
+        });
+
+        return flags.map((f) => ({
+            id: f.id,
+            flag_type: f.flag_type,
+            details: f.details,
+            created_at: f.created_at,
+            session_id: f.exam_session?.id,
+            exam_instance_id: f.exam_session?.exam_instance?.id,
+            exam_template: f.exam_session?.exam_instance?.exam_template,
+            student: f.exam_session?.user,
+            flagged_by: f.user,
+        }));
+    },
+
+    // Khóa thủ công một phiên thi
+    async lockExamSession(sessionId, teacherId, reason) {
+        const session = await prisma.exam_session.findFirst({
+            where: {
+                id: sessionId,
+                exam_instance: {
+                    exam_template: {
+                        Renamedclass: { teacher_id: teacherId },
+                    },
+                },
+            },
+            include: {
+                exam_instance: { select: { id: true, ends_at: true } },
+            },
+        });
+
+        if (!session) {
+            const err = new Error("Phiên thi không tồn tại hoặc không thuộc lớp của bạn");
+            err.status = 404;
+            throw err;
+        }
+
+        if (session.state === "submitted" || session.state === "expired") {
+            const err = new Error("Không thể khóa phiên đã nộp hoặc đã hết hạn");
+            err.status = 400;
+            throw err;
+        }
+
+        await prisma.exam_session.update({
+            where: { id: sessionId },
+            data: { state: "locked", updated_at: new Date() },
+        });
+
+        await prisma.session_flag.create({
+            data: {
+                exam_session_id: sessionId,
+                flag_type: "manual_lock",
+                details: { reason: reason || "Giáo viên khóa thủ công" },
+                flagged_by: teacherId,
+            },
+        });
+
+        return { sessionId, state: "locked" };
+    },
+
+    // Mở khóa thủ công một phiên thi
+    async unlockExamSession(sessionId, teacherId, reason) {
+        const session = await prisma.exam_session.findFirst({
+            where: {
+                id: sessionId,
+                exam_instance: {
+                    exam_template: {
+                        Renamedclass: { teacher_id: teacherId },
+                    },
+                },
+            },
+            include: {
+                exam_instance: { select: { ends_at: true } },
+            },
+        });
+
+        if (!session) {
+            const err = new Error("Phiên thi không tồn tại hoặc không thuộc lớp của bạn");
+            err.status = 404;
+            throw err;
+        }
+
+        if (session.state !== "locked") {
+            const err = new Error("Chỉ mở khóa được phiên đang ở trạng thái locked");
+            err.status = 400;
+            throw err;
+        }
+
+        const now = new Date();
+        if (session.exam_instance?.ends_at && now > session.exam_instance.ends_at) {
+            const err = new Error("Phiên thi đã hết hạn, không thể mở khóa");
+            err.status = 400;
+            throw err;
+        }
+
+        await prisma.exam_session.update({
+            where: { id: sessionId },
+            data: { state: "started", updated_at: new Date() },
+        });
+
+        await prisma.session_flag.create({
+            data: {
+                exam_session_id: sessionId,
+                flag_type: "manual_unlock",
+                details: { reason: reason || "Giáo viên mở khóa thủ công" },
+                flagged_by: teacherId,
+            },
+        });
+
+        return { sessionId, state: "started" };
+    },
+
     // Thêm thời gian cộng thêm cho một học sinh trong đề thi
     async upsertAccommodation({ teacherId, examInstanceId, studentId, extraSeconds, addSeconds, notes }) {
         // 1) Kiểm tra quyền sở hữu đề thi

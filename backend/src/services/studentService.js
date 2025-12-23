@@ -187,7 +187,7 @@ module.exports = {
                     ends_at: existingSession.ends_at,
                     state: existingSession.state,
                     duration_seconds: existingSession.ends_at ? Math.floor((existingSession.ends_at - existingSession.started_at) / 1000) : 0,
-                    questions: existingQuestions,
+                    // questions: existingQuestions,
                 };
             }
             const blockedStates = ["submitted", "expired", "locked"];

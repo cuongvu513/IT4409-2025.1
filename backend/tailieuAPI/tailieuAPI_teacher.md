@@ -1195,18 +1195,19 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ## Endpoint 34 — Thêm thời gian thi cho học sinh  (Dành cho giáo viên)
 
-**POST `/api/teacher/exam-instances/:iddethi/accommodations`**
+**POST `/api/teacher/exam-instances/:idKythi/accommodations`**
 
 - **Mô tả:** Giáo viên cộng thêm thời gian làm bài cho một học sinh cụ thể trong đề thi.
 - Nếu học sinh đã có phiên thi đang diễn ra, thời gian kết thúc phiên sẽ được kéo dài (không vượt quá `ends_at` của đề thi).
 - **Headers:** `Authorization: Bearer <access_token>`
+
 - **Request body:**
 
 ```json
 {
     "student_id": "<uuid-hoc-sinh>",
-    "extra_seconds": 600,        // thiết lập tuyệt đối tổng thời gian cộng thêm
-    "add_seconds": 300,          // cộng dồn thêm 300 giây vào giá trị hiện có (tuỳ chọn)
+    "extra_seconds": 600,
+    "add_seconds": 300,
     "notes": "Thêm 10-15 phút do xác nhận y tế"
 }
 ```
@@ -1244,3 +1245,90 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 ```json
 { "error": "Học sinh không thuộc lớp của đề thi hoặc chưa được duyệt" }
 ```
+
+---
+
+## Endpoint 35 — Danh sách vi phạm của học sinh trong lớp (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/flags`**
+
+- **Mô tả:** Trả về các record trong `session_flag` thuộc lớp do giáo viên sở hữu.
+- **HTTP:** GET
+- **URL:** `/api/teacher/classes/:classId/flags`
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+
+```json
+[
+    {
+        "id": "a1b2...",
+        "flag_type": "focus_lost_threshold",
+        "details": { "count": 6, "threshold": 5 },
+        "created_at": "2025-12-23T05:00:00Z",
+        "session_id": "sess-123",
+        "exam_instance_id": "inst-123",
+        "exam_template": { "id": "tpl-1", "title": "Giữa kỳ Toán" },
+        "student": { "id": "u-1", "name": "Nguyễn Văn A", "email": "a@example.com" },
+        "flagged_by": { "id": "t-1", "name": "GV", "email": "gv@example.com" }
+    }
+]
+```
+
+- **401 Unauthorized / 403 Forbidden** nếu không có quyền hoặc token không hợp lệ.
+
+---
+
+## Endpoint 36 — Khóa thủ công phiên thi (Dành cho giáo viên)
+
+**POST `/api/teacher/exam-sessions/:session_id/lock`**
+
+- **Mô tả:** Giáo viên tự khóa một `exam_session` của lớp mình.
+- **HTTP:** POST
+- **URL:** `/api/teacher/exam-sessions/:session_id/lock`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body (optional):**
+
+```json
+{ "reason": "Khóa vì mất focus nhiều lần" }
+```
+
+- **Response body:**
+
+```json
+{
+    "sessionId": "sess-123",
+    "state": "locked",
+    "message": "Khóa phiên thi thành công"
+}
+```
+
+- **400 / 404** nếu phiên không tồn tại, không thuộc giáo viên, đã hết hạn hoặc đã nộp.
+
+---
+
+## Endpoint 37 — Mở khóa thủ công phiên thi (Dành cho giáo viên)
+
+**POST `/api/teacher/exam-sessions/:session_id/unlock`**
+
+- **Mô tả:** Giáo viên mở khóa lại phiên đang ở trạng thái `locked`.
+- **HTTP:** POST
+- **URL:** `/api/teacher/exam-sessions/:session_id/unlock`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body (optional):**
+
+```json
+{ "reason": "Cho phép tiếp tục sau khi kiểm tra" }
+```
+
+- **Response body:**
+
+```json
+{
+    "sessionId": "sess-123",
+    "state": "started",
+    "message": "Mở khóa phiên thi thành công"
+}
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
