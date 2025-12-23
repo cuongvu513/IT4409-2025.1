@@ -1336,11 +1336,11 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ## Endpoint 37 — Lấy tất cả exam_instance của 1 lớp học (Dành cho giáo viên)
 
-**GET `/api/teacher//classes/:classId/exam-instances`**
+**GET `/api/teacher/classes/:classId/exam-instances`**
 
-- **Mô tả:** Giáo viên lấy danh sách đề thi trong lớp học `locked`.
-- **GET:** POST
-- **URL:** `/api/teacher//classes/:classId/exam-instances`
+- **Mô tả:** Giáo viên lấy danh sách đề thi trong lớp học.
+- **GET:** GET
+- **URL:** `/api/teacher/classes/:classId/exam-instances`
 - **Headers:** `Authorization: Bearer <access_token>`
 - **Request body:**
 
