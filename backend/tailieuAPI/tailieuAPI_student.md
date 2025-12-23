@@ -186,6 +186,7 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
             "text": "2 + 2 = ?",
             "ordinal": 1,
             "points": 1,
+            "multichoice": true,
             "choices": [
                 {"id": "...","label": "A","order": 0,"text": "3"},
                 {"id": "...","label": "B","order": 1,"text": "4"}
@@ -216,6 +217,7 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
         "text": "2 + 2 = ?",
         "ordinal": 1,
         "points": 1,
+        "multichoice": true,
         "choices": [
             {"id": "...","label": "A","order": 0,"text": "3"},
             {"id": "...","label": "B","order": 1,"text": "4"}
