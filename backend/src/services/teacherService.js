@@ -674,7 +674,129 @@ module.exports = {
             data: { published: false },
         });
         return updatedInstance;
-    }
+    },
 
+    // Thêm thời gian cộng thêm cho một học sinh trong đề thi
+    async upsertAccommodation({ teacherId, examInstanceId, studentId, extraSeconds, addSeconds, notes }) {
+        // 1) Kiểm tra quyền sở hữu đề thi
+        const instance = await prisma.exam_instance.findFirst({
+            where: { id: examInstanceId, created_by: teacherId },
+            include: { exam_template: true },
+        });
+        if (!instance) {
+            const err = new Error("Đề thi không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2) Kiểm tra học sinh thuộc lớp (và đã được duyệt)
+        const enrollment = await prisma.enrollment_request.findFirst({
+            where: {
+                student_id: studentId,
+                class_id: instance.exam_template.class_id,
+                status: "approved",
+            },
+        });
+        if (!enrollment) {
+            const err = new Error("Học sinh không thuộc lớp của đề thi hoặc chưa được duyệt");
+            err.status = 400;
+            throw err;
+        }
+
+        // 3) Tính tổng thời gian cộng thêm: hỗ trợ chế độ cộng dồn (addSeconds) hoặc đặt tuyệt đối (extraSeconds)
+        const existingAcc = await prisma.accommodation.findFirst({
+            where: { user_id: studentId, exam_instance_id: examInstanceId },
+        });
+        const currentExtra = existingAcc?.extra_seconds || 0;
+        const finalExtra = (typeof addSeconds === "number")
+            ? currentExtra + addSeconds
+            : (typeof extraSeconds === "number" ? extraSeconds : currentExtra);
+
+        const accommodation = await prisma.accommodation.upsert({
+            where: {
+                user_id_exam_instance_id: {
+                    user_id: studentId,
+                    exam_instance_id: examInstanceId,
+                },
+            },
+            update: {
+                extra_seconds: finalExtra,
+                notes: notes ?? existingAcc?.notes ?? null,
+            },
+            create: {
+                user_id: studentId,
+                exam_instance_id: examInstanceId,
+                extra_seconds: finalExtra,
+                notes: notes ?? null,
+            },
+        });
+
+        // 4) Nếu học sinh đã có phiên thi đang diễn ra, kéo dài thời gian (không vượt quá ends_at của đề thi)
+        const session = await prisma.exam_session.findFirst({
+            where: {
+                exam_instance_id: examInstanceId,
+                user_id: studentId,
+                state: "started",
+            },
+        });
+
+        if (session && session.started_at) {
+            const baseDuration = instance.exam_template.duration_seconds;
+            const newDuration = baseDuration + accommodation.extra_seconds;
+            const hardEnd = new Date(instance.ends_at);
+            const softEnd = new Date(new Date(session.started_at).getTime() + newDuration * 1000);
+            const newEndsAt = new Date(Math.min(hardEnd.getTime(), softEnd.getTime()));
+            console.log({ hardEnd, softEnd, newEndsAt });
+            if (!session.ends_at || newEndsAt > session.ends_at) {
+                await prisma.exam_session.update({
+                    where: { id: session.id },
+                    data: { ends_at: newEndsAt },
+                });
+            }
+        }
+
+        return accommodation;
+    },
+
+    // Liệt kê học sinh đang thi (có exam_session state='started') trong một lớp
+    async listActiveStudentsInClass(teacherId, classId) {
+        // 1) Kiểm tra lớp thuộc giáo viên
+        const klass = await prisma.Renamedclass.findFirst({
+            where: { id: classId, teacher_id: teacherId },
+            select: { id: true }
+        });
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2) Tìm các phiên thi đang diễn ra thuộc các exam_instance của lớp này
+        const sessions = await prisma.exam_session.findMany({
+            where: {
+                state: "started",
+                exam_instance: {
+                    exam_template: {
+                        class_id: classId,
+                    },
+                },
+            },
+            select: {
+                user: { select: { id: true, name: true } },
+                user_id: true,
+            },
+        });
+
+        // 3) Unique theo user_id và trả về danh sách id/name
+        const seen = new Set();
+        const result = [];
+        for (const s of sessions) {
+            if (!seen.has(s.user_id)) {
+                seen.add(s.user_id);
+                result.push({ id: s.user.id, name: s.user.name });
+            }
+        }
+        return result;
+    }
 };
 

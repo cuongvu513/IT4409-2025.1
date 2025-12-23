@@ -1128,6 +1128,8 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 }
 ```
 
+
+
 ## Endpoint 32 — Giáo viên hủy công bố đề thi  ( Dành cho giáo viên)
 
 **POST`/api/teacher/exam-instances/:id/unpublish`**
@@ -1154,4 +1156,91 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 {
     "error": "Unauthorized"
 }
+```
+
+---
+
+## Endpoint 33 — Hiển thị học sinh đang thi trong lớp (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/active-students`**
+
+- **Mô tả:** Trả về danh sách học sinh đang có phiên thi ở trạng thái `started` trong lớp chỉ định.
+- **HTTP:** GET
+- **URL:** `/api/teacher/classes/:classId/active-students`
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+
+**200 OK**
+
+```json
+[
+    { "id": "a2c1...", "name": "Nguyễn Văn A" },
+    { "id": "b3d4...", "name": "Trần Thị B" }
+]
+```
+
+- **403 Forbidden** (lớp không thuộc giáo viên)
+
+```json
+{ "error": "Lớp học không tồn tại hoặc bạn không có quyền" }
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{ "error": "Unauthorized" }
+```
+---
+
+## Endpoint 34 — Thêm thời gian thi cho học sinh  (Dành cho giáo viên)
+
+**POST `/api/teacher/exam-instances/:iddethi/accommodations`**
+
+- **Mô tả:** Giáo viên cộng thêm thời gian làm bài cho một học sinh cụ thể trong đề thi.
+- Nếu học sinh đã có phiên thi đang diễn ra, thời gian kết thúc phiên sẽ được kéo dài (không vượt quá `ends_at` của đề thi).
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+```json
+{
+    "student_id": "<uuid-hoc-sinh>",
+    "extra_seconds": 600,        // thiết lập tuyệt đối tổng thời gian cộng thêm
+    "add_seconds": 300,          // cộng dồn thêm 300 giây vào giá trị hiện có (tuỳ chọn)
+    "notes": "Thêm 10-15 phút do xác nhận y tế"
+}
+```
+
+- **200 OK**
+
+```json
+{
+    "accommodation": {
+        "id": "...",
+        "user_id": "...",
+        "exam_instance_id": "...",
+        "extra_seconds": 600,
+        "notes": "Thêm 10 phút do xác nhận y tế",
+        "created_at": "2025-12-23T01:00:00.000Z"
+    },
+    "message": "Cập nhật thêm thời gian thành công"
+}
+```
+
+- **400 Bad Request**
+
+```json
+{ "error": "Thiếu student_id hoặc extra_seconds/add_seconds không hợp lệ" }
+```
+
+- **403 Forbidden** (đề thi không thuộc giáo viên)
+
+```json
+{ "error": "Đề thi không tồn tại hoặc bạn không có quyền" }
+```
+
+- **400 Bad Request** (học sinh không thuộc lớp/không được duyệt)
+
+```json
+{ "error": "Học sinh không thuộc lớp của đề thi hoặc chưa được duyệt" }
 ```
