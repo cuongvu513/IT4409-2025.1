@@ -6,10 +6,11 @@ import { AuthProvider } from './context/AuthContext';
 import StudentLayout from './layouts/StudentLayout';
 import TeacherLayout from './layouts/TeacherLayout';
 
-// Import các trang
+// Import các trang chung
 import OutsidePage from './pages/Outside/OutsidePage';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
+import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
 
 // Import 2 trang Dashboard mới
 import StudentDashboardPage from './pages/Student/StudentDashboardPage';
@@ -40,6 +41,7 @@ function App() {
           <Route path="/" element={<OutsidePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
 
           {/* Đường dẫn cho Học sinh */}

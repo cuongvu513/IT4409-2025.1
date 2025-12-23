@@ -34,6 +34,16 @@ const authService = {
     changePassword(data) {
         // data: { password, oldPassword, confirmPassword }
         return axiosClient.put('/api/users/update-password', data);
+    },
+    // --- ENDPOINT 7: YÊU CẦU GỬI OTP ---
+    forgotPassword(email) {
+        return axiosClient.post('/api/auth/forgot-password', { email });
+    },
+
+    // --- ENDPOINT 8: RESET MẬT KHẨU (Gửi kèm OTP và Pass mới) ---
+    resetPassword(data) {
+        // data: { email, otp, newPassword }
+        return axiosClient.post('/api/auth/reset-password', data);
     }
 };
 
