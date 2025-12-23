@@ -553,5 +553,43 @@ module.exports = {
             next(error);
         }
     },
+
+    // Hiển thị danh sách flag vi phạm của học sinh trong lớp
+    async getFlaggedStudentsInClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const flags = await teacherService.listFlaggedSessionsByClass(teacherId, classId);
+            res.json(flags);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Khóa thủ công phiên thi
+    async lockExamSession(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const sessionId = req.params.id;
+            const { reason } = req.body || {};
+            const result = await teacherService.lockExamSession(sessionId, teacherId, reason);
+            res.json({ ...result, message: "Khóa phiên thi thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Mở khóa thủ công phiên thi
+    async unlockExamSession(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const sessionId = req.params.id;
+            const { reason } = req.body || {};
+            const result = await teacherService.unlockExamSession(sessionId, teacherId, reason);
+            res.json({ ...result, message: "Mở khóa phiên thi thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
 };
 

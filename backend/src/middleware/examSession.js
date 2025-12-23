@@ -58,7 +58,7 @@ module.exports = async function examSessionMiddleware(req, res, next) {
         data: {
           exam_session_id: sessionId,
           flag_type: "multi_ip",
-          details: { expected: session.ip_binding, actual: reqIp },
+          details: "Phát hiện IP không khớp {}".replace("{}", reqIp),
           flagged_by: null,
         },
       });
@@ -68,7 +68,7 @@ module.exports = async function examSessionMiddleware(req, res, next) {
         data: {
           exam_session_id: sessionId,
           flag_type: "ua_mismatch",
-          details: { expected: session.ua_hash },
+          details: "Phát hiện User-Agent không khớp",
           flagged_by: null,
         },
       });

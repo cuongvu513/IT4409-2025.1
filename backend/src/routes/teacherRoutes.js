@@ -34,6 +34,9 @@ router.post("/exam-instances/:id/publish", teacherController.publishExamInstance
 router.post("/exam-instances/:id/unpublish", teacherController.unpublishExamInstance); // Hủy công bố đề thi
 router.post("/exam-instances/:id/accommodations", teacherController.upsertAccommodation); // Thêm thời gian cho học sinh
 router.get("/classes/:classId/active-students", teacherController.getActiveStudentsInClass); // Hiển thị học sinh đang thi trong lớp
+router.get("/classes/:classId/flags", teacherController.getFlaggedStudentsInClass); // Danh sách vi phạm trong lớp
+router.post("/exam-sessions/:id/lock", teacherController.lockExamSession); // Khóa thủ công phiên thi
+router.post("/exam-sessions/:id/unlock", teacherController.unlockExamSession); // Mở khóa thủ công phiên thi
 
 
 
