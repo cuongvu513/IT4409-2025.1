@@ -591,5 +591,17 @@ module.exports = {
             next(error);
         }
     },
+
+    // Lấy tất cả exam_instance của 1 lớp học
+    async getExamInstancesByClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const instances = await teacherService.getExamInstancesByClass(teacherId, classId);
+            res.json(instances);
+        } catch (error) {
+            next(error);
+        }
+    },
 };
 

@@ -1332,3 +1332,52 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 ```
 
 - **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+
+## Endpoint 37 — Lấy tất cả exam_instance của 1 lớp học (Dành cho giáo viên)
+
+**GET `/api/teacher//classes/:classId/exam-instances`**
+
+- **Mô tả:** Giáo viên lấy danh sách đề thi trong lớp học `locked`.
+- **GET:** POST
+- **URL:** `/api/teacher//classes/:classId/exam-instances`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+[
+    {
+        "id": "d1b7ceae-db5c-4a07-81d5-dfc05deb72dd",
+        "template_id": "f54e9593-dd8c-4184-abb0-089c2e5e7e7c",
+        "starts_at": "2026-12-15T01:00:00.000Z",
+        "ends_at": "2026-12-16T02:30:00.000Z",
+        "published": false,
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "show_answers": false,
+        "created_at": "2025-12-20T09:59:01.840Z"
+    },
+    {
+        "id": "7d19364a-f5ae-4f81-bcec-bd405f4a9460",
+        "template_id": "c0b39423-8d22-42ae-b50f-48d4ee0923cf",
+        "starts_at": "2025-12-15T01:00:00.000Z",
+        "ends_at": "2025-12-15T02:30:00.000Z",
+        "published": false,
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "show_answers": false,
+        "created_at": "2025-12-13T08:48:24.824Z"
+    }
+]
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+
+- **403 Forbidden**
+```json
+{
+    "error": "Lớp học không tồn tại hoặc bạn không có quyền"
+}
+```

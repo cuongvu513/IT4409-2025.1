@@ -961,6 +961,39 @@ module.exports = {
             }
         }
         return result;
+    },
+
+    // Lấy tất cả exam_instance của 1 lớp học
+    async getExamInstancesByClass(teacherId, classId) {
+        // 1) Kiểm tra quyền lớp học
+        const klass = await prisma.Renamedclass.findFirst({
+            where: {
+                id: classId,
+                teacher_id: teacherId
+            },
+            select: { id: true }
+        });
+
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2) Lấy exam_instance thông qua exam_template
+        const instances = await prisma.exam_instance.findMany({
+            where: {
+                exam_template: {
+                    class_id: classId
+                }
+            },
+            orderBy: {
+                created_at: "desc"
+            }
+        });
+
+        return instances;
     }
+
 };
 

@@ -38,6 +38,8 @@ router.get("/classes/:classId/flags", teacherController.getFlaggedStudentsInClas
 router.post("/exam-sessions/:id/lock", teacherController.lockExamSession); // Khóa thủ công phiên thi
 router.post("/exam-sessions/:id/unlock", teacherController.unlockExamSession); // Mở khóa thủ công phiên thi
 
+router.get("/classes/:classId/exam-instances", teacherController.getExamInstancesByClass);// Lấy tất cả exam_instance của 1 lớp học
+
 
 
 module.exports = router;
