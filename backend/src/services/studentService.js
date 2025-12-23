@@ -164,12 +164,30 @@ module.exports = {
         });
         if (existingSession) {
             if (existingSession.state === "started") {
+                // Fetch và return questions cho existing session
+                const existingQuestions = examInstance.exam_question.map((eq) => {
+                    const correctCount = eq.question.question_choice.filter((c) => c.is_correct).length;
+                    return {
+                        id: eq.question.id,
+                        text: eq.question.text,
+                        explanation: null,
+                        ordinal: eq.ordinal,
+                        points: eq.points,
+                        multichoice: correctCount > 1,
+                        choices: eq.question.question_choice
+                            .sort((a, b) => a.order - b.order)
+                            .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
+                        selected_choice_ids: [],
+                    };
+                });
                 return {
                     session_id: existingSession.id,
                     token: existingSession.token,
                     started_at: existingSession.started_at,
                     ends_at: existingSession.ends_at,
                     state: existingSession.state,
+                    duration_seconds: existingSession.ends_at ? Math.floor((existingSession.ends_at - existingSession.started_at) / 1000) : 0,
+                    questions: existingQuestions,
                 };
             }
             const blockedStates = ["submitted", "expired", "locked"];
@@ -213,17 +231,21 @@ module.exports = {
         });
 
         // Chuẩn bị danh sách câu hỏi (ẩn đáp án đúng)
-        const questions = examInstance.exam_question.map((eq) => ({
-            id: eq.question.id,
-            text: eq.question.text,
-            explanation: null, // không trả về giải thích của giáo viên
-            ordinal: eq.ordinal,
-            points: eq.points,
-            choices: eq.question.question_choice
-                .sort((a, b) => a.order - b.order)
-                .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
-            selected_choice_ids: [],
-        }));
+        const questions = examInstance.exam_question.map((eq) => {
+            const correctCount = eq.question.question_choice.filter((c) => c.is_correct).length;
+            return {
+                id: eq.question.id,
+                text: eq.question.text,
+                explanation: null, // không trả về giải thích của giáo viên
+                ordinal: eq.ordinal,
+                points: eq.points,
+                multichoice: correctCount > 1,
+                choices: eq.question.question_choice
+                    .sort((a, b) => a.order - b.order)
+                    .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
+                selected_choice_ids: [],
+            };
+        });
         // console.log(questions);
         return {
             session_id: created.id,
@@ -290,17 +312,21 @@ module.exports = {
             answers.map((a) => [a.question_id, (a.selected_choice_ids && a.selected_choice_ids.length > 0) ? a.selected_choice_ids : (a.choice_id ? [a.choice_id] : [])])
         );
 
-        const questions = session.exam_instance.exam_question.map((eq) => ({
-            id: eq.question.id,
-            text: eq.question.text,
-            explanation: null,
-            ordinal: eq.ordinal,
-            points: eq.points,
-            choices: eq.question.question_choice
-                .sort((a, b) => a.order - b.order)
-                .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
-            selected_choice_ids: answerMap.get(eq.question.id) || [],
-        }));
+        const questions = session.exam_instance.exam_question.map((eq) => {
+            const correctCount = eq.question.question_choice.filter((c) => c.is_correct).length;
+            return {
+                id: eq.question.id,
+                text: eq.question.text,
+                explanation: null,
+                ordinal: eq.ordinal,
+                points: eq.points,
+                multichoice: correctCount > 1,
+                choices: eq.question.question_choice
+                    .sort((a, b) => a.order - b.order)
+                    .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
+                selected_choice_ids: answerMap.get(eq.question.id) || [],
+            };
+        });
         return questions;
     },
 
