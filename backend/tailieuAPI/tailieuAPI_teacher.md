@@ -1381,3 +1381,29 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
     "error": "Lớp học không tồn tại hoặc bạn không có quyền"
 }
 ```
+
+## Endpoint 38 — Lấy tiến độ làm bài thi của sinh viên trong lớp (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/exam-instances/:examInstanceId/progress`**
+
+- **Mô tả:** Lấy tiến độ làm bài thi của sinh viên trong lớp.
+- **GET:** GET
+- **URL:** `/api/teacher/classes/:classId/exam-instances/:examInstanceId/progress`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+- **403 Forbidden**
+```json
+{
+    "error": "Lớp học không tồn tại hoặc bạn không có quyền"
+}
+```

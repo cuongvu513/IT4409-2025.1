@@ -993,6 +993,88 @@ module.exports = {
         });
 
         return instances;
+    },
+
+    // Lấy tiến độ làm bài thi của sinh viên trong lớp
+    async getExamProgressByClass(teacherId, classId, examInstanceId) {
+        // 1️ Check quyền lớp học
+        const klass = await prisma.Renamedclass.findFirst({
+            where: {
+                id: classId,
+                teacher_id: teacherId
+            },
+            select: { id: true }
+        });
+
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2️ Lấy toàn bộ sinh viên của lớp
+        const students = await prisma.class_student.findMany({
+            where: { class_id: classId },
+            select: {
+                user: {
+                    select: {
+                        id: true,
+                        full_name: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        // 3️ Lấy session của ca thi
+        const sessions = await prisma.exam_session.findMany({
+            where: {
+                exam_instance_id: examInstanceId
+            },
+            select: {
+                user_id: true,
+                state: true,
+                started_at: true,
+                ends_at: true
+            }
+        });
+
+        // 4️ Map session theo user_id (O(1))
+        const sessionMap = new Map();
+        sessions.forEach(s => {
+            sessionMap.set(s.user_id, s);
+        });
+
+        // 5️ Phân loại
+        const result = {
+            not_started: [],
+            in_progress: [],
+            finished: []
+        };
+
+        for (const s of students) {
+            const user = s.user;
+            const session = sessionMap.get(user.id);
+
+            if (!session) {
+                result.not_started.push(user);
+            } else if (session.state === "active") {
+                result.in_progress.push({
+                    ...user,
+                    started_at: session.started_at,
+                    ends_at: session.ends_at
+                });
+            } else {
+                result.finished.push({
+                    ...user,
+                    state: session.state,
+                    started_at: session.started_at,
+                    ends_at: session.ends_at
+                });
+            }
+        }
+
+        return result;
     }
 
 };
