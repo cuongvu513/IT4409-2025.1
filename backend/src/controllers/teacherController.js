@@ -492,5 +492,66 @@ module.exports = {
             next(error);
         }
     },
+
+    // Thêm/ghi đè thời gian cộng thêm cho học sinh trong một đề thi
+    async upsertAccommodation(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const examInstanceId = req.params.id;
+            let { student_id, extra_seconds, add_seconds, notes } = req.body || {};
+
+            // validate input
+            if (!student_id) {
+                const err = new Error("Thiếu student_id");
+                err.status = 400;
+                throw err;
+            }
+            // at least one of extra_seconds or add_seconds
+            const hasExtra = extra_seconds !== undefined && extra_seconds !== null;
+            const hasAdd = add_seconds !== undefined && add_seconds !== null;
+            if (!hasExtra && !hasAdd) {
+                const err = new Error("Cần cung cấp extra_seconds (tuyệt đối) hoặc add_seconds (cộng dồn)");
+                err.status = 400;
+                throw err;
+            }
+            const parsedExtra = hasExtra ? parseInt(extra_seconds, 10) : undefined;
+            const parsedAdd = hasAdd ? parseInt(add_seconds, 10) : undefined;
+            if (hasExtra && (Number.isNaN(parsedExtra) || parsedExtra < 0)) {
+                const err = new Error("extra_seconds phải là số không âm");
+                err.status = 400;
+                throw err;
+            }
+            if (hasAdd && (Number.isNaN(parsedAdd) || parsedAdd < 0)) {
+                const err = new Error("add_seconds phải là số không âm");
+                err.status = 400;
+                throw err;
+            }
+
+            const accommodation = await teacherService.upsertAccommodation({
+                teacherId,
+                examInstanceId,
+                studentId: student_id,
+                extraSeconds: parsedExtra,
+                addSeconds: parsedAdd,
+                notes,
+            });
+
+            res.status(200).json({ accommodation, message: "Cập nhật thêm thời gian thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Hiển thị các học sinh đang có phiên thi 'started' trong một lớp
+    async getActiveStudentsInClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const students = await teacherService.listActiveStudentsInClass(teacherId, classId);
+            res.json(students);
+        } catch (error) {
+            next(error);
+        }
+    },
 };
 
