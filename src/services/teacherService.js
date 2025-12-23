@@ -38,7 +38,10 @@ const teacherService = {
 
     // --- THÊM HÀM MỚI (Endpoint 13) ---
     respondToEnrollment(requestId, status) {
-
+        const payload = {
+            status: status,
+            requestId: requestId
+        };
         // --- KHI CÓ BACKEND: Bỏ comment dòng này ---
         return axiosClient.post('/api/teacher/enrollment-requests/approve', payload);
 
@@ -133,6 +136,11 @@ const teacherService = {
     // --- ENDPOINT 21: XÓA ĐỀ THI ---
     deleteExamInstance(id) {
         return axiosClient.delete(`/api/teacher/exam-instances/${id}`);
+    },
+
+    // --- ENDPOINT 24: LẤY CHI TIẾT ĐỀ THI ---
+    getExamInstanceDetail(id) {
+        return axiosClient.get(`/api/teacher/exam-instances/${id}`);
     },
 
 

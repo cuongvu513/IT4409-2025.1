@@ -30,7 +30,7 @@ const authService = {
         return axiosClient.put('/api/users/update', data);
     },
 
-    // --- ENDPOINT 6: ĐỔI MẬT KHẨU ---
+    // API6: ĐỔI MẬT KHẨU ---
     changePassword(data) {
         // data: { password, oldPassword, confirmPassword }
         return axiosClient.put('/api/users/update-password', data);
