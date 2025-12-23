@@ -1396,7 +1396,26 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 - **Response body:**
 
 ```json
-
+{
+  "not_started": [
+    { "id": "u1", "full_name": "Nguyễn Văn A" }
+  ],
+  "in_progress": [
+    {
+      "id": "u2",
+      "full_name": "Trần Văn B",
+      "started_at": "2025-01-10T08:10:00Z",
+      "ends_at": "2025-01-10T09:40:00Z"
+    }
+  ],
+  "finished": [
+    {
+      "id": "u3",
+      "full_name": "Lê Văn C",
+      "state": "submitted"
+    }
+  ]
+}
 ```
 
 - **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
