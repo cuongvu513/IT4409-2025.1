@@ -603,5 +603,18 @@ module.exports = {
             next(error);
         }
     },
+
+    // Lấy tiến độ làm bài thi của sinh viên trong lớp
+    async getExamProgressByClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const examInstanceId = req.params.instanceId;
+            const progress = await teacherService.getExamProgressByClass(teacherId, classId, examInstanceId);
+            res.json(progress);
+        } catch (error) {
+            next(error);
+        }
+    },
 };
 
