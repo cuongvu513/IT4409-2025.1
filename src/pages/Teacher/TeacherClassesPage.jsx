@@ -1,14 +1,11 @@
 // src/pages/Teacher/TeacherClassesPage.jsx
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import TopHeader from '../../components/TopHeader'; // Component Header dùng chung
-import { AuthContext } from '../../context/AuthContext'; // Cần Context để lấy hàm logout cho Sidebar
 import teacherService from '../../services/teacherService';
 import styles from './TeacherClassesPage.module.scss';
 
 const TeacherClassesPage = () => {
-    // Lấy hàm logout để dùng cho nút Đăng xuất ở Sidebar
-    const { logout } = useContext(AuthContext);
+    // KHÔNG CẦN AuthContext hay TopHeader nữa vì Layout đã lo
 
     // --- STATE DỮ LIỆU ---
     const [classes, setClasses] = useState([]);
@@ -76,86 +73,63 @@ const TeacherClassesPage = () => {
     };
 
     return (
-        <div className={styles.layout}>
-            {/* --- 1. THANH SIDEBAR BÊN TRÁI (ĐÃ KHÔI PHỤC) --- */}
-            <aside className={styles.sidebar}>
-                <div className={styles.logo}>EduTest <span>GV</span></div>
-                <nav className={styles.nav}>
-                    <Link to="/teacher/dashboard">Tổng quan</Link>
-                    {/* Active menu này */}
-                    <Link to="/teacher/classes" className={styles.active}>Quản lý Lớp học</Link>
-                    <Link to="/teacher/questions">Ngân hàng câu hỏi</Link>
-                    <Link to="/teacher/exam-templates">Mẫu đề thi</Link>
-                </nav>
-                <div className={styles.sidebarFooter}>
-                    <button onClick={logout}>Đăng xuất</button>
-                </div>
-            </aside>
-
-            {/* --- 2. NỘI DUNG CHÍNH BÊN PHẢI --- */}
-            <div className={styles.mainContent}>
-
-                {/* HEADER DÙNG CHUNG */}
-                <TopHeader title="Quản lý Lớp học" />
-
-                <div className={styles.contentBody}>
-                    <div className={styles.pageHeader}>
-                        <h2>Danh sách lớp học của tôi</h2>
-                        <button className={styles.createBtn} onClick={() => setShowModal(true)}>
-                            + Tạo lớp mới
-                        </button>
-                    </div>
-
-                    {loading ? (
-                        <p>Đang tải dữ liệu...</p>
-                    ) : classes.length > 0 ? (
-                        <div className={styles.tableContainer}>
-                            <table className={styles.classTable}>
-                                <thead>
-                                    <tr>
-                                        <th>STT</th>
-                                        <th>Tên lớp</th>
-                                        <th>Mã lớp</th>
-                                        <th>Mô tả</th>
-                                        <th>Ngày tạo</th>
-                                        <th>Hành động</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {classes.map((cls, index) => (
-                                        <tr key={cls.id}>
-                                            <td>{index + 1}</td>
-                                            <td className={styles.className}>
-                                                <Link to={`/teacher/classes/${cls.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                                    {cls.name}
-                                                </Link>
-                                            </td>
-                                            <td><span className={styles.codeTag}>{cls.code}</span></td>
-                                            <td>{cls.description}</td>
-                                            <td>{formatDate(cls.created_at)}</td>
-                                            <td>
-                                                <Link to={`/teacher/classes/${cls.id}`} className={styles.actionBtn}>
-                                                    Chi tiết
-                                                </Link>
-                                                <button
-                                                    className={`${styles.actionBtn} ${styles.delete}`}
-                                                    onClick={() => handleDeleteClass(cls.id)}
-                                                >
-                                                    Xóa
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className={styles.emptyState}>
-                            <p>Bạn chưa có lớp học nào.</p>
-                        </div>
-                    )}
-                </div>
+        // CHỈ GIỮ LẠI PHẦN NỘI DUNG CHÍNH (CONTENT BODY)
+        <div className={styles.contentBody}>
+            <div className={styles.pageHeader}>
+                <h2>Danh sách lớp học của tôi</h2>
+                <button className={styles.createBtn} onClick={() => setShowModal(true)}>
+                    + Tạo lớp mới
+                </button>
             </div>
+
+            {loading ? (
+                <p style={{ textAlign: 'center', marginTop: '20px' }}>Đang tải dữ liệu...</p>
+            ) : classes.length > 0 ? (
+                <div className={styles.tableContainer}>
+                    <table className={styles.classTable}>
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Tên lớp</th>
+                                <th>Mã lớp</th>
+                                <th>Mô tả</th>
+                                <th>Ngày tạo</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {classes.map((cls, index) => (
+                                <tr key={cls.id}>
+                                    <td>{index + 1}</td>
+                                    <td className={styles.className}>
+                                        <Link to={`/teacher/classes/${cls.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                            {cls.name}
+                                        </Link>
+                                    </td>
+                                    <td><span className={styles.codeTag}>{cls.code}</span></td>
+                                    <td>{cls.description}</td>
+                                    <td>{formatDate(cls.created_at)}</td>
+                                    <td>
+                                        <Link to={`/teacher/classes/${cls.id}`} className={styles.actionBtn}>
+                                            Chi tiết
+                                        </Link>
+                                        <button
+                                            className={`${styles.actionBtn} ${styles.delete}`}
+                                            onClick={() => handleDeleteClass(cls.id)}
+                                        >
+                                            Xóa
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <div className={styles.emptyState}>
+                    <p>Bạn chưa có lớp học nào.</p>
+                </div>
+            )}
 
             {/* --- MODAL (POPUP) --- */}
             {showModal && (

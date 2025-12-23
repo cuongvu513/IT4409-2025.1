@@ -1,25 +1,18 @@
-// src/pages/Teacher/TeacherQuestionsPage.jsx
-import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import React, { useEffect, useState } from 'react';
 import teacherService from '../../services/teacherService';
 import styles from './TeacherQuestionsPage.module.scss';
-import { Link } from 'react-router-dom';
-import TopHeader from '../../components/TopHeader'; // 1. Import TopHeader
 
 const TeacherQuestionsPage = () => {
-    // Chỉ cần lấy logout cho Sidebar
-    const { logout } = useContext(AuthContext);
-
     // State data
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // State Modal
+    // State Modal & Form
     const [showModal, setShowModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [editingQuestion, setEditingQuestion] = useState(null); // null = tạo mới
-    const [viewQuestion, setViewQuestion] = useState(null); // Để xem chi tiết
+    const [editingQuestion, setEditingQuestion] = useState(null);
+    const [viewQuestion, setViewQuestion] = useState(null);
 
     const initialFormState = {
         text: '', difficulty: 'easy', tags: '', explanation: '',
@@ -32,7 +25,7 @@ const TeacherQuestionsPage = () => {
     };
     const [formData, setFormData] = useState(initialFormState);
 
-    // 1. Load danh sách
+    // 1. Load danh sách câu hỏi
     useEffect(() => {
         const fetchQuestions = async () => {
             try {
@@ -44,6 +37,7 @@ const TeacherQuestionsPage = () => {
         fetchQuestions();
     }, []);
 
+    // Helper Reset Form
     const resetForm = () => {
         setFormData(initialFormState);
         setEditingQuestion(null);
@@ -61,15 +55,14 @@ const TeacherQuestionsPage = () => {
         setFormData({ ...formData, choices: newChoices });
     };
 
+    // SỬA: Cho phép chọn nhiều đáp án đúng (Toggle true/false)
     const handleCorrectSelect = (index) => {
-        const newChoices = formData.choices.map((c, i) => ({
-            ...c,
-            is_correct: i === index
-        }));
+        const newChoices = [...formData.choices];
+        newChoices[index].is_correct = !newChoices[index].is_correct;
         setFormData({ ...formData, choices: newChoices });
     };
 
-    // --- CÁC HÀM XỬ LÝ (Create/Edit/Delete/View) ---
+    // --- CÁC HÀM XỬ LÝ ---
     const handleOpenCreate = () => {
         setEditingQuestion(null);
         setFormData(initialFormState);
@@ -110,7 +103,8 @@ const TeacherQuestionsPage = () => {
         };
 
         if (payload.choices.length < 2) { alert("Cần ít nhất 2 đáp án!"); setIsSubmitting(false); return; }
-        if (!payload.choices.some(c => c.is_correct)) { alert("Cần chọn đáp án đúng!"); setIsSubmitting(false); return; }
+        // Kiểm tra ít nhất 1 đáp án đúng
+        if (!payload.choices.some(c => c.is_correct)) { alert("Cần chọn ít nhất 1 đáp án đúng!"); setIsSubmitting(false); return; }
 
         try {
             if (editingQuestion) {
@@ -140,7 +134,6 @@ const TeacherQuestionsPage = () => {
     const handleViewDetail = async (id) => {
         try {
             const res = await teacherService.getQuestionDetail(id);
-            // Xử lý an toàn nếu API trả về mảng hay object
             let detail = null;
             if (Array.isArray(res.data) && res.data.length > 0) detail = res.data[0];
             else if (res.data && !Array.isArray(res.data)) detail = res.data;
@@ -151,68 +144,55 @@ const TeacherQuestionsPage = () => {
     };
 
     return (
-        <div className={styles.layout}>
-            {/* SIDEBAR (GIỮ NGUYÊN) */}
-            <aside className={styles.sidebar}>
-                <div className={styles.logo}>EduTest <span>GV</span></div>
-                <nav className={styles.nav}>
-                    <Link to="/teacher/dashboard">Tổng quan</Link>
-                    <Link to="/teacher/classes">Quản lý Lớp học</Link>
-                    <Link to="/teacher/questions" className={styles.active}>Ngân hàng câu hỏi</Link>
-                    <Link to="/teacher/exam-templates">Mẫu đề thi</Link>
-                </nav>
-                <div className={styles.sidebarFooter}>
-                    <button onClick={logout}>Đăng xuất</button>
-                </div>
-            </aside>
-
-            {/* MAIN CONTENT */}
-            <div className={styles.mainContent}>
-
-                {/* DÙNG TOPHEADER */}
-                <TopHeader title="Ngân hàng câu hỏi" />
-
-                <div className={styles.contentBody}>
-                    <div className={styles.pageHeader}>
-                        <h2>Danh sách câu hỏi ({questions.length})</h2>
-                        <button className={styles.createBtn} onClick={handleOpenCreate}>
-                            + Tạo câu hỏi
-                        </button>
-                    </div>
-
-                    {loading ? <p>Đang tải...</p> : (
-                        <div className={styles.questionList}>
-                            {questions.map((q, i) => (
-                                <div key={q.id} className={styles.questionCard}>
-                                    <div className={styles.qHeader}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span className={styles.qIndex}>Câu {i + 1}</span>
-                                            <span className={`${styles.badge} ${styles[q.difficulty]}`}>{q.difficulty}</span>
-                                        </div>
-
-                                        <div className={styles.actionButtons}>
-                                            <button className={styles.btnView} onClick={() => handleViewDetail(q.id)} title="Xem chi tiết">
-                                                Chi tiết
-                                            </button>
-                                            <button className={styles.btnEdit} onClick={() => handleEditClick(q)} title="Sửa">
-                                                <i className="fa-solid fa-pen"></i>
-                                            </button>
-                                            <button className={styles.btnDelete} onClick={() => handleDeleteClick(q.id)} title="Xóa">
-                                                <i className="fa-solid fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <p className={styles.qText}>{q.text}</p>
-                                    <div className={styles.qTags}>
-                                        {q.tags.map((t, idx) => <span key={idx}>#{t}</span>)}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+        <div className={styles.contentBody}>
+            <div className={styles.pageHeader}>
+                <h2>Danh sách câu hỏi ({questions.length})</h2>
+                <button className={styles.createBtn} onClick={handleOpenCreate}>
+                    + Tạo câu hỏi
+                </button>
             </div>
+
+            {loading ? (
+                <p style={{ textAlign: 'center', marginTop: '30px' }}>Đang tải dữ liệu...</p>
+            ) : (
+                <div className={styles.questionList}>
+                    {questions.map((q, i) => (
+                        <div key={q.id} className={styles.questionCard}>
+                            <div className={styles.qHeader}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span className={styles.qIndex}>Câu {i + 1}</span>
+                                    <span className={`${styles.badge} ${styles[q.difficulty]}`}>{q.difficulty}</span>
+                                </div>
+
+                                <div className={styles.actionButtons}>
+                                    <button className={styles.btnView} onClick={() => handleViewDetail(q.id)} title="Xem chi tiết">
+                                        Chi tiết
+                                    </button>
+                                    <button className={styles.btnEdit} onClick={() => handleEditClick(q)} title="Sửa">
+                                        <i className="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button className={styles.btnDelete} onClick={() => handleDeleteClick(q.id)} title="Xóa">
+                                        <i className="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p className={styles.qText}>{q.text}</p>
+                            <div className={styles.qTags}>
+                                {q.tags?.map((t, idx) => <span key={idx}>#{t}</span>)}
+                            </div>
+
+                            {/* Hiển thị danh sách đáp án đúng */}
+                            <div className={styles.qFooter}>
+                                <span>Đáp án đúng: </span>
+                                <strong>
+                                    {q.question_choice?.filter(c => c.is_correct).map(c => c.text).join(', ') || "Chưa có"}
+                                </strong>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* --- MODAL TẠO/SỬA --- */}
             {showModal && (
@@ -244,14 +224,15 @@ const TeacherQuestionsPage = () => {
                             </div>
 
                             <div className={styles.formGroup}>
-                                <label>Các lựa chọn (Tích chọn đáp án đúng)</label>
+                                <label>Các lựa chọn (Tích chọn CÁC đáp án đúng)</label>
                                 {formData.choices.map((choice, index) => (
                                     <div key={index} className={styles.choiceRow}>
+                                        {/* CHECKBOX CHO PHÉP CHỌN NHIỀU */}
                                         <input
-                                            type="radio"
-                                            name="correct_answer"
+                                            type="checkbox"
                                             checked={choice.is_correct}
                                             onChange={() => handleCorrectSelect(index)}
+                                            style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                                         />
                                         <input
                                             type="text"
