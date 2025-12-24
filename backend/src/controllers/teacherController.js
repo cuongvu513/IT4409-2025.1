@@ -621,5 +621,17 @@ module.exports = {
             next(error);
         }
     },
-};
 
+    // Lấy thông tin dashboard của giáo viên
+    async getDashboard(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const dashboardData = await teacherService.getDashboardStats(teacherId);
+            res.json(dashboardData);
+        } catch (error) {
+            const err = new Error("Lấy thông tin dashboard thất bại");
+            err.status = 400;
+            next(err);
+        }
+    }
+};

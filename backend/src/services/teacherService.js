@@ -1075,6 +1075,139 @@ module.exports = {
         }
 
         return result;
+    },
+
+    // Lấy thông tin dashboard của giáo viên (số lớp, học sinh, đề thi, hoạt động)
+    async getDashboardStats(teacherId) {
+        //  Lấy số lớp học
+        const classCount = await prisma.Renamedclass.count({
+            where: { teacher_id: teacherId }
+        });
+
+        //  Lấy tổng số học sinh từ các lớp của giáo viên
+        const totalStudents = await prisma.enrollment_request.count({
+            where: {
+                status: "approved",
+                Renamedclass: { teacher_id: teacherId }
+            }
+        });
+
+        //  Lấy số đề thi đã tạo
+        const examInstanceCount = await prisma.exam_instance.count({
+            where: { created_by: teacherId }
+        });
+
+        // Lấy hoạt động gần đây (từ các action khác nhau)
+        const [recentClasses, recentEnrollments, recentExams, recentQuestions, recentTemplates] = await Promise.all([
+            // Lớp học được tạo
+            prisma.Renamedclass.findMany({
+                where: { teacher_id: teacherId },
+                select: { id: true, name: true, created_at: true },
+                orderBy: { created_at: "desc" },
+                take: 10
+            }),
+            // Học sinh tham gia được duyệt
+            prisma.enrollment_request.findMany({
+                where: {
+                    Renamedclass: { teacher_id: teacherId },
+                    status: "approved"
+                },
+                select: {
+                    id: true,
+                    requested_at: true,
+                    user_enrollment_request_student_idTouser: {
+                        select: { name: true }
+                    },
+                    Renamedclass: { select: { name: true } }
+                },
+                orderBy: { requested_at: "desc" },
+                take: 10
+            }),
+            // Đề thi được tạo
+            prisma.exam_instance.findMany({
+                where: { created_by: teacherId },
+                select: {
+                    id: true,
+                    created_at: true,
+                    exam_template: { select: { title: true } }
+                },
+                orderBy: { created_at: "desc" },
+                take: 10
+            }),
+            // Câu hỏi được tạo
+            prisma.question.findMany({
+                where: { owner_id: teacherId },
+                select: {
+                    id: true,
+                    text: true,
+                    created_at: true
+                },
+                orderBy: { created_at: "desc" },
+                take: 10
+            }),
+            // Template được tạo
+            prisma.exam_template.findMany({
+                where: { created_by: teacherId },
+                select: {
+                    id: true,
+                    title: true,
+                    created_at: true
+                },
+                orderBy: { created_at: "desc" },
+                take: 10
+            })
+        ]);
+
+        // Kết hợp tất cả hoạt động thành một danh sách duy nhất, sắp xếp theo thời gian
+        const activities = [
+            ...recentClasses.map(c => ({
+                id: c.id,
+                type: "create_class",
+                description: `Tạo lớp học "${c.name}"`,
+                timestamp: c.created_at
+            })),
+            ...recentEnrollments.map(e => ({
+                id: e.id,
+                type: "approve_enrollment",
+                description: `Duyệt học sinh "${e.user_enrollment_request_student_idTouser.name}" vào lớp "${e.Renamedclass.name}"`,
+                timestamp: e.updated_at
+            })),
+            ...recentExams.map(ex => ({
+                id: ex.id,
+                type: "create_exam_instance",
+                description: `Tạo đề thi "${ex.exam_template.title}"`,
+                timestamp: ex.created_at
+            })),
+            ...recentQuestions.map(q => ({
+                id: q.id,
+                type: "create_question",
+                description: `Thêm câu hỏi: "${q.text.substring(0, 50)}..."`,
+                timestamp: q.created_at
+            })),
+            ...recentTemplates.map(t => ({
+                id: t.id,
+                type: "create_template",
+                description: `Tạo template đề thi "${t.title}"`,
+                timestamp: t.created_at
+            }))
+        ];
+
+        // Sắp xếp theo thời gian mới nhất
+        activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        // Lấy 20 hoạt động gần nhất
+        const recentActivities = activities.slice(0, 20);
+
+        return {
+            stats: {
+                totalClasses: classCount,
+                totalStudents,
+                totalExams: examInstanceCount,
+                totalQuestions: await prisma.question.count({ where: { owner_id: teacherId } }),
+                totalTemplates: await prisma.exam_template.count({ where: { created_by: teacherId } })
+            },
+            recentActivities
+        };
     }
 
 };
