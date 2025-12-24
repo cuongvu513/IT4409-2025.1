@@ -1426,3 +1426,69 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
     "error": "Lớp học không tồn tại hoặc bạn không có quyền"
 }
 ```
+
+## Endpoint 39 — Lấy dashboard (Dành cho giáo viên)
+
+**GET `/api/teacher/dashboard`**
+
+- **Mô tả:** Lấy thông tin hiển thị dashboard.
+- **GET:** GET
+- **URL:** `/api/teacher/dashboard`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+{
+    "stats": {
+        "totalClasses": 5,
+        "totalStudents": 2,
+        "totalExams": 18,
+        "totalQuestions": 14,
+        "totalTemplates": 3
+    },
+    "recentActivities": [
+        {
+            "id": "440a10d5-715b-4ebf-b900-c2d245c71a3c",
+            "type": "create_class",
+            "description": "Tạo lớp học \"TIN HỌC ĐẠI CƯƠNG\"",
+            "timestamp": "2025-12-24T07:21:15.112Z"
+        },
+        {
+            "id": "5dceff08-479a-45f4-b4e7-b9a22450d1d8",
+            "type": "create_question",
+            "description": "Thêm câu hỏi: \"Tính đáp án của 5!...\"",
+            "timestamp": "2025-12-24T07:23:32.332Z"
+        },
+        {
+            "id": "f9a9619c-d768-4333-aff1-65327d87b792",
+            "type": "create_exam_instance",
+            "description": "Tạo đề thi \"Kỳ thi cuối học kỳ 1 Môn Toán\"",
+            "timestamp": "2025-12-23T02:18:15.268Z"
+        },
+        {
+            "id": "7d7d207c-4b1b-48ed-b6cc-a1d38c28e6ac",
+            "type": "create_exam_instance",
+            "description": "Tạo đề thi \"Kỳ thi cuối học kỳ 1 Môn Toán\"",
+            "timestamp": "2025-12-23T01:49:41.368Z"
+        },
+        {
+            "id": "c386540f-e9b6-429a-a602-257d01cfa15b",
+            "type": "create_exam_instance",
+            "description": "Tạo đề thi \"Kỳ thi cuối học kỳ 1 Môn Toán\"",
+            "timestamp": "2025-12-23T01:19:34.898Z"
+        },
+        {
+            "id": "e14b75af-4e5b-41b0-afaa-9591801f7efd",
+            "type": "create_question",
+            "description": "Thêm câu hỏi: \"2 + 2 = ?...\"",
+            "timestamp": "2025-12-23T01:16:27.025Z"
+        }
+    ]
+}
+```
+
+- **400** Lấy thông tin dashboard thất bại
+

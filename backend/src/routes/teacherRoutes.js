@@ -41,6 +41,8 @@ router.post("/exam-sessions/:id/unlock", teacherController.unlockExamSession); /
 router.get("/classes/:classId/exam-instances", teacherController.getExamInstancesByClass);// Lấy tất cả exam_instance của 1 lớp học
 router.get("/classes/:classId/exam-instances/:examInstanceId/progress", teacherController.getExamProgressByClass); // Lấy tiến độ làm bài thi của sinh viên trong lớp
 
+router.get("/dashboard", teacherController.getDashboard); // Lấy thông tin dashboard của giáo viên
+
 
 
 module.exports = router;
