@@ -75,7 +75,7 @@ module.exports = {
             await teacherService.deleteClass(classId, teacherId);
             res.status(204).end();
         } catch (error) {
-            const err = new Error('Xóa lớp học thất bại');
+            const err = new Error('Xóa lớp học thất bại: Không được xóa lớp học có sinh viên đang tham gia');
             err.status = 400;
             next(err);
         }
@@ -201,7 +201,7 @@ module.exports = {
             await teacherService.deleteQuestion(questionId, teacherId);
             res.status(200).json({ message: "Xóa câu hỏi thành công" });
         } catch (error) {
-            const err = new Error('Xóa câu hỏi thất bại');
+            const err = new Error('Xóa câu hỏi thất bại: Không được xóa câu hỏi đã được sử dụng trong đề thi');
             console.error("Error stack:", error.stack);
             err.status = 400;
             next(err);
@@ -322,7 +322,10 @@ module.exports = {
             // console.error("Error stack:", error.stack);
             // // const err = new Error("Xóa mẫu đề thi thất bại");
             // err.status = 400;
-            next(error);
+            const err = new Error('Xóa mẫu đề thi thất bại: Không được xóa mẫu đề thi đã có đề thi được tạo từ nó');
+            err.status = 400;
+            next(err);
+
         }
     },
 
@@ -415,7 +418,9 @@ module.exports = {
             res.json({ message: "Xóa đề thi thành công" });
             res.status(200).end();
         } catch (error) {
-            next(error);
+            const err = new Error("Xóa đề thi thất bại: Đề thi đã được công bố hoặc có sinh viên tham gia làm bài");
+            err.status = 400;
+            next(err);
         }
     },
 
