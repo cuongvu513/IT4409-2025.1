@@ -26,11 +26,12 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ## Endpoint 1 — Đăng ký user
 
-**POST** `/api/auth/register`
+## Endpoint 1.1 - đăng ký
+**POST** `/api/auth/register-request`
 
 - **Mô tả:** Tạo tài khoản mới.
 - **HTTP:** `POST`
-- **URL:** `/api/auth/register`
+- **URL:** `/api/auth/register-request`
 - **Request body:**
 
 ```php
@@ -51,7 +52,54 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ```json
 {
-    "message": "User registered successfully"
+    "message": "OTP has been sent to your email"
+}
+```
+
+- **400 Bad Request** (ví dụ email đã tồn tại / validation failed)
+
+```json
+{
+    "error": "Role not found for provided role_name: stucdent"
+}
+```
+
+Notes:
+
+- Hiển thị ra lỗi
+
+---
+
+
+## Endpoint 1.2 - xác nhận otp để đăng ký
+
+**POST** `/api/auth/register-confirm`
+
+- **Mô tả:** xác thực otp để Tạo tài khoản mới.
+- **HTTP:** `POST`
+- **URL:** `/api/auth/register-confirm`
+- **Request body:**
+
+```php
+{
+    "email": "student1@gmail.com",
+    "otp": "142376"
+}
+```
+
+- **Validations:**
+    - `email`: required, phải là email hợp lệ
+    - `password`: required, tối thiểu 8 ký tự, khuyến nghị có chữ hoa, chữ thường, số và ký tự đặc biệt
+    - `role_name` : gồm [student, teacher]
+- **Responses:**
+    - **201 Created**
+
+```json
+{
+{
+    "message": "User registered successfully",
+    "user_id": "0877ed37-f73e-44a8-983b-37bc203cc8a7"
+}
 }
 ```
 
