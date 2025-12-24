@@ -5,10 +5,32 @@ const JWT_SECRET = process.env.JWT_SECRET || "Password123!!!";
 
 
 module.exports = {
-  async register(req, res, next) {
+  // async register(req, res, next) {
+  //   try {
+  //     const { message } = await authService.register(req.body);
+  //     res.status(201).json({ message: message });
+  //   } catch (err) {
+  //     next(err);
+  //   }
+  // },
+
+  // đăng ký
+  async registerRequest(req, res, next) {
     try {
-      const { message } = await authService.register(req.body);
-      res.status(201).json({ message: message });
+      const data = req.body;
+      const result = await authService.registerRequest(data);
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // xác nhận opt để đăng ký
+  async registerConfirm(req, res, next) {
+    try {
+      const data = req.body;  
+      const result = await authService.registerConfirm(data);
+      res.status(200).json(result);
     } catch (err) {
       next(err);
     }

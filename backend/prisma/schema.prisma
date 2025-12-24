@@ -355,3 +355,19 @@ enum session_state {
   expired
   locked
 }
+
+model pending_user {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email         String   @unique
+  name          String
+  password_hash String
+  role_id       String
+
+  otp_hash      String
+  otp_expires_at DateTime
+  otp_used      Boolean  @default(false)
+  otp_attempts  Int      @default(0)
+
+  created_at    DateTime @default(now())
+}
+
