@@ -133,7 +133,7 @@ const RegisterPage = () => {
 
     const handleResendOtp = async () => {
         try {
-            await authService.register({
+            await authService.registerRequest({
                 email: formData.email,
                 name: formData.fullName,
                 password: formData.password,
