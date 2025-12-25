@@ -17,5 +17,7 @@ router.post("/sessions/:id/heartbeat", examSession, studentController.heartbeat)
 router.post("/sessions/:id/answers", examSession, studentController.submitAnswer); // Lưu đáp án
 router.post("/sessions/:id/submit", examSession, studentController.submitExam); // Nộp bài
 
+router.get("/dashboard", studentController.getStudentDashboard);    // Lấy dashboard của sinh viên
+
 
 module.exports = router;

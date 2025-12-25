@@ -303,7 +303,7 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ## Endpoint 10 — hủy yêu cầu tham gia lớp học
 
-**POST `/api/student//classes/:id/cancel-enrollment`**
+**POST `/api/student/classes/:id/cancel-enrollment`**
 
 - **Mô tả:**  hủy yêu cầu tham gia lớp học.
 - **Headers:** `Authorization: Bearer <access_token>`
@@ -314,6 +314,54 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 - **204 No Content** 
 
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 10 — Lấy dashboard sinh viên
+
+**GET `/api/student/dashboard`**
+
+- **Mô tả:**  Lấy dashboard sinh viên
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Body:** (không cần)
+
+
+- **Response body:**
+
+- **200 Ok** 
+```json
+{
+    "classes": [
+        {
+            "id": "8409b373-5deb-43c0-9a23-dfc0cc162f84",
+            "teacher_id": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+            "name": "Tin học đại cương",
+            "code": "5ebscqj6",
+            "description": "Học lâp trình vào sáng t6",
+            "created_at": "2025-12-06T15:06:17.459Z",
+            "updated_at": "2025-12-06T15:06:17.459Z"
+        },
+        {
+            "id": "470383ba-9827-4e6b-80bb-2aab9a3873cd",
+            "teacher_id": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+            "name": "tin hoc",
+            "code": "6ey1dbl0",
+            "description": "đâsasd",
+            "created_at": "2025-12-25T09:15:33.851Z",
+            "updated_at": "2025-12-25T09:15:33.851Z"
+        }
+    ],
+    "averageScore": 5,
+    "upcomingCount": 0,
+    "completedCount": 1
+}
+```
 
 - **401 Unauthorized** (missing/invalid token)
 

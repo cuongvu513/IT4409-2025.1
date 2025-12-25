@@ -153,4 +153,17 @@ module.exports = {
             next(err);
         }
     },
+
+    // lấy dashboard của sinh viên
+    async getStudentDashboard(req, res, next) {
+        try {
+            const studentId = req.user.id;
+            const dashboard = await studentService.getStudentDashboard(studentId);
+            res.status(200).json(dashboard);
+        } catch (error) {
+            const err = new Error("Lấy dashboard thất bại: " + error.message);
+            err.status = 400;
+            next(err);
+        }
+    },
 };
