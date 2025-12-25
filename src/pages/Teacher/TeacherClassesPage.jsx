@@ -110,15 +110,22 @@ const TeacherClassesPage = () => {
                                     <td>{cls.description}</td>
                                     <td>{formatDate(cls.created_at)}</td>
                                     <td>
-                                        <Link to={`/teacher/classes/${cls.id}`} className={styles.actionBtn}>
-                                            Chi tiết
-                                        </Link>
-                                        <button
-                                            className={`${styles.actionBtn} ${styles.delete}`}
-                                            onClick={() => handleDeleteClass(cls.id)}
-                                        >
-                                            Xóa
-                                        </button>
+                                        <div className={styles.actionButtons}>
+                                            <Link
+                                                to={`/teacher/classes/${cls.id}`}
+                                                className={styles.btnView}
+                                            >
+                                                Chi tiết
+                                            </Link>
+
+
+                                            <button
+                                                className={styles.btnDelete}
+                                                onClick={() => handleDeleteClass(cls.id)}
+                                            >
+                                                Xóa
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
