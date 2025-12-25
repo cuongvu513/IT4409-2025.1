@@ -590,5 +590,86 @@ module.exports = {
             where: { student_id: studentId, class_id: classId, status: "pending" }
         });
         return;
+    },
+
+    // lấy dashboard của sinh viên
+    async getStudentDashboard(studentId) {
+        // kiểm tra sinh viên tồn tại
+        const student = await userService.getUserById(studentId);
+        if (!student) {
+            const err = new Error("Sinh viên không tồn tại");
+            err.status = 404;
+            throw err;
+        }
+
+        // Lấy danh sách lớp đã tham gia
+        const classes = await prisma.enrollment_request.findMany({
+            where: { student_id: studentId, status: "approved" },
+            include: { Renamedclass: true },
+        });
+        const classList = classes.map((enrollment) => enrollment.Renamedclass);
+
+
+        const now = new Date();
+        // Lấy danh sách submission đã hoàn thành
+        const submissions = await prisma.submission.findMany({
+            where: {
+                exam_session: {
+                user_id: studentId,
+                exam_instance: {
+                    published: true,
+                },
+                },
+                graded_at: { not: null }, // chỉ lấy bài đã chấm
+            },
+                select: {
+                    score: true,
+                    max_score: true,
+                },
+        });
+
+        let avgScore = 0;
+
+        if (submissions.length > 0) {
+        const normalizedScores = submissions.map(s =>
+            s.max_score > 0 ? (Number(s.score) / Number(s.max_score)) * 10 : 0
+        );
+
+        avgScore =
+            normalizedScores.reduce((sum, v) => sum + v, 0) /
+            normalizedScores.length;
+        }
+        avgScore = Number(avgScore.toFixed(2));
+
+
+        // lấy số lượng kỳ thi sắp tới
+        const upcomingCount = await prisma.exam_instance.count({
+            where: {
+                published: true,
+                starts_at: { gt: now },
+                exam_template: {
+                    class_id: { in: classList.map((c) => c.id) },
+                },
+            },
+        });
+
+        // lấy số lượng kỳ thi đã hoàn thành
+        const completedCount = await prisma.submission.count({
+            where: {
+                exam_session: {
+                    user_id: studentId,
+                    exam_instance: {
+                        published: true,
+                    },
+                },
+            },
+        });
+
+        return {
+            classes: classList,
+            averageScore: avgScore,
+            upcomingCount,
+            completedCount,
+        };
     }
 };
