@@ -142,7 +142,7 @@ module.exports = {
     });
 
     // Gửi email
-    await sendResetOtpEmail(email, otp);
+    await sendResetOtpEmail(email, otp, "Xác thực đăng ký tài khoản");
       return {
         message: "OTP has been sent to your email",
     };
@@ -268,7 +268,7 @@ module.exports = {
     console.log("OTP hash from request:", otpHash);
     console.log("Current time:", new Date());
 
-    await sendResetOtpEmail(email, otp);
+    await sendResetOtpEmail(email, otp, "Xác nhận đặt lại mật khẩu");
       return {
         message: "OTP has been sent to your email",
     };
