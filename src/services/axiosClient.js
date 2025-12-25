@@ -32,6 +32,10 @@ axiosClient.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true; // Đánh dấu đã thử refresh
 
+            if (originalRequest.url.includes('/auth/login')) {
+                return Promise.reject(error);
+            }
+
             try {
                 // Lấy refreshToken từ LocalStorage
                 const refreshToken = localStorage.getItem('refreshToken');
