@@ -27,6 +27,9 @@ import TeacherQuestionsPage from './pages/Teacher/TeacherQuestionsPage';
 import TeacherTemplatesPage from './pages/Teacher/TeacherTemplatesPage';
 // de thi
 import TeacherExamInstancesPage from './pages/Teacher/TeacherExamInstancesPage';
+// Quan ly phien thi
+import ClassExamSessionPage from './pages/Teacher/ClassExamSessionPage';
+import TeacherClassExamPage from './pages/Teacher/TeacherClassExamPage';
 
 // trang cho student
 import StudentClassesPage from './pages/Student/StudentClassesPage';
@@ -59,9 +62,11 @@ function App() {
             <Route path="dashboard" element={<TeacherDashboardPage />} />
             <Route path="classes" element={<TeacherClassesPage />} />
             <Route path="classes/:id" element={<ClassDetailPage />} />
+            <Route path="classes/:classId/exams" element={<TeacherClassExamPage />} />
             <Route path="questions" element={<TeacherQuestionsPage />} />
             <Route path="exam-templates" element={<TeacherTemplatesPage />} />
             <Route path="exam-templates/:templateId" element={<TeacherExamInstancesPage />} />
+            <Route path="classes/:classId/exams/:examInstanceId"element={<ClassExamSessionPage />} />
           </Route>
 
 

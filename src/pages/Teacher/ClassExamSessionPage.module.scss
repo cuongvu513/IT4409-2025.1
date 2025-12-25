@@ -1,0 +1,33 @@
+/* ClassExamSessionPage.module.scss */
+.contentBody {
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.section h3 {
+  margin-bottom: 12px;
+}
+
+.lockBtn {
+  background: #dc2626;
+  color: white;
+  margin-right: 12px;
+}
+
+.unlockBtn {
+  background: #16a34a;
+  color: white;
+}
+

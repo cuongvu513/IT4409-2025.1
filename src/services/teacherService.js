@@ -2,6 +2,46 @@
 import axiosClient from './axiosClient';
 
 const teacherService = {
+        // exams theo lớp
+    getExamInstances(classId) {
+        return axiosClient.get(`/api/teacher/classes/${classId}/exam-instances`);
+    },
+
+    // HS đang thi
+    getActiveStudents(classId) {
+        return axiosClient.get(`/api/teacher/classes/${classId}/active-students`);
+    },
+
+    // Tiến độ thi
+    getExamProgress(classId, examInstanceId) {
+        return axiosClient.get(
+            `/api/teacher/classes/${classId}/exam-instances/${examInstanceId}/progress`
+        );
+    },
+
+    // Vi phạm
+    getClassFlags(classId) {
+        return axiosClient.get(`/api/teacher/classes/${classId}/flags`);
+    },
+
+    // Cộng giờ
+    addAccommodation(examInstanceId, data) {
+        return axiosClient.post(
+            `/api/teacher/exam-instances/${examInstanceId}/accommodations`,
+            data
+        );
+    },
+
+    // Khóa / mở phiên endpoint 36
+    lockSession(sessionId, reason) {
+        return axiosClient.post(`/api/teacher/exam-sessions/${sessionId}/lock`, { reason });
+    },
+
+    //endpoint 37
+    unlockSession(sessionId, reason) {
+        return axiosClient.post(`/api/teacher/exam-sessions/${sessionId}/unlock`, { reason });
+    },
+
     // Endpoint 39: api lấy thông số cho giao diện dashboard teacher
     getDashboardData() {
         return axiosClient.get('/api/teacher/dashboard');
