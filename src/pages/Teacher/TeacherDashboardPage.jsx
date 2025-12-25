@@ -37,7 +37,10 @@ const TeacherDashboardPage = () => {
                 setLoading(false);
             }
         };
+        setLoading(true);
         fetchDashboard();
+        const intervalId = setInterval(fetchDashboard, 5000);
+        return () => clearInterval(intervalId);
     }, []);
 
     // --- HELPER: FORMAT NGÀY GIỜ ---
@@ -92,7 +95,7 @@ const TeacherDashboardPage = () => {
             {/* Banner chào mừng */}
             <div className={styles.welcomeHero}>
                 <div className={styles.heroContent}>
-                    <h2>Chào mừng giáo viên đến với trang quản lý học sinh!</h2>
+                    <h2>Chào mừng giáo viên đến với trang quản lý học sinh! 👋</h2>
                     <p>Chúc thầy cô một ngày làm việc hiệu quả và tràn đầy năng lượng.</p>
                 </div>
                 <div className={styles.heroIcon}>
