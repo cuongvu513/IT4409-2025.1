@@ -1,219 +1,275 @@
-// src/pages/Auth/RegisterPage.jsx
+// src/pages/RegisterPage.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
-import styles from './RegisterPage.module.scss';
+import styles from './RegisterPage.module.scss'; // Import CSS Module
 
 const RegisterPage = () => {
     const navigate = useNavigate();
 
-    // State quản lý các bước (1: Nhập info, 2: Nhập OTP)
-    const [step, setStep] = useState(1);
-
-    // State dữ liệu Form
+    // State quản lý dữ liệu form
     const [formData, setFormData] = useState({
-        name: '',
+        fullName: '',      // UI hiển thị "Họ và tên"
         email: '',
         password: '',
         confirmPassword: '',
-        role_name: 'student' // Mặc định là học sinh
+        role: 'student',   // Mặc định là học sinh
     });
 
-    // State OTP
-    const [otp, setOtp] = useState('');
-
-    // State UI
     const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
+    const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Xử lý nhập liệu Form Bước 1
+    // Xử lý khi người dùng nhập liệu
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // --- XỬ LÝ BƯỚC 1: GỬI YÊU CẦU ĐĂNG KÝ ---
-    const handleRegisterRequest = async (e) => {
+    // Dung de set router cho thay doi giua form register va otp
+    const [step, setStep] = useState('register'); // 'register' | 'otp'
+    const [otp, setOtp] = useState('');
+    const handleSubmit = (e) => {
         e.preventDefault();
-        setError('');
-        setSuccessMessage('');
+        if (step === 'register') {
+            handleRegisterRequest();
+        } else {
+            handleConfirmOtp();
+        }
+    };
 
-        // Validate cơ bản
+    // Ham maskemail dung de che email luc hien thanh cong
+    const maskEmail = (email) => {
+        if (!email) return '';
+
+        const [name, domain] = email.split('@');
+
+        if (name.length <= 2) {
+            return `${name[0]}*@${domain}`;
+        }
+
+        const visibleStart = name.slice(0, 2);
+        const visibleEnd = name.slice(-1);
+
+        return `${visibleStart}***${visibleEnd}@${domain}`;
+    };
+
+
+    // Xử lý khi nhấn Đăng ký => Gui OTP
+    const handleRegisterRequest = async (e) => {
+        setError('');
+        setSuccess('');
+        setLoading(true);
+
         if (formData.password !== formData.confirmPassword) {
             setError('Mật khẩu nhập lại không khớp!');
-            return;
-        }
-        if (formData.password.length < 8) {
-            setError('Mật khẩu phải có ít nhất 8 ký tự.');
+            setLoading(false);
             return;
         }
 
-        setLoading(true);
         try {
-            // Gọi API 1.1
-            const payload = {
+            await authService.registerRequest({ //register goi API tao otp
                 email: formData.email,
-                name: formData.name,
+                name: formData.fullName,
                 password: formData.password,
-                role_name: formData.role_name
-            };
+                role_name: formData.role,
+            });
 
-            const res = await authService.registerRequest(payload);
-
-            // Thành công -> Chuyển sang bước nhập OTP
-            setSuccessMessage(res.data.message || "OTP đã được gửi đến email của bạn.");
-            setStep(2);
-
+            setSuccess('OTP đã được gửi tới email của bạn'); 
+            setStep('otp'); // chuan bi de goi toi API confirm OTP
+            startCountdown();
         } catch (err) {
-            setError(err.response?.data?.error || "Đăng ký thất bại.");
+            setError(err.response?.data?.error || 'Gửi OTP thất bại');
         } finally {
             setLoading(false);
         }
     };
 
-    // --- XỬ LÝ BƯỚC 2: XÁC THỰC OTP ---
+    // Xu ly dang nhap co OTP
     const handleConfirmOtp = async (e) => {
-        e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            // Gọi API 1.2
-            const payload = {
-                email: formData.email, // Lấy email từ state bước 1
-                otp: otp
-            };
+            await authService.otp({
+                email: formData.email,
+                otp,
+            });
 
-            const res = await authService.registerConfirm(payload);
+            setSuccess('Đăng ký thành công!');
 
-            alert(res.data.message || "Đăng ký thành công! Vui lòng đăng nhập.");
-            navigate('/login'); // Chuyển hướng về trang login
-
-        } catch (err) {
-            setError(err.response?.data?.error || "Mã OTP không đúng hoặc đã hết hạn.");
-        } finally {
+            setTimeout(() => {
+                navigate('/login');
+            }, 1500);
+        } 
+        catch (err) {
+            setError(err.response?.data?.error || 'OTP không hợp lệ');
+        } 
+        finally {
             setLoading(false);
         }
     };
+
+    //Them phan countdown va nut gui lai OTP
+    const [countdown, setCountdown] = useState(60); //Mac dinh 5p giong Backend
+    const timerRef = React.useRef(null);
+    const startCountdown = () => {
+        setCountdown(60);
+
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+
+        timerRef.current = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    clearInterval(timerRef.current);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    const handleResendOtp = async () => {
+        try {
+            await authService.register({
+                email: formData.email,
+                name: formData.fullName,
+                password: formData.password,
+                role_name: formData.role
+            });
+
+            setSuccess(`OTP mới đã được gửi tới ${maskEmail(formData.email)}`);
+            startCountdown();
+        } catch (err) {
+            setError('Không thể gửi lại OTP. Vui lòng thử lại.');
+        }
+    };
+
+
 
     return (
         <div className={styles.registerContainer}>
-            <div className={styles.registerForm}>
+            <form className={styles.registerForm} onSubmit={handleSubmit}>
                 <div className={styles.formHeader}>
-                    <h2>{step === 1 ? 'Đăng ký tài khoản' : 'Xác thực OTP'}</h2>
-                    <p>{step === 1 ? 'Chào mừng bạn đến với EduTest' : `Mã OTP đã gửi tới: ${formData.email}`}</p>
+                    <h2>
+                        {step === 'register' ? 'Đăng ký tài khoản' : 'Xác nhận OTP'}
+                    </h2>
+                    <p>
+                        {step === 'register'
+                            ? 'Chào mừng bạn đến với lớp học!'
+                            : `OTP đã gửi tới ${maskEmail(formData.email)}`}
+                    </p>
                 </div>
 
-                {/* Hiển thị lỗi hoặc thông báo thành công */}
                 {error && <div className={styles.alertError}>{error}</div>}
-                {successMessage && <div className={styles.alertSuccess}>{successMessage}</div>}
+                {success && <div className={styles.alertSuccess}>{success}</div>}
 
-                {/* --- GIAO DIỆN BƯỚC 1 --- */}
-                {step === 1 && (
-                    <form onSubmit={handleRegisterRequest}>
+                {/*Form 1: REGISTER*/}
+                {step === 'register' && (
+                    <>
                         <div className={styles.formGroup}>
                             <label>Họ và tên</label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                placeholder="Nguyễn Văn A"
+                            <input 
+                                name="fullName" 
+                                placeholder="Nguyen Van A" 
+                                value={formData.fullName} 
+                                onChange={handleChange} 
+                                required 
                             />
                         </div>
 
                         <div className={styles.formGroup}>
                             <label>Email</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                                placeholder="student@example.com"
+                            <input 
+                                type="email" 
+                                name="email" 
+                                placeholder="nguyenvan@gmail.com" 
+                                value={formData.email} 
+                                onChange={handleChange} 
+                                required 
                             />
                         </div>
 
                         <div className={styles.formGroup}>
                             <label>Mật khẩu</label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
-                                placeholder="Tối thiểu 8 ký tự"
+                            <input 
+                                type="password" 
+                                name="password" 
+                                placeholder="Mat Khau phai co it nhat 8 chu" 
+                                value={formData.password} 
+                                onChange={handleChange} 
+                                required 
                             />
                         </div>
 
                         <div className={styles.formGroup}>
                             <label>Nhập lại mật khẩu</label>
-                            <input
-                                type="password"
-                                name="confirmPassword"
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                required
-                                placeholder="Xác nhận mật khẩu"
+                            <input 
+                                type="password" 
+                                name="confirmPassword" 
+                                placeholder="Nhap lai mat khau" 
+                                value={formData.confirmPassword} 
+                                onChange={handleChange} 
+                                required 
                             />
                         </div>
 
                         <div className={styles.formGroup}>
                             <label>Vai trò</label>
-                            <select
-                                name="role_name"
-                                value={formData.role_name}
-                                onChange={handleChange}
-                                className={styles.selectInput}
-                            >
-                                <option value="student">Học sinh</option>
-                                <option value="teacher">Giáo viên</option>
+                            <select name="role" value={formData.role} onChange={handleChange} className={styles.selectInput}>
+                                <option value="student">Học sinh (Student)</option>
+                                <option value="teacher">Giáo viên (Teacher)</option>
                             </select>
                         </div>
-
-                        <button type="submit" className={styles.submitBtn} disabled={loading}>
-                            {loading ? 'Đang xử lý...' : 'Tiếp tục'}
-                        </button>
-                    </form>
+                    </>
                 )}
 
-                {/* --- GIAO DIỆN BƯỚC 2 (OTP) --- */}
-                {step === 2 && (
-                    <form onSubmit={handleConfirmOtp}>
+                {/* Form 2: OTP */}
+                {step === 'otp' && (
+                    <>
                         <div className={styles.formGroup}>
-                            <label>Nhập mã OTP</label>
+                            <label>Mã OTP</label>
                             <input
                                 type="text"
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value)}
+                                placeholder="Nhập mã OTP"
                                 required
-                                placeholder="Nhập mã 6 số"
-                                style={{ textAlign: 'center', letterSpacing: '2px', fontSize: '1.2rem' }}
                             />
                         </div>
 
-                        <button type="submit" className={styles.submitBtn} disabled={loading}>
-                            {loading ? 'Đang xác thực...' : 'Hoàn tất đăng ký'}
-                        </button>
-
-                        <div className={styles.formFooter}>
-                            <span
-                                style={{ color: '#007bff', cursor: 'pointer', fontSize: '0.9rem' }}
-                                onClick={() => setStep(1)}
-                            >
-                                ← Quay lại sửa thông tin
-                            </span>
+                        <div className={styles.resubmitBtn}>
+                            {countdown > 0 ? (
+                                <p>Gửi lại OTP sau <strong>{countdown}s</strong></p>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleResendOtp}
+                                    className={styles.resendBtn}
+                                >
+                                    Gửi lại OTP
+                                </button>
+                            )}
                         </div>
-                    </form>
+                    </>
                 )}
 
-                {step === 1 && (
+                <button type="submit" className={styles.submitBtn} disabled={loading}>
+                    {loading
+                        ? 'Đang xử lý...'
+                        : step === 'register'
+                            ? 'Gửi OTP'
+                            : 'Xác nhận'}
+                </button>
+
+                {step === 'register' && (
                     <div className={styles.formFooter}>
-                        <p>Đã có tài khoản? <Link to="/login">Đăng nhập ngay</Link></p>
+                        <p>Đã có tài khoản? <Link to="/login">Đăng nhập</Link></p>
                     </div>
                 )}
-            </div>
+            </form>
         </div>
     );
 };

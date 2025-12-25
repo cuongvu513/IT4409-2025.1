@@ -152,3 +152,43 @@ $success-color: #2ecc71;
         }
     }
 }
+
+.resubmitBtn{
+    margin-top: 16px;
+    text-align: center;
+    font-size: 14px;
+    color: #555;
+
+    p {
+        margin: 0;
+        padding: 8px 0;
+        color: #777;
+    }
+
+    strong {
+        color: #ff6b00;
+        font-weight: 600;
+        font-size: 15px;
+    }
+}
+
+.resendBtn {
+    background: none;
+    border: none;
+    color: #2563eb; // xanh nhẹ
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background-color: rgba(37, 99, 235, 0.08);
+        text-decoration: underline;
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+}
