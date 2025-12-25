@@ -2,8 +2,13 @@ import axiosClient from './axiosClient';
 
 const authService = {
     // API 1: Đăng ký
-    register(data) {
-        return axiosClient.post('/api/auth/register', data);
+    registerRequest(data) {
+        return axiosClient.post('/api/auth/register-request', data);
+    },
+
+    registerConfirm(data) {
+        // data: { email, otp }
+        return axiosClient.post('/api/auth/register-confirm', data);
     },
 
     // API 2: Đăng nhập
