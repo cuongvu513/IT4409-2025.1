@@ -125,9 +125,13 @@ const ClassDetailPage = () => {
                                         requests.map(req => (
                                             <div key={req.id} className={styles.requestItem}>
                                                 <div className={styles.reqInfo}>
-                                                    <strong>{req.studentInfo?.name || 'Học sinh'}</strong>
-                                                    <span className={styles.reqEmail}>{req.studentInfo?.email}</span>
+                                                    <strong style={{ wordBreak: 'break-all' }}>
+                                                        Student-ID: {req.student_id}
+                                                    </strong>
                                                     {req.note && <p className={styles.reqNote}>"{req.note}"</p>}
+                                                    <span className={styles.reqTime}>
+                                                        {new Date(req.requested_at).toLocaleDateString('vi-VN')}
+                                                    </span>
                                                 </div>
                                                 <div className={styles.reqActions}>
                                                     <button

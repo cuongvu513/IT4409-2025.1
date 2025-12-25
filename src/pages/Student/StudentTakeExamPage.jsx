@@ -81,7 +81,7 @@ const StudentTakeExamPage = () => {
 
             } catch (error) {
                 console.error("Lỗi khởi tạo:", error);
-                alert("Không thể tải bài thi. Vui lòng thử lại!");
+                alert("Bạn đã hoàn thành bài thi !");
                 navigate(backPath);
             }
         };

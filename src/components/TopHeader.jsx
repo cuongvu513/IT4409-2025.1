@@ -117,6 +117,7 @@ const TopHeader = ({ title }) => {
                         <div className={styles.dropdown}>
                             <div className={styles.ddHeader}>Thông tin cá nhân</div>
                             <div className={styles.ddBody}>
+                                <div className={styles.row}><span>ID: </span> <b>{user.id}</b></div>
                                 <div className={styles.row}><span>Tên:</span> <b>{user.name}</b></div>
                                 <div className={styles.row}><span>Bio:</span> <b>{user.bio || '...'}</b></div>
                                 <div className={styles.row}><span>Email:</span> <b>{user.email}</b></div>
