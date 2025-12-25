@@ -130,7 +130,7 @@ const StudentTakeExamPage = () => {
             if (res.data && res.data.locked) {
                 alert("Bạn đã vi phạm quy chế thi quá số lần cho phép. Bài thi đã bị khóa!");
                 // Tự động nộp bài hoặc đá ra ngoài
-                navigate('/student/exams');
+                navigate(backPath);
                 // Hoặc gọi hàm handleSubmitExam() để nộp cưỡng ép
             }
         };

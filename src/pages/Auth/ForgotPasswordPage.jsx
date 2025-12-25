@@ -34,6 +34,7 @@ const ForgotPasswordPage = () => {
             // Chuyển sang bước 2
             setStep(2);
         } catch (err) {
+            setMessage('');
             setError(err.response?.data?.error || "Không tìm thấy email hoặc lỗi hệ thống.");
         } finally {
             setLoading(false);
@@ -56,12 +57,15 @@ const ForgotPasswordPage = () => {
 
             const res = await authService.resetPassword(payload);
 
+            setError('');
+
             alert(res.data.message || "Đặt lại mật khẩu thành công! Vui lòng đăng nhập.");
 
             // Chuyển hướng về trang Login
             navigate('/login');
 
         } catch (err) {
+            setMessage('');
             setError(err.response?.data?.error || "OTP không hợp lệ hoặc đã hết hạn.");
         } finally {
             setLoading(false);
