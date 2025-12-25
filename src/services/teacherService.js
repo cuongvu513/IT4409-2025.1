@@ -2,6 +2,10 @@
 import axiosClient from './axiosClient';
 
 const teacherService = {
+    // Endpoint 39: api lấy thông số cho giao diện dashboard teacher
+    getDashboardData() {
+        return axiosClient.get('/api/teacher/dashboard');
+    },
     // Endpoint 7: Tạo lớp học mới
     createClass(data) {
         // data: { name, description }
@@ -141,14 +145,8 @@ const teacherService = {
     // --- ENDPOINT 24: LẤY CHI TIẾT ĐỀ THI ---
     getExamInstanceDetail(id) {
         return axiosClient.get(`/api/teacher/exam-instances/${id}`);
-    },
-
-
-    // (Các API khác như lấy danh sách lớp, thống kê... sẽ thêm sau)
-    getDashboardData() {
-        // Giả lập hoặc gọi API thật nếu có
-        return Promise.resolve({ data: { /* ... */ } });
     }
+
 };
 
 export default teacherService;

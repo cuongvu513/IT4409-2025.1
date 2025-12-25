@@ -63,7 +63,7 @@ const TeacherClassesPage = () => {
             setClasses((prevClasses) => prevClasses.filter(cls => cls.id !== classId));
             alert("Xóa lớp học thành công!");
         } catch (error) {
-            alert("Xóa lớp học thất bại");
+            alert(error.response?.data?.error || "Xóa lớp học thất bại");
         }
     };
 

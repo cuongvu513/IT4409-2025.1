@@ -89,7 +89,7 @@ const TeacherQuestionsPage = () => {
             await teacherService.deleteQuestion(id);
             setQuestions(prev => prev.filter(q => q.id !== id));
             alert("Xóa thành công!");
-        } catch (error) { alert("Xóa thất bại!"); }
+        } catch (error) { alert(error.response?.data?.error || "Xóa thất bại!"); }
     };
 
     const handleSubmit = async (e) => {

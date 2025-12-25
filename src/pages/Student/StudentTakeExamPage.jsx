@@ -344,7 +344,7 @@ const StudentTakeExamPage = () => {
                                                     {isSelected && <div className={styles.innerDot}></div>}
                                                 </div>
 
-                                                <span className={styles.choiceLabel}>{choice.label}.</span>
+                                                <span className={styles.choiceLabel}>{choice.label}</span>
                                                 <span className={styles.choiceText}>{choice.text}</span>
                                             </div>
                                         );
