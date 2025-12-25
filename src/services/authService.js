@@ -6,7 +6,7 @@ const authService = {
         return axiosClient.post('/api/auth/register-request', data);
     },
 
-    registerConfirm(data) {
+    otp(data) {
         // data: { email, otp }
         return axiosClient.post('/api/auth/register-confirm', data);
     },
