@@ -32,7 +32,10 @@ const ClassDetailPage = () => {
     };
 
     useEffect(() => {
+        setLoading(true);
         fetchClassData();
+        const intervalId2 = setInterval(fetchClassData, 5000);
+        return () => clearInterval(intervalId2);
     }, [id]);
 
     // 2. Load yêu cầu tham gia
@@ -45,7 +48,11 @@ const ClassDetailPage = () => {
                 console.error("Lỗi tải yêu cầu:", err);
             }
         };
+        setLoading(true);
         fetchRequests();
+        const intervalId = setInterval(fetchRequests, 5000);
+        return () => clearInterval(intervalId);
+
     }, [id]);
 
     // 3. Click outside để đóng dropdown chuông

@@ -20,7 +20,7 @@ const StudentClassesPage = () => {
     // --- 1. HÀM LOAD DỮ LIỆU (Tách ra để tái sử dụng) ---
     const fetchClasses = async () => {
         try {
-            setLoading(true);
+            // setLoading(true);
             const res = await studentService.getClassesByStatus(status);
             setClasses(res.data || []);
         } catch (error) {
@@ -33,7 +33,11 @@ const StudentClassesPage = () => {
 
     // Gọi API khi tab (status) thay đổi
     useEffect(() => {
+        setLoading(true);
         fetchClasses();
+        const intervalId = setInterval(fetchClasses, 5000);
+
+        return () => clearInterval(intervalId);
     }, [status]);
 
     // --- 2. XỬ LÝ ENROLL (Xin vào lớp - Endpoint 1) ---

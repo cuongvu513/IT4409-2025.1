@@ -84,17 +84,16 @@ const StudentDashboardPage = () => {
             {/* --- 3. HIỂN THỊ THỐNG KÊ TỪ API --- */}
             <div className={styles.statsGrid}>
                 <div className={styles.card}>
-                    <h3>{dashboardData.completedCount}</h3>
                     <p>Bài thi đã làm</p>
+                    <h3>{dashboardData.completedCount}</h3>
                 </div>
                 <div className={styles.card}>
-                    <h3>{dashboardData.upcomingCount}</h3>
                     <p>Bài thi sắp tới</p>
+                    <h3>{dashboardData.upcomingCount}</h3>
                 </div>
                 <div className={styles.card}>
-                    {/* Làm tròn điểm số 1 chữ số thập phân */}
-                    <h3>{dashboardData.averageScore ? Number(dashboardData.averageScore).toFixed(1) : '--'}</h3>
                     <p>Điểm trung bình</p>
+                    <h3>{dashboardData.averageScore ? Number(dashboardData.averageScore).toFixed(1) : '--'}</h3>
                 </div>
             </div>
 
