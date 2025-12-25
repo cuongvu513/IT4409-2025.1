@@ -1,11 +1,12 @@
 // src/pages/Teacher/ClassDetailPage.jsx
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import styles from './ClassDetailPage.module.scss';
 
 const ClassDetailPage = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
 
     // KHÔNG CẦN AuthContext hay TopHeader ở đây nữa vì TeacherLayout đã lo
 
@@ -169,6 +170,12 @@ const ClassDetailPage = () => {
                 <div className={styles.metaInfo}>
                     <span>Ngày tạo: {new Date(classInfo.created_at).toLocaleDateString('vi-VN')}</span>
                     <span>Sĩ số: <strong>{listStudent.length}</strong> học viên</span>
+                    <button
+                        className={styles.btnPrimary}
+                        onClick={() => navigate(`/teacher/classes/${id}/exams`)}
+                    >
+                        Quản lý bài thi
+                    </button>
                 </div>
             </div>
 
