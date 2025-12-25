@@ -2,6 +2,10 @@
 import axiosClient from './axiosClient';
 
 const studentService = {
+    // --- ENDPOINT 10: LẤY DASHBOARD SINH VIÊN ---
+    getDashboard() {
+        return axiosClient.get('/api/student/dashboard');
+    },
     // Endpoint 1: Enroll
     enrollClass(data) {
         return axiosClient.post('/api/student/enroll', data);
@@ -66,10 +70,7 @@ const studentService = {
         );
     },
 
-    // Mock data (nếu cần)
-    getDashboardData() {
-        return Promise.resolve({ data: {} });
-    }
+
 };
 
 // --- QUAN TRỌNG: PHẢI CÓ DÒNG NÀY Ở CUỐI ---
