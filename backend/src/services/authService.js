@@ -309,5 +309,19 @@ module.exports = {
     });
 
     return { message: "Password reset successfully" };
+  },
+  
+    // tìm kiếm lớp học theo tên
+  async searchClassesByName(name) {
+    const users = await prisma.Renamedclass.findMany({
+      where: {
+        name: {
+          contains: name,
+          mode: "insensitive",
+        },
+      },
+    });
+    return users;
   }
+
 };

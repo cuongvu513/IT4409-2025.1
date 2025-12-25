@@ -372,3 +372,35 @@ Implementation options:
 
 - gửi cả otp và mk mới luôn.
 ---
+
+
+## Endpoint 9 — tìm kiếm lớp học theo tên
+
+**GET `/api/auth/classes/search`**
+
+- **Mô tả:** tìm kiếm lớp học theo tên
+- **HTTP:** GET
+- **URL:** **`/api/auth/classes/search`**
+
+- **Response body**
+- **200 Ok** 
+```json
+[
+    {
+        "id": "8409b373-5deb-43c0-9a23-dfc0cc162f84",
+        "teacher_id": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "name": "Tin học đại cương",
+        "code": "5ebscqj6",
+        "description": "Học lâp trình vào sáng t6",
+        "created_at": "2025-12-06T15:06:17.459Z",
+        "updated_at": "2025-12-06T15:06:17.459Z"
+    }
+]
+```
+
+**400 Bad Request** 
+```json
+{
+    "error": "OTP invalid or expired"
+}
+```

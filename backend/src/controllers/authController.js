@@ -110,5 +110,20 @@ module.exports = {
     } catch (err) {
       next(err);
     }
-  }
+  },
+
+  
+  // tìm kiếm lớp học theo tên
+  async searchClassesByName(req, res, next) {
+    try {
+      const { name } = req.query;
+      if (!name) {
+        return res.status(400).json({ error: "Vui lòng cung cấp tên lớp học để tìm kiếm" });
+      }
+      const classes = await authService.searchClassesByName(name);
+      res.json(classes);
+    } catch (err) {
+      next(err);
+    }
+  },
 };
