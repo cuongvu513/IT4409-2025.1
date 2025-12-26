@@ -997,7 +997,8 @@ module.exports = {
 
     // Lấy tiến độ làm bài thi của sinh viên trong lớp
     async getExamProgressByClass(teacherId, classId, examInstanceId) {
-        // 1️ Check quyền lớp học
+
+        // 1️ Check quyền giáo viên
         const klass = await prisma.Renamedclass.findFirst({
             where: {
                 id: classId,
@@ -1012,22 +1013,26 @@ module.exports = {
             throw err;
         }
 
-        // 2️ Lấy toàn bộ sinh viên của lớp
-        const students = await prisma.enrollment_request.findMany({
+        // 2️ Lấy sinh viên đã được duyệt
+        const enrollments = await prisma.enrollment_request.findMany({
             where: {
                 class_id: classId,
                 status: "approved"
             },
             select: {
                 user_enrollment_request_student_idTouser: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true
-                }
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
                 }
             }
-            });
+        });
+
+        const students = enrollments
+            .map(e => e.user_enrollment_request_student_idTouser)
+            .filter(Boolean); // loại null / undefined
 
         // 3️ Lấy session của ca thi
         const sessions = await prisma.exam_session.findMany({
@@ -1035,6 +1040,7 @@ module.exports = {
                 exam_instance_id: examInstanceId
             },
             select: {
+                id: true,
                 user_id: true,
                 state: true,
                 started_at: true,
@@ -1042,42 +1048,52 @@ module.exports = {
             }
         });
 
-        // 4️ Map session theo user_id (O(1))
-        const sessionMap = new Map();
-        sessions.forEach(s => {
-            sessionMap.set(s.user_id, s);
-        });
 
-        // 5️ Phân loại
+        // 4️ Map session theo user_id
+        const sessionMap = new Map();
+        for (const s of sessions) {
+            sessionMap.set(s.user_id, s);
+        }
+
+        // 5️ Phân loại tiến độ
         const result = {
             not_started: [],
             in_progress: [],
             finished: []
         };
 
-        const studentList = students
-            .map(s => s.user_enrollment_request_student_idTouser)
-            .filter(Boolean); // loại null / undefined
+        const now = new Date();
 
-        for (const user of studentList) {
+        for (const user of students) {
             const session = sessionMap.get(user.id);
 
-            if (!session) {
+            // 5.1 Chưa vào phòng thi
+            if (!session || session.state === "pending") {
                 result.not_started.push(user);
-            } else if (session.state === "active") {
+                continue;
+            }
+
+            // 5.2 Đang làm bài (started + còn thời gian)
+            if (
+                session.state === "started" &&
+                (!session.ends_at || now <= session.ends_at)
+            ) {
                 result.in_progress.push({
-                    ...user,
-                    started_at: session.started_at,
-                    ends_at: session.ends_at
-                });
-            } else {
-                result.finished.push({
                     ...user,
                     state: session.state,
                     started_at: session.started_at,
                     ends_at: session.ends_at
                 });
+                continue;
             }
+
+            // 5.3 Đã kết thúc (submitted / expired / locked / started nhưng hết giờ)
+            result.finished.push({
+                ...user,
+                state: session.state,
+                started_at: session.started_at,
+                ends_at: session.ends_at
+            });
         }
 
         return result;
