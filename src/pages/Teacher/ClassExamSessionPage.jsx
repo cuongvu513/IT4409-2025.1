@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import styles from './ClassExamSessionPage.module.scss';
+import ProgressCircle from '../../components/ProgressCircle';
 
 const ClassExamSessionPage = () => {
     const { classId, examInstanceId } = useParams();
@@ -48,6 +49,22 @@ const ClassExamSessionPage = () => {
     const [extraSeconds, setExtraSeconds] = useState(300);
     const [note, setNote] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [selectedSession, setSelectedSession] = useState('');
+
+    // derive unique active sessions from flags (flags include session_id)
+    const sessionOptions = Array.from(
+        flags.reduce((m, f) => {
+            if (!m.has(f.session_id)) {
+                m.set(f.session_id, {
+                    sessionId: f.session_id,
+                    name: f.student?.name || `Phiên ${f.session_id}`,
+                    flagType: f.flag_type,
+                    time: f.created_at,
+                });
+            }
+            return m;
+        }, new Map()).values()
+    );
 
     //API 34
     const handleAddTime = async () => {
@@ -70,25 +87,36 @@ const ClassExamSessionPage = () => {
     };
 
     //API 36+37
-    const handleLockSession = async () => {
+    const handleLockSession = async (sessionId) => {
         if (!window.confirm('Bạn chắc chắn muốn khóa phiên thi?')) return;
 
         try {
-            await teacherService.lockSession(examInstanceId, 'Khóa thủ công');
+            setProcessing(true);
+            await teacherService.lockSession(sessionId, 'Khóa thủ công');
             alert('Đã khóa phiên thi');
+            await fetchAll();
         } catch (err) {
             alert(err.response?.data?.error || 'Không thể khóa');
-        }
-        };
-
-        const handleUnlockSession = async () => {
-        try {
-            await teacherService.unlockSession(examInstanceId, 'Mở lại');
-            alert('Đã mở khóa phiên thi');
-        } catch (err) {
-            alert(err.response?.data?.error || 'Không thể mở khóa');
+        } finally {
+            setProcessing(false);
         }
     };
+
+    const handleUnlockSession = async (sessionId) => {
+        if (!window.confirm('Bạn chắc chắn muốn mở khóa phiên thi?')) return;
+
+        try {
+            setProcessing(true);
+            await teacherService.unlockSession(sessionId, 'Mở lại');
+            alert('Đã mở khóa phiên thi');
+            await fetchAll();
+        } catch (err) {
+            alert(err.response?.data?.error || 'Không thể mở khóa');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
 
 
     return (
@@ -102,144 +130,150 @@ const ClassExamSessionPage = () => {
             <p>Đang tải dữ liệu...</p>
         ) : (
             <>
-            {/* HS đang thi */}
+            <section className={styles.section}>
+                <h3>📊 Tiến độ làm bài</h3>
+
+                <div className={styles.circleGrid}>
+                    <ProgressCircle
+                    title="Chưa bắt đầu"
+                    value={progress.not_started.length}
+                    total={activeStudents.length}
+                    color="#9ca3af"
+                    />
+                    <ProgressCircle
+                    title="Đang làm"
+                    value={progress.in_progress.length}
+                    total={activeStudents.length}
+                    color="#f59e0b"
+                    />
+                    <ProgressCircle
+                    title="Đã nộp"
+                    value={progress.finished.length}
+                    total={activeStudents.length}
+                    color="#10b981"
+                    />
+                </div>
+            </section>
+
             <section className={styles.section}>
                 <h3>👨‍🎓 Học sinh đang thi</h3>
+
                 {activeStudents.length === 0 ? (
-                <p>Không có học sinh nào đang thi</p>
+                    <p>Không có học sinh nào đang thi</p>
                 ) : (
-                <ul>
-                    {activeStudents.map((s) => (
-                    <li key={s.id}>{s.name}</li>
-                    ))}
-                </ul>
+                    <div className={styles.studentList}>
+                    {activeStudents.map((s) => {
+                        const session = sessionOptions.find(
+                        (x) => x.name === s.name
+                        );
+
+                        return (
+                        <div key={s.id} className={styles.studentCard}>
+                            <div className={styles.studentInfo}>
+                            <strong>{s.name}</strong>
+                            <span>Session: {session?.sessionId || '—'}</span>
+                            </div>
+
+                            <div className={styles.studentActions}>
+                            <button
+                                onClick={() => {
+                                setSelectedStudent(s.id);
+                                setExtraSeconds(300);
+                                }}
+                            >
+                                ➕ Cộng giờ
+                            </button>
+
+                            {session && (
+                                <>
+                                <button
+                                    className={styles.lockBtn}
+                                    onClick={() =>
+                                    handleLockSession(session.sessionId)
+                                    }
+                                >
+                                    🔒 Khóa
+                                </button>
+                                </>
+                            )}
+
+                            {selectedStudent && (
+                                <section className={styles.section}>
+                                    <h3>⏱ Cộng thêm thời gian</h3>
+
+                                    <div className={styles.formRow}>
+                                    <input
+                                        type="number"
+                                        min={60}
+                                        step={60}
+                                        value={extraSeconds}
+                                        onChange={(e) => setExtraSeconds(Number(e.target.value))}
+                                    />
+
+                                    <input
+                                        type="text"
+                                        placeholder="Ghi chú"
+                                        value={note}
+                                        onChange={(e) => setNote(e.target.value)}
+                                    />
+
+                                    <button onClick={handleAddTime} disabled={processing}>
+                                        {processing ? '⏳' : '✔ Xác nhận'}
+                                    </button>
+
+                                    <button
+                                        className={styles.cancelBtn}
+                                        onClick={() => setSelectedStudent('')}
+                                    >
+                                        ✖ Hủy
+                                    </button>
+                                    </div>
+                            </section>
+                                )}
+                            </div>
+                        </div>
+                        );
+                    })}
+                    </div>
                 )}
             </section>
-
-            {/* Tiến độ */}
             <section className={styles.section}>
-                <h3>Tiến độ làm bài</h3>
+                <h3>🚩 Phiên thi có dấu hiệu bất thường</h3>
+                {flags.length > 0 && (
+                <section className={styles.section}>
+                    <h3>🚨 Vi phạm</h3>
 
-                <p>Chưa bắt đầu: {progress.not_started.length}</p>
-                <p>Đang làm: {progress.in_progress.length}</p>
-                <p>Đã nộp: {progress.finished.length}</p>
-            </section>
-
-            {/* Vi phạm */}
-            <section className={styles.section}>
-                <h3>Vi phạm</h3>
-                {flags.length === 0 ? (
-                <p>Chưa có vi phạm</p>
-                ) : (
-                <table>
+                    <table>
                     <thead>
-                    <tr>
+                        <tr>
                         <th>Học sinh</th>
                         <th>Loại</th>
                         <th>Thời gian</th>
-                    </tr>
+                        <th></th>
+                        </tr>
                     </thead>
                     <tbody>
-                    {flags.map((f) => (
+                        {flags.map((f) => (
                         <tr key={f.id}>
-                        <td>{f.student.name}</td>
-                        <td>{f.flag_type}</td>
-                        <td>{new Date(f.created_at).toLocaleString()}</td>
+                            <td>{f.student?.name}</td>
+                            <td>{f.flag_type}</td>
+                            <td>{new Date(f.created_at).toLocaleString()}</td>
+                            <td>
+                            <button
+                                onClick={() => handleUnlockSession(f.session_id)}
+                                disabled={processing}
+                            >
+                                🔓 Mở khóa
+                            </button>
+                            </td>
                         </tr>
-                    ))}
+                        ))}
                     </tbody>
-                </table>
+                    </table>
+                </section>
                 )}
+                {flags.length === 0 && <p>Không có phiên thi nào bị đánh dấu.</p>}
             </section>
-            
-            {/* Cong gio */}
-            <section className={styles.section}>
-            <h3>⏱ Cộng thêm thời gian làm bài</h3>
-
-            {activeStudents.length === 0 ? (
-                <p className={styles.emptyText}>
-                ⚠️ Hiện không có học sinh nào đang thi
-                </p>
-            ) : (
-                <>
-                <div className={styles.formGroup}>
-                    <label>Học sinh đang thi</label>
-                    <select
-                    value={selectedStudent}
-                    onChange={(e) => setSelectedStudent(e.target.value)}
-                    >
-                    <option value="">-- Chọn học sinh --</option>
-                    {activeStudents.map((s) => (
-                        <option key={s.id} value={s.id}>
-                        {s.name}
-                        </option>
-                    ))}
-                    </select>
-                </div>
-
-                <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                    <label>Số giây cộng thêm</label>
-                    <input
-                        type="number"
-                        min={60}
-                        step={60}
-                        value={extraSeconds}
-                        onChange={(e) => setExtraSeconds(Number(e.target.value))}
-                        placeholder="VD: 300 = 5 phút"
-                    />
-                    </div>
-
-                    <div className={styles.formGroup}>
-                    <label>Ghi chú</label>
-                    <input
-                        type="text"
-                        value={note}
-                        onChange={(e) => setNote(e.target.value)}
-                        placeholder="Lý do cộng thêm thời gian"
-                    />
-                    </div>
-                </div>
-
-                <button
-                    disabled={processing || !selectedStudent || extraSeconds <= 0}
-                    onClick={handleAddTime}
-                >
-                    {processing ? '⏳ Đang xử lý...' : '➕ Cộng thêm thời gian'}
-                </button>
-                </>
-            )}
-            </section>
-            
-            {/* Khoa + mo khoa phien ti */}
-            <section className={styles.section}>
-                <h3>🔐 Điều khiển phiên thi</h3>
-
-                <div className={styles.controlBox}>
-                    <p className={styles.controlDesc}>
-                    Giáo viên có thể khóa hoặc mở khóa phiên thi của học sinh khi phát hiện vi phạm.
-                    </p>
-
-                    <div className={styles.controlActions}>
-                    <button
-                        className={styles.lockBtn}
-                        onClick={() => handleLockSession()}
-                        disabled={processing}
-                    >
-                        🔒 Khóa phiên thi
-                    </button>
-
-                    <button
-                        className={styles.unlockBtn}
-                        onClick={() => handleUnlockSession()}
-                        disabled={processing}
-                    >
-                        🔓 Mở khóa phiên thi
-                    </button>
-                    </div>
-                </div>
-            </section>
-
             </>
         )}
         </div>
