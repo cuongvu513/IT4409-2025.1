@@ -154,59 +154,90 @@ const ClassExamSessionPage = () => {
             
             {/* Cong gio */}
             <section className={styles.section}>
-                <h3>⏱ Cộng thêm thời gian</h3>
+            <h3>⏱ Cộng thêm thời gian làm bài</h3>
 
-                <select
+            {activeStudents.length === 0 ? (
+                <p className={styles.emptyText}>
+                ⚠️ Hiện không có học sinh nào đang thi
+                </p>
+            ) : (
+                <>
+                <div className={styles.formGroup}>
+                    <label>Học sinh đang thi</label>
+                    <select
                     value={selectedStudent}
                     onChange={(e) => setSelectedStudent(e.target.value)}
-                >
+                    >
                     <option value="">-- Chọn học sinh --</option>
                     {activeStudents.map((s) => (
-                    <option key={s.id} value={s.id}>
+                        <option key={s.id} value={s.id}>
                         {s.name}
-                    </option>
+                        </option>
                     ))}
-                </select>
+                    </select>
+                </div>
 
-                <input
-                    type="number"
-                    value={extraSeconds}
-                    onChange={(e) => setExtraSeconds(Number(e.target.value))}
-                    placeholder="Số giây cộng thêm"
-                />
+                <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                    <label>Số giây cộng thêm</label>
+                    <input
+                        type="number"
+                        min={60}
+                        step={60}
+                        value={extraSeconds}
+                        onChange={(e) => setExtraSeconds(Number(e.target.value))}
+                        placeholder="VD: 300 = 5 phút"
+                    />
+                    </div>
 
-                <input
-                    type="text"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Ghi chú"
-                />
+                    <div className={styles.formGroup}>
+                    <label>Ghi chú</label>
+                    <input
+                        type="text"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="Lý do cộng thêm thời gian"
+                    />
+                    </div>
+                </div>
 
                 <button
-                    disabled={processing || !selectedStudent}
+                    disabled={processing || !selectedStudent || extraSeconds <= 0}
                     onClick={handleAddTime}
                 >
-                    Cộng giờ
+                    {processing ? '⏳ Đang xử lý...' : '➕ Cộng thêm thời gian'}
                 </button>
+                </>
+            )}
             </section>
             
             {/* Khoa + mo khoa phien ti */}
             <section className={styles.section}>
-                <h3>Điều khiển phiên thi</h3>
+                <h3>🔐 Điều khiển phiên thi</h3>
 
-                <button
-                    className={styles.lockBtn}
-                    onClick={() => handleLockSession()}
-                >
-                    Khóa phiên thi
-                </button>
+                <div className={styles.controlBox}>
+                    <p className={styles.controlDesc}>
+                    Giáo viên có thể khóa hoặc mở khóa phiên thi của học sinh khi phát hiện vi phạm.
+                    </p>
 
-                <button
-                    className={styles.unlockBtn}
-                    onClick={() => handleUnlockSession()}
-                >
-                    Mở khóa phiên thi
-                </button>
+                    <div className={styles.controlActions}>
+                    <button
+                        className={styles.lockBtn}
+                        onClick={() => handleLockSession()}
+                        disabled={processing}
+                    >
+                        🔒 Khóa phiên thi
+                    </button>
+
+                    <button
+                        className={styles.unlockBtn}
+                        onClick={() => handleUnlockSession()}
+                        disabled={processing}
+                    >
+                        🔓 Mở khóa phiên thi
+                    </button>
+                    </div>
+                </div>
             </section>
 
             </>
