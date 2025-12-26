@@ -1013,18 +1013,21 @@ module.exports = {
         }
 
         // 2️ Lấy toàn bộ sinh viên của lớp
-        const students = await prisma.class_student.findMany({
-            where: { class_id: classId },
+        const students = await prisma.enrollment_request.findMany({
+            where: {
+                class_id: classId,
+                status: "approved"
+            },
             select: {
-                user: {
-                    select: {
-                        id: true,
-                        full_name: true,
-                        email: true
-                    }
+                user_enrollment_request_student_idTouser: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true
+                }
                 }
             }
-        });
+            });
 
         // 3️ Lấy session của ca thi
         const sessions = await prisma.exam_session.findMany({
@@ -1052,8 +1055,11 @@ module.exports = {
             finished: []
         };
 
-        for (const s of students) {
-            const user = s.user;
+        const studentList = students
+            .map(s => s.user_enrollment_request_student_idTouser)
+            .filter(Boolean); // loại null / undefined
+
+        for (const user of studentList) {
             const session = sessionMap.get(user.id);
 
             if (!session) {
@@ -1208,7 +1214,44 @@ module.exports = {
             },
             recentActivities
         };
-    }
+    },
+
+    // // thông báo thông tin cho sinh viên
+    // async notifyStudentsInClass(teacherId, classId, notificationData) {
+    //     // 1) Kiểm tra quyền lớp học
+    //     const klass = await prisma.Renamedclass.findFirst({
+    //         where: {
+    //             id: classId,
+    //             teacher_id: teacherId
+    //         },
+    //         select: { id: true }
+    //     });
+    //     if (!klass) {
+    //         const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+    //         err.status = 403;
+    //         throw err;
+    //     }
+    //     // 2) Lấy danh sách học sinh đã được duyệt trong lớp
+    //     const students = await prisma.enrollment_request.findMany({
+    //         where: {
+    //             class_id: classId,
+    //             status: "approved"
+    //         },
+    //         select: {
+    //             user_enrollment_request_student_idTouser: {
+    //                 select: { id: true, name: true, email: true }
+    //             }
+    //         }
+    //     });
+    //     // 3) Gửi thông báo (giả sử có hàm sendNotification)
+    //     const notifications = [];
+    //     for (const s of students) {
+    //         const user = s.user_enrollment_request_student_idTouser;
+    //         const notification = await sendNotification(user.id, notificationData);
+    //         notifications.push(notification);
+    //     }
+    //     return notifications;
+    // }
 
 };
 

@@ -614,7 +614,7 @@ module.exports = {
         try {
             const teacherId = req.user.id;
             const classId = req.params.classId;
-            const examInstanceId = req.params.instanceId;
+            const examInstanceId = req.params.examInstanceId;
             const progress = await teacherService.getExamProgressByClass(teacherId, classId, examInstanceId);
             res.json(progress);
         } catch (error) {
