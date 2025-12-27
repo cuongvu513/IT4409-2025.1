@@ -194,14 +194,16 @@
 
 .choiceRow {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     margin-bottom: 10px;
 
-    input[type="radio"] {
+    input[type="radio"],
+    input[type="checkbox"] {
         width: 20px;
         height: 20px;
         cursor: pointer;
+        margin-top: 10px;
     }
 
     input[type="text"] {
@@ -213,6 +215,74 @@
     border-color: $success-color !important;
     background-color: #f0fff4;
     font-weight: 500;
+}
+
+// Preview boxes for LaTeX
+.previewBox {
+    margin-top: 10px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 0.95rem;
+
+    strong {
+        display: block;
+        margin-bottom: 8px;
+        color: #495057;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+}
+
+.choicePreview {
+    margin-top: 6px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-left: 3px solid #dee2e6;
+    font-size: 0.9rem;
+}
+
+.removeChoiceBtn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+
+    &:hover {
+        background-color: #c82333;
+        transform: scale(1.1);
+    }
+}
+
+.addChoiceBtn {
+    margin-top: 10px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &:hover {
+        background-color: #218838;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
 }
 
 .modalActions {

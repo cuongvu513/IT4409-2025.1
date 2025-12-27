@@ -10,8 +10,8 @@ $error-color: #e74c3c;
 $success-color: #2ecc71;
 
 .registerContainer {
-    //  Cấu hình ảnh nền
-    background-image: url('../../assets/images/background-log-in.jpg');
+    //  Cấu hình nền gradient
+    background: linear-gradient(180deg, #E3F2FD, #90CAF9);
     background-size: cover; // Ảnh phủ kín khung
     background-position: center; // Căn giữa ảnh
     background-repeat: no-repeat; // Không lặp lại ảnh
