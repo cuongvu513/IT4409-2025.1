@@ -550,11 +550,6 @@ module.exports = {
                     err.status = 400;
                     throw err;
                 }
-                if (startDate <= new Date()) {
-                    const err = new Error("Thời gian bắt đầu phải là tương lai");
-                    err.status = 400;
-                    throw err;
-                }
             }
             else if (updateData.starts_at) {
                 const startDate = new Date(updateData.starts_at);
