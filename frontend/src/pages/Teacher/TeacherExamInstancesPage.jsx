@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
+import MathRenderer from '../../components/MathRenderer';
 import styles from './TeacherExamInstancesPage.module.scss';
 
 const TeacherExamInstancesPage = () => {
@@ -21,6 +22,10 @@ const TeacherExamInstancesPage = () => {
 
     // Modal Xem chi tiết
     const [viewExam, setViewExam] = useState(null);
+
+    // Search state2
+    const [searchTerm, setSearchTerm] = useState('');
+    const [difficultyFilter, setDifficultyFilter] = useState('all');
 
     const initialForm = {
         starts_at: '',
@@ -72,6 +77,17 @@ const TeacherExamInstancesPage = () => {
             else return { ...prev, selectedQuestionIds: [...current, qId] };
         });
     };
+
+    // Filter questions based on search and difficulty
+    const filteredQuestions = questions.filter(q => {
+        const matchesSearch = searchTerm === '' || 
+            q.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (q.tags && q.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+        
+        const matchesDifficulty = difficultyFilter === 'all' || q.difficulty === difficultyFilter;
+        
+        return matchesSearch && matchesDifficulty;
+    });
 
     // --- CÁC HÀM XỬ LÝ ---
     const openCreateModal = () => {
@@ -268,9 +284,31 @@ const TeacherExamInstancesPage = () => {
 
                             <div className={styles.questionSection}>
                                 <h4>Chọn câu hỏi ({formData.selectedQuestionIds.length})</h4>
+                                
+                                <div className={styles.filterRow}>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Tìm kiếm câu hỏi theo nội dung hoặc tags..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className={styles.searchInput}
+                                    />
+                                    <select 
+                                        value={difficultyFilter}
+                                        onChange={(e) => setDifficultyFilter(e.target.value)}
+                                        className={styles.difficultyFilter}
+                                    >
+                                        <option value="all">Tất cả độ khó</option>
+                                        <option value="easy">Dễ</option>
+                                        <option value="medium">Trung bình</option>
+                                        <option value="hard">Khó</option>
+                                    </select>
+                                </div>
+
                                 <div className={styles.questionList}>
                                     {questions.length === 0 ? <p>Ngân hàng câu hỏi trống.</p> :
-                                        questions.map(q => (
+                                        filteredQuestions.length === 0 ? <p>Không tìm thấy câu hỏi phù hợp.</p> :
+                                        filteredQuestions.map(q => (
                                             <div key={q.id} className={styles.qItem}>
                                                 <input
                                                     type="checkbox"
@@ -280,7 +318,7 @@ const TeacherExamInstancesPage = () => {
                                                 />
                                                 <label htmlFor={`q-${q.id}`}>
                                                     <span className={`${styles.badge} ${styles.gray}`}>{q.difficulty}</span>
-                                                    {q.text}
+                                                    <MathRenderer text={q.text} />
                                                 </label>
                                             </div>
                                         ))}
