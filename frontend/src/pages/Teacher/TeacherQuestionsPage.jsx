@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import teacherService from '../../services/teacherService';
 import MathRenderer from '../../components/MathRenderer';
+import Pagination from '../../components/Pagination';
 import styles from './TeacherQuestionsPage.module.scss';
 
 const TeacherQuestionsPage = () => {
     // State data
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     // State Modal & Form
     const [showModal, setShowModal] = useState(false);
@@ -180,12 +185,15 @@ const TeacherQuestionsPage = () => {
             {loading ? (
                 <p style={{ textAlign: 'center', marginTop: '30px' }}>Đang tải dữ liệu...</p>
             ) : (
-                <div className={styles.questionList}>
-                    {questions.map((q, i) => (
+                <>
+                    <div className={styles.questionList}>
+                        {questions
+                            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                            .map((q, i) => (
                         <div key={q.id} className={styles.questionCard}>
                             <div className={styles.qHeader}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span className={styles.qIndex}>Câu {i + 1}</span>
+                                    <span className={styles.qIndex}>Câu {(currentPage - 1) * itemsPerPage + i + 1}</span>
                                     <span className={`${styles.badge} ${styles[q.difficulty]}`}>{q.difficulty}</span>
                                 </div>
 
@@ -223,7 +231,17 @@ const TeacherQuestionsPage = () => {
                             </div>
                         </div>
                     ))}
-                </div>
+                    </div>
+                    
+                    {/* Pagination */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={Math.ceil(questions.length / itemsPerPage)}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={questions.length}
+                    />
+                </>
             )}
 
             {/* --- MODAL TẠO/SỬA --- */}
