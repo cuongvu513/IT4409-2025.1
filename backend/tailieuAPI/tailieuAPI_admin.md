@@ -625,7 +625,7 @@ ID,Email,Họ tên,Trạng thái,Lớp học,Ngày tạo,Đăng nhập gần nh�
 
 **Cấu trúc CSV:**
 ```
-Mã sinh viên,Email,Họ tên,Trạng thái,Điểm,Điểm tối đa,Phần trăm,Kết quả,Thời gian bắt đầu,Thời gian nộp bài,Thời gian chấm
+ID,Email,Họ tên,Trạng thái,Điểm,Điểm tối đa,Phần trăm,Kết quả,Thời gian bắt đầu,Thời gian nộp bài,Thời gian chấm
 "uuid","student@example.com","Nguyễn Văn A","submitted","8.50","10.00","85.00%","Đạt","2025-12-27T09:00:00Z","2025-12-27T10:30:00Z","2025-12-27T10:31:00Z"
 ```
 
@@ -662,8 +662,11 @@ Mã sinh viên,Email,Họ tên,Trạng thái,Điểm,Điểm tối đa,Phần tr
 **Cấu trúc CSV:**
 ```
 Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi tiết
-"2025-12-27T09:00:00Z","EXAM_START","Nguyễn Văn A","student@example.com","session-uuid","192.168.1.100","Mozilla/5.0...","{"action":"started"}"
-"2025-12-27T09:30:00Z","TAB_SWITCH","Nguyễn Văn A","student@example.com","session-uuid","192.168.1.100","Mozilla/5.0...","{"count":1}"
+"2025-12-27T05:51:15.111Z","EXAM_START","student11","student1@gmail.com","086ada2f-6640-433a-91e5-408172e8ffc8","::ffff:172.31.80.1","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","""Học sinh bắt đầu làm bài thi 154a437d-8d11-4c23-b1bf-8b42e55f344d"""
+"2025-12-27T05:51:26.713Z","TAB_SWITCH","student11","student1@gmail.com","086ada2f-6640-433a-91e5-408172e8ffc8","::ffff:172.31.80.1","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","""Người dùng đã chuyển tab hoặc mất focus cửa sổ lần thứ 1"""
+"2025-12-27T05:51:45.142Z","TAB_SWITCH","student11","student1@gmail.com","086ada2f-6640-433a-91e5-408172e8ffc8","::ffff:172.31.80.1","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","""Người dùng đã chuyển tab hoặc mất focus cửa sổ lần thứ 0"""
+"2025-12-27T05:51:45.527Z","TAB_SWITCH","student11","student1@gmail.com","086ada2f-6640-433a-91e5-408172e8ffc8","::ffff:172.31.80.1","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","""Người dùng đã chuyển tab hoặc mất focus cửa sổ lần thứ 2"""
+"2025-12-27T05:52:00.762Z","ANSWER_SUBMIT","student11","student1@gmail.com","086ada2f-6640-433a-91e5-408172e8ffc8","N/A","","""Học sinh trả lời câu hỏi 5dceff08-479a-45f4-b4e7-b9a22450d1d8 với lựa chọn [\""d25da15f-06fc-48b5-a39b-6eef61d3e965\""]"""
 ```
 
 **Loại sự kiện thường gặp:**

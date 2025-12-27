@@ -633,5 +633,68 @@ module.exports = {
             err.status = 400;
             next(err);
         }
+    },
+
+    /**
+     * GET /teacher/export/students/:classId
+     * Xuất danh sách học sinh trong lớp ra CSV
+     */
+    async exportStudents(req, res, next) {
+        try {
+            const { classId } = req.params;
+            const teacherId = req.user.id;
+            const csv = await teacherService.exportStudentList(classId, teacherId);
+
+            // Set headers cho file CSV
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="danh-sach-hoc-sinh-${classId}-${Date.now()}.csv"`);
+
+            // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+            res.send('\uFEFF' + csv);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    /**
+     * GET /teacher/export/results/:examId
+     * Xuất kết quả thi ra CSV
+     */
+    async exportResults(req, res, next) {
+        try {
+            const { examId } = req.params;
+            const teacherId = req.user.id;
+            const csv = await teacherService.exportExamResults(examId, teacherId);
+
+            // Set headers cho file CSV
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="ket-qua-thi-${examId}-${Date.now()}.csv"`);
+
+            // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+            res.send('\uFEFF' + csv);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    /**
+     * GET /teacher/export/logs/:examId
+     * Xuất nhật ký thi ra CSV
+     */
+    async exportLogs(req, res, next) {
+        try {
+            const { examId } = req.params;
+            const teacherId = req.user.id;
+            const csv = await teacherService.exportExamLogs(examId, teacherId);
+
+            // Set headers cho file CSV
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="nhat-ky-thi-${examId}-${Date.now()}.csv"`);
+
+            // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+            res.send('\uFEFF' + csv);
+        } catch (err) {
+            next(err);
+        }
     }
 };
