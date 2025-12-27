@@ -625,9 +625,11 @@ module.exports = {
         return;
     },
 
+
     // lấy dashboard của sinh viên
     async getStudentDashboard(studentId) {
-        // kiểm tra sinh viên tồn tại
+
+        // 1️ Kiểm tra sinh viên tồn tại
         const student = await userService.getUserById(studentId);
         if (!student) {
             const err = new Error("Sinh viên không tồn tại");
@@ -635,58 +637,57 @@ module.exports = {
             throw err;
         }
 
-        // Lấy danh sách lớp đã tham gia
+        // 2️ Lấy danh sách lớp đã tham gia
         const classes = await prisma.enrollment_request.findMany({
             where: { student_id: studentId, status: "approved" },
             include: { Renamedclass: true },
         });
-        const classList = classes.map((enrollment) => enrollment.Renamedclass);
 
+        const classList = classes.map(e => e.Renamedclass);
+        const classIds = classList.map(c => c.id);
 
         const now = new Date();
-        // Lấy danh sách submission đã hoàn thành
+
+        // 3️ Lấy submission đã hoàn thành
         const submissions = await prisma.submission.findMany({
             where: {
                 exam_session: {
-                user_id: studentId,
-                exam_instance: {
-                    published: true,
+                    user_id: studentId,
+                    exam_instance: {
+                        published: true,
+                    },
                 },
-                },
-                graded_at: { not: null }, // chỉ lấy bài đã chấm
+                graded_at: { not: null },
             },
-                select: {
-                    score: true,
-                    max_score: true,
-                },
+            select: {
+                score: true,
+                max_score: true,
+            },
         });
 
         let avgScore = 0;
-
         if (submissions.length > 0) {
-        const normalizedScores = submissions.map(s =>
-            s.max_score > 0 ? (Number(s.score) / Number(s.max_score)) * 10 : 0
-        );
-
-        avgScore =
-            normalizedScores.reduce((sum, v) => sum + v, 0) /
-            normalizedScores.length;
+            const normalizedScores = submissions.map(s =>
+                s.max_score > 0 ? (Number(s.score) / Number(s.max_score)) * 10 : 0
+            );
+            avgScore =
+                normalizedScores.reduce((sum, v) => sum + v, 0) /
+                normalizedScores.length;
         }
         avgScore = Number(avgScore.toFixed(2));
 
-
-        // lấy số lượng kỳ thi sắp tới
+        // 4️ Số kỳ thi sắp tới
         const upcomingCount = await prisma.exam_instance.count({
             where: {
                 published: true,
                 starts_at: { gt: now },
                 exam_template: {
-                    class_id: { in: classList.map((c) => c.id) },
+                    class_id: { in: classIds },
                 },
             },
         });
 
-        // lấy số lượng kỳ thi đã hoàn thành
+        // 5️ Số kỳ thi đã hoàn thành
         const completedCount = await prisma.submission.count({
             where: {
                 exam_session: {
@@ -698,11 +699,59 @@ module.exports = {
             },
         });
 
+        // 6️ bài thi đã mở nhưng chưa thi
+        const notAttemptedExams = await prisma.exam_instance.findMany({
+            where: {
+                published: true,
+                exam_template: {
+                    class_id: {
+                        in: classList.map(c => c.id),
+                    },
+                },
+                exam_session: {
+                    none: {
+                        user_id: studentId,
+                    },
+                },
+            },
+            select: {
+                id: true,
+                starts_at: true,
+                ends_at: true,
+                exam_template: {
+                    select: {
+                        id: true,
+                        title: true,
+                        duration_seconds: true,
+                        class_id: true,
+                    },
+                },
+            },
+        });
+
+        const notAttempted = notAttemptedExams.map(e => ({
+            examInstanceId: e.id,
+            title: e.exam_template.title,
+            durationMinutes: Math.ceil(e.exam_template.duration_seconds / 60),
+            starts_at: e.starts_at,
+            ends_at: e.ends_at,
+            class_id: e.exam_template.class_id,
+        }));
+
+
+        const notAttemptedCount = notAttempted.length;
+
+
+
         return {
             classes: classList,
             averageScore: avgScore,
             upcomingCount,
             completedCount,
+            notAttemptedCount,
+            notAttemptedExams: notAttempted,
         };
+
     }
+
 };
