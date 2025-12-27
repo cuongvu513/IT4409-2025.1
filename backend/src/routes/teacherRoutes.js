@@ -43,6 +43,11 @@ router.get("/classes/:classId/exam-instances/:examInstanceId/progress", teacherC
 
 router.get("/dashboard", teacherController.getDashboard); // Lấy thông tin dashboard của giáo viên
 
+// ==================== XUẤT BÁO CÁO ====================
+router.get("/export/students/:classId", teacherController.exportStudents); // Xuất danh sách học sinh trong lớp CSV
+router.get("/export/results/:examId", teacherController.exportResults); // Xuất kết quả thi CSV
+router.get("/export/logs/:examId", teacherController.exportLogs); // Xuất nhật ký thi CSV
+
 
 
 module.exports = router;

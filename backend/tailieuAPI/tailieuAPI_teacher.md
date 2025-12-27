@@ -1250,27 +1250,52 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ## Endpoint 35 — Danh sách vi phạm của học sinh trong lớp (Dành cho giáo viên)
 
-**GET `/api/teacher/classes/:classId/flags`**
+**GET `/api/teacher/classes/:examID/flags`**
 
 - **Mô tả:** Trả về các record trong `session_flag` thuộc lớp do giáo viên sở hữu.
 - **HTTP:** GET
-- **URL:** `/api/teacher/classes/:classId/flags`
+- **URL:** `/api/teacher/classes/:examID/flags`
 - **Headers:** `Authorization: Bearer <access_token>`
 
 - **Response body:**
 
 ```json
-[
-    {
-        "id": "a1b2...",
-        "flag_type": "focus_lost_threshold",
-        "details": { "count": 6, "threshold": 5 },
-        "created_at": "2025-12-23T05:00:00Z",
-        "session_id": "sess-123",
-        "exam_instance_id": "inst-123",
-        "exam_template": { "id": "tpl-1", "title": "Giữa kỳ Toán" },
-        "student": { "id": "u-1", "name": "Nguyễn Văn A", "email": "a@example.com" },
-        "flagged_by": { "id": "t-1", "name": "GV", "email": "gv@example.com" }
+[{
+        "id": "604920e8-6fc0-4a76-a9c0-b97f8c4193cc",
+        "flag_type": "ua_mismatch",
+        "details": "Phát hiện User-Agent không khớp",
+        "created_at": "2025-12-27T05:49:54.984Z",
+        "session_id": "42e3d31c-b1d7-4007-bc4f-7dd8a542bebd",
+        "exam_instance_id": "f9c7e7c0-5636-4c8c-8947-5645e28a9cb7",
+        "exam_template": {
+            "id": "196e5932-28c5-40da-b254-bba8668bcc18",
+            "title": "Đề thi Kiểm tra",
+            "class_id": "1864fd85-bf81-4e26-828b-1dcf2b57cc6a"
+        },
+        "student": {
+            "id": "5d0ca9ae-d6f4-4633-8ca6-d41cf548d8fd",
+            "name": "student11",
+            "email": "student1@gmail.com"
+        },
+        "flagged_by": null
+    }, {
+        "id": "d25cfc35-176f-40e6-9e9f-9411231407b3",
+        "flag_type": "ua_mismatch",
+        "details": "Phát hiện User-Agent không khớp",
+        "created_at": "2025-12-27T05:49:24.989Z",
+        "session_id": "42e3d31c-b1d7-4007-bc4f-7dd8a542bebd",
+        "exam_instance_id": "f9c7e7c0-5636-4c8c-8947-5645e28a9cb7",
+        "exam_template": {
+            "id": "196e5932-28c5-40da-b254-bba8668bcc18",
+            "title": "Đề thi Kiểm tra",
+            "class_id": "1864fd85-bf81-4e26-828b-1dcf2b57cc6a"
+        },
+        "student": {
+            "id": "5d0ca9ae-d6f4-4633-8ca6-d41cf548d8fd",
+            "name": "student11",
+            "email": "student1@gmail.com"
+        },
+        "flagged_by": null
     }
 ]
 ```
@@ -1492,3 +1517,126 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 - **400** Lấy thông tin dashboard thất bại
 
+---
+
+## Endpoint 40 - Xuất danh sách học sinh trong lớp (CSV)
+
+**GET `/api/teacher/export/students/:classId`**
+
+- **Mô tả: Xuất danh sách học sinh trong lớp học ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/teacher/export/students/:classId`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `classId`: ID của lớp học cần xuất danh sách
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `danh-sach-hoc-sinh-{classId}-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+ID,Email,Họ tên,Trạng thái,Ngày tham gia lớp,Ngày tạo tài khoản,Đăng nhập gần nhất
+"uuid","student@example.com","Nguyễn Văn A","Hoạt động","2025-09-01T00:00:00Z","2025-08-15T00:00:00Z","2025-12-27T10:30:00Z"
+```
+
+- **404 Not Found** (lớp học không tồn tại hoặc không có quyền)
+
+```json
+{
+  "error": "Không tìm thấy lớp học hoặc bạn không có quyền truy cập"
+}
+```
+
+---
+
+## Endpoint 41 - Xuất kết quả thi (CSV)
+
+**GET `/api/teacher/export/results/:examId`**
+
+- **Mô tả: Xuất kết quả thi của một kỳ thi ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/teacher/export/results/:examId`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `examId`: ID của kỳ thi cần xuất kết quả
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `ket-qua-thi-{examId}-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+ID,Email,Họ tên,Trạng thái,Điểm,Điểm tối đa,Phần trăm,Kết quả,Thời gian bắt đầu,Thời gian nộp bài,Thời gian chấm
+"uuid","student@example.com","Nguyễn Văn A","submitted","8.50","10.00","85.00%","Đạt","2025-12-27T09:00:00Z","2025-12-27T10:30:00Z","2025-12-27T10:31:00Z"
+```
+
+**Giải thích:**
+- `Trạng thái`: pending, started, submitted, expired, locked
+- `Phần trăm`: Tỷ lệ phần trăm điểm đạt được
+- `Kết quả`: "Đạt" hoặc "Không đạt" dựa trên điểm chuẩn
+
+- **403 Forbidden** (không có quyền truy cập kỳ thi)
+
+```json
+{
+  "error": "Bạn không có quyền truy cập kỳ thi này"
+}
+```
+
+- **404 Not Found** (kỳ thi không tồn tại)
+
+```json
+{
+  "error": "Không tìm thấy kỳ thi"
+}
+```
+
+---
+
+## Endpoint 42 - Xuất nhật ký thi (CSV)
+
+**GET `/api/teacher/export/logs/:examId`**
+
+- **Mô tả: Xuất nhật ký hoạt động của một kỳ thi ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/teacher/export/logs/:examId`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `examId`: ID của kỳ thi cần xuất nhật ký
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `nhat-ky-thi-{examId}-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi tiết
+"2025-12-27T09:00:00Z","EXAM_START","Nguyễn Văn A","student@example.com","session-uuid","192.168.1.100","Mozilla/5.0...","{"action":"started"}"
+"2025-12-27T09:30:00Z","TAB_SWITCH","Nguyễn Văn A","student@example.com","session-uuid","192.168.1.100","Mozilla/5.0...","{"count":1}"
+```
+
+**Loại sự kiện thường gặp:**
+- `EXAM_START`: Bắt đầu làm bài
+- `EXAM_SUBMIT`: Nộp bài
+- `TAB_SWITCH`: Chuyển tab
+- `HEARTBEAT`: Tín hiệu định kỳ
+- `ANSWER_SAVE`: Lưu câu trả lời
+
+- **403 Forbidden** (không có quyền truy cập kỳ thi)
+
+```json
+{
+  "error": "Bạn không có quyền truy cập kỳ thi này"
+}
+```
+
+- **404 Not Found** (kỳ thi không tồn tại)
+
+```json
+{
+  "error": "Không tìm thấy kỳ thi"
+}
+```
+
+---
