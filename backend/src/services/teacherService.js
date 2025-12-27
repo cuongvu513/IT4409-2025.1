@@ -1560,8 +1560,30 @@ module.exports = {
         });
 
         return result;
-    }
+    },
 
+
+    // lấy danh sách template đề thi theo lớp học
+    async getExamTemplatesByClass(teacherId, classId) {
+        const klass = await prisma.Renamedclass.findFirst({
+            where: {
+                id: classId,
+                teacher_id: teacherId
+            },
+            select: { id: true }
+        });
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        const templates = await prisma.exam_template.findMany({
+            where: { class_id: classId },
+            orderBy: { created_at: "desc" }
+        });
+        return templates;
+    }
 
 };
 
