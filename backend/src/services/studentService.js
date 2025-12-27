@@ -158,6 +158,7 @@ module.exports = {
             throw err;
         }
 
+
         // Nếu đã có session trước đó
         const existingSession = await prisma.exam_session.findFirst({
             where: { exam_instance_id: examInstanceId, user_id: studentId },
@@ -227,6 +228,16 @@ module.exports = {
                 ends_at: sessionEndsAt,
                 ip_binding: clientMeta.ip || null,
                 ua_hash: uaHash || null,
+            },
+        });
+        await prisma.audit_log.create({
+            data: {
+                event_type: "EXAM_START",
+                exam_session_id: created.id,
+                user_id: studentId,
+                payload: `Học sinh bắt đầu làm bài thi ${examInstanceId}`,
+                source_ip: clientMeta.ip || null,
+                user_agent: clientMeta.userAgent || null,
             },
         });
 
@@ -339,12 +350,7 @@ module.exports = {
             err.status = 404;
             throw err;
         }
-        const examInstance = await prisma.exam_instance.findMany({ where: { id: session.exam_instance_id } });
-        if (!examInstance.published){
-            const err = new Error("Đề thi đã bị hủy hoặc tạm dừng");
-            err.status = 500;
-            throw err;
-        }
+
 
         if (session.user_id !== studentId) {
             const err = new Error("Bạn không có quyền truy cập phiên này");
@@ -408,6 +414,16 @@ module.exports = {
                 answered_at: now,
             },
         });
+        await prisma.audit_log.create({
+            data: {
+                event_type: "ANSWER_SUBMIT",
+                exam_session_id: sessionId,
+                user_id: studentId,
+                payload: `Học sinh trả lời câu hỏi ${questionId} với lựa chọn ${JSON.stringify(uniqueIds)}`,
+                source_ip: null,
+                user_agent: null,
+            },
+        });
 
         return { question_id: answered.question_id, choice_ids: answered.selected_choice_ids };
     },
@@ -436,7 +452,7 @@ module.exports = {
 
         // đếm mất focus
         const focusLost = !!payload.focusLost;
-        const threshold = Number(process.env.EXAM_FOCUS_LOST_THRESHOLD || 100000000000000000000000000000000000000000000);
+        const threshold = Number(process.env.EXAM_FOCUS_LOST_THRESHOLD || 100000);
         let locked = false;
         if (focusLost) {
             updates.focus_lost_count = session.focus_lost_count + 1;
@@ -457,10 +473,10 @@ module.exports = {
         // audit log
         await prisma.audit_log.create({
             data: {
-                event_type: "heartbeat",
+                event_type: "TAB_SWITCH",
                 exam_session_id: sessionId,
                 user_id: studentId,
-                payload: { focusLost },
+                payload: "Người dùng đã chuyển tab hoặc mất focus cửa sổ lần thứ " + (focusLost ? updates.focus_lost_count : 0),
                 source_ip: payload.ip || null,
                 user_agent: payload.userAgent || null,
             },
@@ -570,6 +586,16 @@ module.exports = {
                 graded_at: new Date(),
                 graded_by: null, // auto-graded
                 details: details,
+            },
+        });
+        await prisma.audit_log.create({
+            data: {
+                event_type: "EXAM_SUBMIT",
+                exam_session_id: sessionId,
+                user_id: studentId,
+                payload: `Học sinh nộp bài thi cho phiên ${sessionId}`,
+                source_ip: null,
+                user_agent: null,
             },
         });
 

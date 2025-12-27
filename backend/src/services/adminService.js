@@ -792,4 +792,282 @@ module.exports = {
     };
   },
 
+  /**
+   * Lấy thống kê dashboard tổng quan
+   * @returns {Promise<Object>} Thống kê dashboard
+   */
+  async getDashboardStats() {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsers,
+      totalClasses,
+      totalExams,
+      todaySubmissions,
+      activeExams,
+      upcomingExams
+    ] = await Promise.all([
+      // Tổng số người dùng
+      prisma.user.count(),
+      
+      // Tổng số lớp học
+      prisma.Renamedclass.count(),
+      
+      // Tổng số kỳ thi
+      prisma.exam_instance.count(),
+      
+      // Số bài thi đã nộp hôm nay
+      prisma.submission.count({
+        where: {
+          created_at: {
+            gte: todayStart,
+            lt: todayEnd
+          }
+        }
+      }),
+      
+      // Số kỳ thi đang diễn ra
+      prisma.exam_instance.count({
+        where: {
+          published: true,
+          starts_at: { lte: now },
+          ends_at: { gte: now }
+        }
+      }),
+      
+      // Số kỳ thi sắp diễn ra (trong 7 ngày tới)
+      prisma.exam_instance.count({
+        where: {
+          published: true,
+          starts_at: {
+            gt: now,
+            lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+          }
+        }
+      })
+    ]);
+
+    return {
+      users: {
+        total: totalUsers
+      },
+      classes: {
+        total: totalClasses
+      },
+      exams: {
+        total: totalExams,
+        active: activeExams,
+        upcoming: upcomingExams
+      },
+      submissions: {
+        today: todaySubmissions
+      }
+    };
+  },
+
+  /**
+   * Xuất danh sách học sinh ra CSV
+   * @param {Object} filters - Bộ lọc
+   * @returns {Promise<String>} CSV string
+   */
+  async exportStudentList(filters = {}) {
+    const { classId, status } = filters;
+    
+    let where = {
+      auth_role: {
+        name: 'student'
+      }
+    };
+    
+    if (status === 'active') {
+      where.is_active = true;
+    } else if (status === 'locked') {
+      where.is_active = false;
+    }
+
+    // Nếu có classId, filter students theo enrollment_request
+    if (classId) {
+      where.enrollment_request_enrollment_request_student_idTouser = {
+        some: {
+          class_id: classId,
+          status: 'approved'
+        }
+      };
+    }
+    
+    const students = await prisma.user.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        is_active: true,
+        created_at: true,
+        last_login_at: true,
+        enrollment_request_enrollment_request_student_idTouser: {
+          where: {
+            status: 'approved'
+          },
+          select: {
+            Renamedclass: {
+              select: {
+                name: true,
+                code: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    // Tạo CSV header
+    let csv = 'ID,Email,Họ tên,Trạng thái,Lớp học,Ngày tạo,Đăng nhập gần nhất\n';
+    
+    // Thêm dữ liệu
+    students.forEach(student => {
+      const classes = student.enrollment_request_enrollment_request_student_idTouser
+        .map(e => `${e.Renamedclass.name} (${e.Renamedclass.code})`)
+        .join('; ');
+      
+      csv += `"${student.id}","${student.email}","${student.name}","${student.is_active ? 'Hoạt động' : 'Bị khóa'}","${classes}","${student.created_at.toISOString()}","${student.last_login_at ? student.last_login_at.toISOString() : 'Chưa đăng nhập'}"\n`;
+    });
+    
+    return csv;
+  },
+
+  /**
+   * Xuất kết quả thi ra CSV
+   * @param {string} examInstanceId - ID kỳ thi
+   * @returns {Promise<String>} CSV string
+   */
+  async exportExamResults(examInstanceId) {
+    const exam = await prisma.exam_instance.findUnique({
+      where: { id: examInstanceId },
+      select: {
+        id: true,
+        starts_at: true,
+        ends_at: true,
+        exam_template: {
+          select: {
+            title: true,
+            duration_seconds: true,
+            passing_score: true,
+            Renamedclass: {
+              select: {
+                name: true,
+                code: true
+              }
+            }
+          }
+        },
+        exam_session: {
+          select: {
+            id: true,
+            state: true,
+            started_at: true,
+            ends_at: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            },
+            submission: {
+              select: {
+                score: true,
+                max_score: true,
+                graded_at: true,
+                created_at: true
+              }
+            }
+          },
+          orderBy: {
+            created_at: 'desc'
+          }
+        }
+      }
+    });
+    
+    if (!exam) {
+      const err = new Error("Không tìm thấy kỳ thi");
+      err.status = 404;
+      throw err;
+    }
+    
+    // Tạo CSV header
+    let csv = 'ID,Email,Họ tên,Trạng thái,Điểm,Điểm tối đa,Phần trăm,Kết quả,Thời gian bắt đầu,Thời gian nộp bài,Thời gian chấm\n';
+    
+    // Thêm dữ liệu
+    exam.exam_session.forEach(session => {
+      const submission = session.submission[0];
+      const score = submission?.score || 0;
+      const maxScore = submission?.max_score || 0;
+      const percentage = maxScore > 0 ? ((score / maxScore) * 100).toFixed(2) : 0;
+      const passingScore = exam.exam_template.passing_score || 0;
+      const percent = Number(percentage);
+      const pass = Number(passingScore);
+      const passed = percent >= pass ? "Đạt" : "Không đạt"
+
+      csv += `"${session.user.id}","${session.user.email}","${session.user.name}","${session.state}","${score}","${maxScore}","${percentage}%","${passed}","${session.started_at ? session.started_at.toISOString() : 'Chưa bắt đầu'}","${submission?.created_at ? submission.created_at.toISOString() : 'Chưa nộp'}","${submission?.graded_at ? submission.graded_at.toISOString() : 'Chưa chấm'}"\n`;
+    });
+    
+    return csv;
+  },
+
+  /**
+   * Xuất nhật ký thi ra CSV
+   * @param {string} examInstanceId - ID kỳ thi
+   * @returns {Promise<String>} CSV string
+   */
+  async exportExamLogs(examInstanceId) {
+    const logs = await prisma.audit_log.findMany({
+      where: {
+        exam_session: {
+          exam_instance_id: examInstanceId
+        }
+      },
+      orderBy: {
+        created_at: 'asc'
+      },
+      select: {
+        id: true,
+        event_type: true,
+        created_at: true,
+        source_ip: true,
+        user_agent: true,
+        payload: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        },
+        exam_session: {
+          select: {
+            id: true,
+            token: true
+          }
+        }
+      }
+    });
+    
+    // Tạo CSV header
+    let csv = 'Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi tiết\n';
+    
+    // Thêm dữ liệu
+    logs.forEach(log => {
+      const details = log.payload ? JSON.stringify(log.payload).replace(/"/g, '""') : '';
+      const userAgent = (log.user_agent || '').replace(/"/g, '""');
+      
+      csv += `"${log.created_at.toISOString()}","${log.event_type}","${log.user?.name || 'N/A'}","${log.user?.email || 'N/A'}","${log.exam_session?.id || 'N/A'}","${log.source_ip || 'N/A'}","${userAgent}","${details}"\n`;
+    });
+    
+    return csv;
+  },
+
 };

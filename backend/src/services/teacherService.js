@@ -687,27 +687,12 @@ module.exports = {
         return updatedInstance;
     },
 
-    // Danh sách flag của học sinh trong một lớp
-    async listFlaggedSessionsByClass(teacherId, classId) {
-        const klass = await prisma.Renamedclass.findFirst({
-            where: { id: classId, teacher_id: teacherId },
-            select: { id: true }
-        });
-        if (!klass) {
-            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
-            err.status = 403;
-            throw err;
-        }
-
+    // Danh sách flag của học sinh trong 1 kỳ thi
+    async listFlaggedSessionsByClass(exam_instance_id) {
         const flags = await prisma.session_flag.findMany({
             where: {
                 exam_session: {
-                    exam_instance: {
-                        exam_template: {
-                            class_id: classId,
-                            Renamedclass: { teacher_id: teacherId }
-                        },
-                    },
+                    exam_instance: exam_instance_id,
                 },
             },
             include: {

@@ -23,5 +23,13 @@ router.delete("/classes/:id", adminController.deleteClass); // Xóa lớp học
 router.get("/exams", adminController.getExams); // Lấy danh sách tất cả kỳ thi
 router.get("/exams/:id", adminController.getExamById); // Lấy thông tin chi tiết kỳ thi
 
+// ==================== DASHBOARD & BÁO CÁO ====================
+router.get("/dashboard", adminController.getDashboard); // Lấy thống kê dashboard tổng quan
+
+// ==================== XUẤT BÁO CÁO ====================
+router.get("/export/students", adminController.exportStudents); // Xuất danh sách học sinh CSV
+router.get("/export/results/:examId", adminController.exportResults); // Xuất kết quả thi CSV
+router.get("/export/logs/:examId", adminController.exportLogs); // Xuất nhật ký thi CSV
+
 
 module.exports = router;
