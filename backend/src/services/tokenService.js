@@ -7,7 +7,7 @@ function hashToken(token) {
 
 module.exports = {
   // days: lifetime of refresh token (default 30 days)
-  async generateRefreshToken(userId, ip = null, days = 1) {
+  async generateRefreshToken(userId, ip = null, days = 30) {
     const token = crypto.randomBytes(64).toString("hex");
     const token_hash = hashToken(token);
     const expires_at = new Date(Date.now() + days * 24 * 60 * 60 * 1000);

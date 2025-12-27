@@ -158,18 +158,37 @@ module.exports = {
             throw err;
         }
 
+
         // Nếu đã có session trước đó
         const existingSession = await prisma.exam_session.findFirst({
             where: { exam_instance_id: examInstanceId, user_id: studentId },
         });
         if (existingSession) {
             if (existingSession.state === "started") {
+                // Fetch và return questions cho existing session
+                const existingQuestions = examInstance.exam_question.map((eq) => {
+                    const correctCount = eq.question.question_choice.filter((c) => c.is_correct).length;
+                    return {
+                        id: eq.question.id,
+                        text: eq.question.text,
+                        explanation: null,
+                        ordinal: eq.ordinal,
+                        points: eq.points,
+                        multichoice: correctCount > 1,
+                        choices: eq.question.question_choice
+                            .sort((a, b) => a.order - b.order)
+                            .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
+                        selected_choice_ids: [],
+                    };
+                });
                 return {
                     session_id: existingSession.id,
                     token: existingSession.token,
                     started_at: existingSession.started_at,
                     ends_at: existingSession.ends_at,
                     state: existingSession.state,
+                    duration_seconds: existingSession.ends_at ? Math.floor((existingSession.ends_at - existingSession.started_at) / 1000) : 0,
+                    // questions: existingQuestions,
                 };
             }
             const blockedStates = ["submitted", "expired", "locked"];
@@ -211,19 +230,33 @@ module.exports = {
                 ua_hash: uaHash || null,
             },
         });
+        await prisma.audit_log.create({
+            data: {
+                event_type: "EXAM_START",
+                exam_session_id: created.id,
+                user_id: studentId,
+                payload: `Học sinh bắt đầu làm bài thi ${examInstanceId}`,
+                source_ip: clientMeta.ip || null,
+                user_agent: clientMeta.userAgent || null,
+            },
+        });
 
         // Chuẩn bị danh sách câu hỏi (ẩn đáp án đúng)
-        const questions = examInstance.exam_question.map((eq) => ({
-            id: eq.question.id,
-            text: eq.question.text,
-            explanation: null, // không trả về giải thích của giáo viên
-            ordinal: eq.ordinal,
-            points: eq.points,
-            choices: eq.question.question_choice
-                .sort((a, b) => a.order - b.order)
-                .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
-            selected_choice_ids: [],
-        }));
+        const questions = examInstance.exam_question.map((eq) => {
+            const correctCount = eq.question.question_choice.filter((c) => c.is_correct).length;
+            return {
+                id: eq.question.id,
+                text: eq.question.text,
+                explanation: null, // không trả về giải thích của giáo viên
+                ordinal: eq.ordinal,
+                points: eq.points,
+                multichoice: correctCount > 1,
+                choices: eq.question.question_choice
+                    .sort((a, b) => a.order - b.order)
+                    .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
+                selected_choice_ids: [],
+            };
+        });
         // console.log(questions);
         return {
             session_id: created.id,
@@ -290,17 +323,21 @@ module.exports = {
             answers.map((a) => [a.question_id, (a.selected_choice_ids && a.selected_choice_ids.length > 0) ? a.selected_choice_ids : (a.choice_id ? [a.choice_id] : [])])
         );
 
-        const questions = session.exam_instance.exam_question.map((eq) => ({
-            id: eq.question.id,
-            text: eq.question.text,
-            explanation: null,
-            ordinal: eq.ordinal,
-            points: eq.points,
-            choices: eq.question.question_choice
-                .sort((a, b) => a.order - b.order)
-                .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
-            selected_choice_ids: answerMap.get(eq.question.id) || [],
-        }));
+        const questions = session.exam_instance.exam_question.map((eq) => {
+            const correctCount = eq.question.question_choice.filter((c) => c.is_correct).length;
+            return {
+                id: eq.question.id,
+                text: eq.question.text,
+                explanation: null,
+                ordinal: eq.ordinal,
+                points: eq.points,
+                multichoice: correctCount > 1,
+                choices: eq.question.question_choice
+                    .sort((a, b) => a.order - b.order)
+                    .map((c) => ({ id: c.id, label: c.label, order: c.order, text: c.text })),
+                selected_choice_ids: answerMap.get(eq.question.id) || [],
+            };
+        });
         return questions;
     },
 
@@ -313,6 +350,8 @@ module.exports = {
             err.status = 404;
             throw err;
         }
+
+
         if (session.user_id !== studentId) {
             const err = new Error("Bạn không có quyền truy cập phiên này");
             err.status = 403;
@@ -375,6 +414,16 @@ module.exports = {
                 answered_at: now,
             },
         });
+        await prisma.audit_log.create({
+            data: {
+                event_type: "ANSWER_SUBMIT",
+                exam_session_id: sessionId,
+                user_id: studentId,
+                payload: `Học sinh trả lời câu hỏi ${questionId} với lựa chọn ${JSON.stringify(uniqueIds)}`,
+                source_ip: null,
+                user_agent: null,
+            },
+        });
 
         return { question_id: answered.question_id, choice_ids: answered.selected_choice_ids };
     },
@@ -403,7 +452,7 @@ module.exports = {
 
         // đếm mất focus
         const focusLost = !!payload.focusLost;
-        const threshold = Number(process.env.EXAM_FOCUS_LOST_THRESHOLD || 5);
+        const threshold = Number(process.env.EXAM_FOCUS_LOST_THRESHOLD || 100000);
         let locked = false;
         if (focusLost) {
             updates.focus_lost_count = session.focus_lost_count + 1;
@@ -424,10 +473,10 @@ module.exports = {
         // audit log
         await prisma.audit_log.create({
             data: {
-                event_type: "heartbeat",
+                event_type: "TAB_SWITCH",
                 exam_session_id: sessionId,
                 user_id: studentId,
-                payload: { focusLost },
+                payload: "Người dùng đã chuyển tab hoặc mất focus cửa sổ lần thứ " + (focusLost ? updates.focus_lost_count : 0),
                 source_ip: payload.ip || null,
                 user_agent: payload.userAgent || null,
             },
@@ -539,6 +588,16 @@ module.exports = {
                 details: details,
             },
         });
+        await prisma.audit_log.create({
+            data: {
+                event_type: "EXAM_SUBMIT",
+                exam_session_id: sessionId,
+                user_id: studentId,
+                payload: `Học sinh nộp bài thi cho phiên ${sessionId}`,
+                source_ip: null,
+                user_agent: null,
+            },
+        });
 
         // Kiểm tra cờ hiển thị đáp án
         const showAnswers = session.exam_instance.show_answers;
@@ -556,5 +615,143 @@ module.exports = {
         }
 
         return result;
+    },
+
+    // hủy yêu cầu tham gia lớp học
+    async cancelEnrollmentRequest(studentId, classId) {
+        await prisma.enrollment_request.deleteMany({
+            where: { student_id: studentId, class_id: classId, status: "pending" }
+        });
+        return;
+    },
+
+
+    // lấy dashboard của sinh viên
+    async getStudentDashboard(studentId) {
+
+        // 1️ Kiểm tra sinh viên tồn tại
+        const student = await userService.getUserById(studentId);
+        if (!student) {
+            const err = new Error("Sinh viên không tồn tại");
+            err.status = 404;
+            throw err;
+        }
+
+        // 2️ Lấy danh sách lớp đã tham gia
+        const classes = await prisma.enrollment_request.findMany({
+            where: { student_id: studentId, status: "approved" },
+            include: { Renamedclass: true },
+        });
+
+        const classList = classes.map(e => e.Renamedclass);
+        const classIds = classList.map(c => c.id);
+
+        const now = new Date();
+
+        // 3️ Lấy submission đã hoàn thành
+        const submissions = await prisma.submission.findMany({
+            where: {
+                exam_session: {
+                    user_id: studentId,
+                    exam_instance: {
+                        published: true,
+                    },
+                },
+                graded_at: { not: null },
+            },
+            select: {
+                score: true,
+                max_score: true,
+            },
+        });
+
+        let avgScore = 0;
+        if (submissions.length > 0) {
+            const normalizedScores = submissions.map(s =>
+                s.max_score > 0 ? (Number(s.score) / Number(s.max_score)) * 10 : 0
+            );
+            avgScore =
+                normalizedScores.reduce((sum, v) => sum + v, 0) /
+                normalizedScores.length;
+        }
+        avgScore = Number(avgScore.toFixed(2));
+
+        // 4️ Số kỳ thi sắp tới
+        const upcomingCount = await prisma.exam_instance.count({
+            where: {
+                published: true,
+                starts_at: { gt: now },
+                exam_template: {
+                    class_id: { in: classIds },
+                },
+            },
+        });
+
+        // 5️ Số kỳ thi đã hoàn thành
+        const completedCount = await prisma.submission.count({
+            where: {
+                exam_session: {
+                    user_id: studentId,
+                    exam_instance: {
+                        published: true,
+                    },
+                },
+            },
+        });
+
+        // 6️ bài thi đã mở nhưng chưa thi
+        const notAttemptedExams = await prisma.exam_instance.findMany({
+            where: {
+                published: true,
+                exam_template: {
+                    class_id: {
+                        in: classList.map(c => c.id),
+                    },
+                },
+                exam_session: {
+                    none: {
+                        user_id: studentId,
+                    },
+                },
+            },
+            select: {
+                id: true,
+                starts_at: true,
+                ends_at: true,
+                exam_template: {
+                    select: {
+                        id: true,
+                        title: true,
+                        duration_seconds: true,
+                        class_id: true,
+                    },
+                },
+            },
+        });
+
+        const notAttempted = notAttemptedExams.map(e => ({
+            examInstanceId: e.id,
+            title: e.exam_template.title,
+            durationMinutes: Math.ceil(e.exam_template.duration_seconds / 60),
+            starts_at: e.starts_at,
+            ends_at: e.ends_at,
+            class_id: e.exam_template.class_id,
+        }));
+
+
+        const notAttemptedCount = notAttempted.length;
+
+
+
+        return {
+            classes: classList,
+            averageScore: avgScore,
+            upcomingCount,
+            completedCount,
+            notAttemptedCount,
+            notAttemptedExams: notAttempted,
+        };
+
     }
+
 };

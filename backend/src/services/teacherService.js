@@ -57,11 +57,22 @@ module.exports = {
     },
     // Phê duyệt hoặc từ chối yêu cầu tham gia lớp học
     async approveEnrollmentRequest(requestId, status) {
+        if (status !== "approved" && status !== "rejected") {
+            const err = new Error("Trạng thái không hợp lệ");
+            err.status = 400;
+            throw err;
+        }
+        if (status === "approved") {
         const request = await prisma.enrollment_request.updateMany({
             where: { id: requestId },
             data: { status: status },
         });
         return request;
+        } else {
+            await prisma.enrollment_request.deleteMany({
+                where: { id: requestId },
+            });
+        }
     },
     // Tạo thêm câu hỏi
     async addQuestion( questionData, actorId) {
@@ -674,7 +685,880 @@ module.exports = {
             data: { published: false },
         });
         return updatedInstance;
+    },
+
+    // Danh sách flag của học sinh trong 1 kỳ thi
+    async listFlaggedSessionsByClass(exam_instance_id) {
+        const flags = await prisma.session_flag.findMany({
+            where: {
+                exam_session: {
+                    exam_instance_id: exam_instance_id,
+                },
+            },
+            include: {
+                exam_session: {
+                    select: {
+                        id: true,
+                        user: { select: { id: true, name: true, email: true } },
+                        exam_instance: {
+                            select: {
+                                id: true,
+                                exam_template: {
+                                    select: { id: true, title: true, class_id: true },
+                                },
+                            },
+                        },
+                    },
+                },
+                user: { select: { id: true, name: true, email: true } },
+            },
+            orderBy: { created_at: "desc" },
+        });
+
+        return flags.map((f) => ({
+            id: f.id,
+            flag_type: f.flag_type,
+            details: f.details,
+            created_at: f.created_at,
+            session_id: f.exam_session?.id,
+            exam_instance_id: f.exam_session?.exam_instance?.id,
+            exam_template: f.exam_session?.exam_instance?.exam_template,
+            student: f.exam_session?.user,
+            flagged_by: f.user,
+        }));
+    },
+
+    // Khóa thủ công một phiên thi
+    async lockExamSession(sessionId, teacherId, reason) {
+        const session = await prisma.exam_session.findFirst({
+            where: {
+                id: sessionId,
+                exam_instance: {
+                    exam_template: {
+                        Renamedclass: { teacher_id: teacherId },
+                    },
+                },
+            },
+            include: {
+                exam_instance: { select: { id: true, ends_at: true } },
+            },
+        });
+
+        if (!session) {
+            const err = new Error("Phiên thi không tồn tại hoặc không thuộc lớp của bạn");
+            err.status = 404;
+            throw err;
+        }
+
+        if (session.state === "submitted" || session.state === "expired") {
+            const err = new Error("Không thể khóa phiên đã nộp hoặc đã hết hạn");
+            err.status = 400;
+            throw err;
+        }
+
+        await prisma.exam_session.update({
+            where: { id: sessionId },
+            data: { state: "locked", updated_at: new Date() },
+        });
+
+        await prisma.session_flag.create({
+            data: {
+                exam_session_id: sessionId,
+                flag_type: "manual_lock",
+                details: { reason: reason || "Giáo viên khóa thủ công" },
+                flagged_by: teacherId,
+            },
+        });
+
+        return { sessionId, state: "locked" };
+    },
+
+    // Mở khóa thủ công một phiên thi
+    async unlockExamSession(sessionId, teacherId, reason) {
+        const session = await prisma.exam_session.findFirst({
+            where: {
+                id: sessionId,
+                exam_instance: {
+                    exam_template: {
+                        Renamedclass: { teacher_id: teacherId },
+                    },
+                },
+            },
+            include: {
+                exam_instance: { select: { ends_at: true } },
+            },
+        });
+
+        if (!session) {
+            const err = new Error("Phiên thi không tồn tại hoặc không thuộc lớp của bạn");
+            err.status = 404;
+            throw err;
+        }
+
+        if (session.state !== "locked") {
+            const err = new Error("Chỉ mở khóa được phiên đang ở trạng thái locked");
+            err.status = 400;
+            throw err;
+        }
+
+        const now = new Date();
+        if (session.exam_instance?.ends_at && now > session.exam_instance.ends_at) {
+            const err = new Error("Phiên thi đã hết hạn, không thể mở khóa");
+            err.status = 400;
+            throw err;
+        }
+
+        await prisma.exam_session.update({
+            where: { id: sessionId },
+            data: { state: "started", updated_at: new Date() },
+        });
+
+        await prisma.session_flag.create({
+            data: {
+                exam_session_id: sessionId,
+                flag_type: "manual_unlock",
+                details: { reason: reason || "Giáo viên mở khóa thủ công" },
+                flagged_by: teacherId,
+            },
+        });
+
+        return { sessionId, state: "started" };
+    },
+
+    // Thêm thời gian cộng thêm cho một học sinh trong đề thi
+    async upsertAccommodation({ teacherId, examInstanceId, studentId, extraSeconds, addSeconds, notes }) {
+        // 1) Kiểm tra quyền sở hữu đề thi
+        const instance = await prisma.exam_instance.findFirst({
+            where: { id: examInstanceId, created_by: teacherId },
+            include: { exam_template: true },
+        });
+        if (!instance) {
+            const err = new Error("Đề thi không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2) Kiểm tra học sinh thuộc lớp (và đã được duyệt)
+        const enrollment = await prisma.enrollment_request.findFirst({
+            where: {
+                student_id: studentId,
+                class_id: instance.exam_template.class_id,
+                status: "approved",
+            },
+        });
+        if (!enrollment) {
+            const err = new Error("Học sinh không thuộc lớp của đề thi hoặc chưa được duyệt");
+            err.status = 400;
+            throw err;
+        }
+
+        // 3) Tính tổng thời gian cộng thêm: hỗ trợ chế độ cộng dồn (addSeconds) hoặc đặt tuyệt đối (extraSeconds)
+        const existingAcc = await prisma.accommodation.findFirst({
+            where: { user_id: studentId, exam_instance_id: examInstanceId },
+        });
+        const currentExtra = existingAcc?.extra_seconds || 0;
+        const finalExtra = (typeof addSeconds === "number")
+            ? currentExtra + addSeconds
+            : (typeof extraSeconds === "number" ? extraSeconds : currentExtra);
+
+        const accommodation = await prisma.accommodation.upsert({
+            where: {
+                user_id_exam_instance_id: {
+                    user_id: studentId,
+                    exam_instance_id: examInstanceId,
+                },
+            },
+            update: {
+                extra_seconds: finalExtra,
+                notes: notes ?? existingAcc?.notes ?? null,
+            },
+            create: {
+                user_id: studentId,
+                exam_instance_id: examInstanceId,
+                extra_seconds: finalExtra,
+                notes: notes ?? null,
+            },
+        });
+
+        // 4) Nếu học sinh đã có phiên thi đang diễn ra, kéo dài thời gian (không vượt quá ends_at của đề thi)
+        const session = await prisma.exam_session.findFirst({
+            where: {
+                exam_instance_id: examInstanceId,
+                user_id: studentId,
+                state: "started",
+            },
+        });
+
+        if (session && session.started_at) {
+            const baseDuration = instance.exam_template.duration_seconds;
+            const newDuration = baseDuration + accommodation.extra_seconds;
+            const hardEnd = new Date(instance.ends_at);
+            const softEnd = new Date(new Date(session.started_at).getTime() + newDuration * 1000);
+            const newEndsAt = new Date(Math.min(hardEnd.getTime(), softEnd.getTime()));
+            console.log({ hardEnd, softEnd, newEndsAt });
+            if (!session.ends_at || newEndsAt > session.ends_at) {
+                await prisma.exam_session.update({
+                    where: { id: session.id },
+                    data: { ends_at: newEndsAt },
+                });
+            }
+        }
+
+        return accommodation;
+    },
+
+    // Liệt kê học sinh đang thi (có exam_session state='started') trong một lớp
+    async listActiveStudentsInClass(teacherId, classId) {
+        // 1) Kiểm tra lớp thuộc giáo viên
+        const klass = await prisma.Renamedclass.findFirst({
+            where: { id: classId, teacher_id: teacherId },
+            select: { id: true }
+        });
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2) Tìm các phiên thi đang diễn ra thuộc các exam_instance của lớp này
+        const sessions = await prisma.exam_session.findMany({
+            where: {
+                state: "started",
+                exam_instance: {
+                    exam_template: {
+                        class_id: classId,
+                    },
+                },
+            },
+            select: {
+                user: { select: { id: true, name: true } },
+                user_id: true,
+            },
+        });
+
+        // 3) Unique theo user_id và trả về danh sách id/name
+        const seen = new Set();
+        const result = [];
+        for (const s of sessions) {
+            if (!seen.has(s.user_id)) {
+                seen.add(s.user_id);
+                result.push({ id: s.user.id, name: s.user.name });
+            }
+        }
+        return result;
+    },
+
+    // Lấy tất cả exam_instance của 1 lớp học
+    async getExamInstancesByClass(teacherId, classId) {
+        // 1) Kiểm tra quyền lớp học
+        const klass = await prisma.Renamedclass.findFirst({
+            where: {
+                id: classId,
+                teacher_id: teacherId
+            },
+            select: { id: true }
+        });
+
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2) Lấy exam_instance thông qua exam_template
+        const instances = await prisma.exam_instance.findMany({
+            where: {
+                exam_template: {
+                    class_id: classId
+                }
+            },
+            orderBy: {
+                created_at: "desc"
+            }
+        });
+
+        return instances;
+    },
+
+    // Lấy tiến độ làm bài thi của sinh viên trong lớp
+    async getExamProgressByClass(teacherId, classId, examInstanceId) {
+
+        // 1️ Check quyền giáo viên
+        const klass = await prisma.Renamedclass.findFirst({
+            where: {
+                id: classId,
+                teacher_id: teacherId
+            },
+            select: { id: true }
+        });
+
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2️ Lấy sinh viên đã được duyệt
+        const enrollments = await prisma.enrollment_request.findMany({
+            where: {
+                class_id: classId,
+                status: "approved"
+            },
+            select: {
+                user_enrollment_request_student_idTouser: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        const students = enrollments
+            .map(e => e.user_enrollment_request_student_idTouser)
+            .filter(Boolean); // loại null / undefined
+
+        // 3️ Lấy session của ca thi
+        const sessions = await prisma.exam_session.findMany({
+            where: {
+                exam_instance_id: examInstanceId
+            },
+            select: {
+                id: true,
+                user_id: true,
+                state: true,
+                started_at: true,
+                ends_at: true
+            }
+        });
+
+
+        // 4️ Map session theo user_id
+        const sessionMap = new Map();
+        for (const s of sessions) {
+            sessionMap.set(s.user_id, s);
+        }
+
+        // 5️ Phân loại tiến độ
+        const result = {
+            not_started: [],
+            in_progress: [],
+            finished: []
+        };
+
+        const now = new Date();
+
+        for (const user of students) {
+            const session = sessionMap.get(user.id);
+
+            // 5.1 Chưa vào phòng thi
+            if (!session || session.state === "pending") {
+                result.not_started.push(user);
+                continue;
+            }
+
+            // 5.2 Đang làm bài (started + còn thời gian)
+            if (
+                session.state === "started" &&
+                (!session.ends_at || now <= session.ends_at)
+            ) {
+                result.in_progress.push({
+                    ...user,
+                    state: session.state,
+                    started_at: session.started_at,
+                    ends_at: session.ends_at
+                });
+                continue;
+            }
+
+            // 5.3 Đã kết thúc (submitted / expired / locked / started nhưng hết giờ)
+            result.finished.push({
+                ...user,
+                state: session.state,
+                started_at: session.started_at,
+                ends_at: session.ends_at
+            });
+        }
+
+        return result;
+    },
+
+    // Lấy thông tin dashboard của giáo viên (số lớp, học sinh, đề thi, hoạt động)
+    async getDashboardStats(teacherId) {
+        //  Lấy số lớp học
+        const classCount = await prisma.Renamedclass.count({
+            where: { teacher_id: teacherId }
+        });
+
+        //  Lấy tổng số học sinh từ các lớp của giáo viên
+        const totalStudents = await prisma.enrollment_request.count({
+            where: {
+                status: "approved",
+                Renamedclass: { teacher_id: teacherId }
+            }
+        });
+
+        //  Lấy số đề thi đã tạo
+        const examInstanceCount = await prisma.exam_instance.count({
+            where: { created_by: teacherId }
+        });
+
+        // Lấy hoạt động gần đây (từ các action khác nhau)
+        const [recentClasses, recentEnrollments, recentExams, recentQuestions, recentTemplates] = await Promise.all([
+            // Lớp học được tạo
+            prisma.Renamedclass.findMany({
+                where: { teacher_id: teacherId },
+                select: { id: true, name: true, created_at: true },
+                orderBy: { created_at: "desc" },
+                take: 10
+            }),
+            // Học sinh tham gia được duyệt
+            prisma.enrollment_request.findMany({
+                where: {
+                    Renamedclass: { teacher_id: teacherId },
+                    status: "approved"
+                },
+                select: {
+                    id: true,
+                    requested_at: true,
+                    user_enrollment_request_student_idTouser: {
+                        select: { name: true }
+                    },
+                    Renamedclass: { select: { name: true } }
+                },
+                orderBy: { requested_at: "desc" },
+                take: 10
+            }),
+            // Đề thi được tạo
+            prisma.exam_instance.findMany({
+                where: { created_by: teacherId },
+                select: {
+                    id: true,
+                    created_at: true,
+                    exam_template: { select: { title: true } }
+                },
+                orderBy: { created_at: "desc" },
+                take: 10
+            }),
+            // Câu hỏi được tạo
+            prisma.question.findMany({
+                where: { owner_id: teacherId },
+                select: {
+                    id: true,
+                    text: true,
+                    created_at: true
+                },
+                orderBy: { created_at: "desc" },
+                take: 10
+            }),
+            // Template được tạo
+            prisma.exam_template.findMany({
+                where: { created_by: teacherId },
+                select: {
+                    id: true,
+                    title: true,
+                    created_at: true
+                },
+                orderBy: { created_at: "desc" },
+                take: 10
+            })
+        ]);
+
+        // Kết hợp tất cả hoạt động thành một danh sách duy nhất, sắp xếp theo thời gian
+        const activities = [
+            ...recentClasses.map(c => ({
+                id: c.id,
+                type: "create_class",
+                description: `Tạo lớp học "${c.name}"`,
+                timestamp: c.created_at
+            })),
+            ...recentEnrollments.map(e => ({
+                id: e.id,
+                type: "approve_enrollment",
+                description: `Duyệt học sinh "${e.user_enrollment_request_student_idTouser.name}" vào lớp "${e.Renamedclass.name}"`,
+                timestamp: e.updated_at
+            })),
+            ...recentExams.map(ex => ({
+                id: ex.id,
+                type: "create_exam_instance",
+                description: `Tạo đề thi "${ex.exam_template.title}"`,
+                timestamp: ex.created_at
+            })),
+            ...recentQuestions.map(q => ({
+                id: q.id,
+                type: "create_question",
+                description: `Thêm câu hỏi: "${q.text.substring(0, 50)}..."`,
+                timestamp: q.created_at
+            })),
+            ...recentTemplates.map(t => ({
+                id: t.id,
+                type: "create_template",
+                description: `Tạo template đề thi "${t.title}"`,
+                timestamp: t.created_at
+            }))
+        ];
+
+        // Sắp xếp theo thời gian mới nhất
+        activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        // Lấy 20 hoạt động gần nhất
+        const recentActivities = activities.slice(0, 20);
+
+        return {
+            stats: {
+                totalClasses: classCount,
+                totalStudents,
+                totalExams: examInstanceCount,
+                totalQuestions: await prisma.question.count({ where: { owner_id: teacherId } }),
+                totalTemplates: await prisma.exam_template.count({ where: { created_by: teacherId } })
+            },
+            recentActivities
+        };
+    },
+
+    // // thông báo thông tin cho sinh viên
+    // async notifyStudentsInClass(teacherId, classId, notificationData) {
+    //     // 1) Kiểm tra quyền lớp học
+    //     const klass = await prisma.Renamedclass.findFirst({
+    //         where: {
+    //             id: classId,
+    //             teacher_id: teacherId
+    //         },
+    //         select: { id: true }
+    //     });
+    //     if (!klass) {
+    //         const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+    //         err.status = 403;
+    //         throw err;
+    //     }
+    //     // 2) Lấy danh sách học sinh đã được duyệt trong lớp
+    //     const students = await prisma.enrollment_request.findMany({
+    //         where: {
+    //             class_id: classId,
+    //             status: "approved"
+    //         },
+    //         select: {
+    //             user_enrollment_request_student_idTouser: {
+    //                 select: { id: true, name: true, email: true }
+    //             }
+    //         }
+    //     });
+    //     // 3) Gửi thông báo (giả sử có hàm sendNotification)
+    //     const notifications = [];
+    //     for (const s of students) {
+    //         const user = s.user_enrollment_request_student_idTouser;
+    //         const notification = await sendNotification(user.id, notificationData);
+    //         notifications.push(notification);
+    //     }
+    //     return notifications;
+    // }
+
+    /**
+     * Xuất danh sách học sinh trong lớp học ra CSV
+     * @param {string} classId - ID lớp học
+     * @param {string} teacherId - ID giáo viên (để kiểm tra quyền)
+     * @returns {Promise<String>} CSV string
+     */
+    async exportStudentList(classId, teacherId) {
+        // Kiểm tra quyền sở hữu lớp học
+        const classInfo = await prisma.Renamedclass.findFirst({
+            where: { 
+                id: classId,
+                teacher_id: teacherId
+            }
+        });
+
+        if (!classInfo) {
+            const err = new Error("Không tìm thấy lớp học hoặc bạn không có quyền truy cập");
+            err.status = 404;
+            throw err;
+        }
+
+        // Lấy danh sách học sinh
+        const enrollments = await prisma.enrollment_request.findMany({
+            where: {
+                class_id: classId,
+                status: 'approved'
+            },
+            orderBy: {
+                requested_at: 'asc'
+            },
+            select: {
+                requested_at: true,
+                user_enrollment_request_student_idTouser: {
+                    select: {
+                        id: true,
+                        email: true,
+                        name: true,
+                        is_active: true,
+                        created_at: true,
+                        last_login_at: true
+                    }
+                }
+            }
+        });
+
+        // Tạo CSV header
+        let csv = 'ID,Email,Họ tên,Trạng thái,Ngày tham gia lớp,Ngày tạo tài khoản,Đăng nhập gần nhất\n';
+
+        // Thêm dữ liệu
+        enrollments.forEach(enrollment => {
+            const student = enrollment.user_enrollment_request_student_idTouser;
+            csv += `"${student.id}","${student.email}","${student.name}","${student.is_active ? 'Hoạt động' : 'Bị khóa'}","${enrollment.requested_at.toISOString()}","${student.created_at.toISOString()}","${student.last_login_at ? student.last_login_at.toISOString() : 'Chưa đăng nhập'}"\n`;
+        });
+
+        return csv;
+    },
+
+    /**
+     * Xuất kết quả thi ra CSV
+     * @param {string} examInstanceId - ID kỳ thi
+     * @param {string} teacherId - ID giáo viên (để kiểm tra quyền)
+     * @returns {Promise<String>} CSV string
+     */
+    async exportExamResults(examInstanceId, teacherId) {
+        const exam = await prisma.exam_instance.findUnique({
+            where: { id: examInstanceId },
+            select: {
+                id: true,
+                starts_at: true,
+                ends_at: true,
+                exam_template: {
+                    select: {
+                        title: true,
+                        duration_seconds: true,
+                        passing_score: true,
+                        Renamedclass: {
+                            select: {
+                                id: true,
+                                name: true,
+                                code: true,
+                                teacher_id: true
+                            }
+                        }
+                    }
+                },
+                exam_session: {
+                    select: {
+                        id: true,
+                        state: true,
+                        started_at: true,
+                        ends_at: true,
+                        user: {
+                            select: {
+                                id: true,
+                                email: true,
+                                name: true
+                            }
+                        },
+                        submission: {
+                            select: {
+                                score: true,
+                                max_score: true,
+                                graded_at: true,
+                                created_at: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        created_at: 'desc'
+                    }
+                }
+            }
+        });
+
+        if (!exam) {
+            const err = new Error("Không tìm thấy kỳ thi");
+            err.status = 404;
+            throw err;
+        }
+
+        // Kiểm tra quyền
+        if (exam.exam_template.Renamedclass.teacher_id !== teacherId) {
+            const err = new Error("Bạn không có quyền truy cập kỳ thi này");
+            err.status = 403;
+            throw err;
+        }
+
+        // Tạo CSV header
+        let csv = 'ID,Email,Họ tên,Trạng thái,Điểm,Điểm tối đa,Phần trăm,Kết quả,Thời gian bắt đầu,Thời gian nộp bài,Thời gian chấm\n';
+
+        // Thêm dữ liệu
+        exam.exam_session.forEach(session => {
+            const submission = session.submission[0];
+            const score = submission?.score || 0;
+            const maxScore = submission?.max_score || 0;
+            const percentage = maxScore > 0 ? ((score / maxScore) * 100).toFixed(2) : 0;
+            const passingScore = exam.exam_template.passing_score || 0;
+            const passed = percentage >= passingScore ? 'Đạt' : 'Không đạt';
+
+            csv += `"${session.user.id}","${session.user.email}","${session.user.name}","${session.state}","${score}","${maxScore}","${percentage}%","${passed}","${session.started_at ? session.started_at.toISOString() : 'Chưa bắt đầu'}","${submission?.created_at ? submission.created_at.toISOString() : 'Chưa nộp'}","${submission?.graded_at ? submission.graded_at.toISOString() : 'Chưa chấm'}"\n`;
+        });
+
+        return csv;
+    },
+
+    /**
+     * Xuất nhật ký thi ra CSV
+     * @param {string} examInstanceId - ID kỳ thi
+     * @param {string} teacherId - ID giáo viên (để kiểm tra quyền)
+     * @returns {Promise<String>} CSV string
+     */
+    async exportExamLogs(examInstanceId, teacherId) {
+        // Kiểm tra quyền
+        const exam = await prisma.exam_instance.findUnique({
+            where: { id: examInstanceId },
+            select: {
+                exam_template: {
+                    select: {
+                        Renamedclass: {
+                            select: {
+                                teacher_id: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!exam) {
+            const err = new Error("Không tìm thấy kỳ thi");
+            err.status = 404;
+            throw err;
+        }
+
+        if (exam.exam_template.Renamedclass.teacher_id !== teacherId) {
+            const err = new Error("Bạn không có quyền truy cập kỳ thi này");
+            err.status = 403;
+            throw err;
+        }
+
+        const logs = await prisma.audit_log.findMany({
+            where: {
+                exam_session: {
+                    exam_instance_id: examInstanceId
+                }
+            },
+            orderBy: {
+                created_at: 'asc'
+            },
+            select: {
+                id: true,
+                event_type: true,
+                created_at: true,
+                source_ip: true,
+                user_agent: true,
+                payload: true,
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        name: true
+                    }
+                },
+                exam_session: {
+                    select: {
+                        id: true,
+                        token: true
+                    }
+                }
+            }
+        });
+
+        // Tạo CSV header
+        let csv = 'Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi tiết\n';
+
+        // Thêm dữ liệu
+        logs.forEach(log => {
+            const details = log.payload ? JSON.stringify(log.payload).replace(/"/g, '""') : '';
+            const userAgent = (log.user_agent || '').replace(/"/g, '""');
+
+            csv += `"${log.created_at.toISOString()}","${log.event_type}","${log.user?.name || 'N/A'}","${log.user?.email || 'N/A'}","${log.exam_session?.id || 'N/A'}","${log.source_ip || 'N/A'}","${userAgent}","${details}"\n`;
+        });
+
+        return csv;
+    },
+
+    // giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi
+    async getStudentScoresInClass(teacherId, classId, examInstanceId) {
+        // 1️ Check quyền lớp học
+        const klass = await prisma.Renamedclass.findFirst({
+            where: {
+                id: classId,
+                teacher_id: teacherId,
+            },
+            select: { id: true },
+        });
+
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2️ Lấy toàn bộ sinh viên trong lớp
+        const enrollments = await prisma.enrollment_request.findMany({
+            where: {
+                class_id: classId,
+                status: "approved",
+            },
+            select: {
+                user_enrollment_request_student_idTouser: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
+        });
+
+        const students = enrollments
+            .map(e => e.user_enrollment_request_student_idTouser)
+            .filter(Boolean);
+
+        // 3️ Lấy toàn bộ session của kỳ thi
+        const sessions = await prisma.exam_session.findMany({
+            where: {
+                exam_instance_id: examInstanceId,
+            },
+            include: {
+                submission: {
+                    select: {
+                        score: true,
+                        max_score: true,
+                        graded_at: true,
+                    },
+                },
+            },
+        });
+
+        // 4️ Map session theo user_id
+        const sessionMap = new Map();
+        sessions.forEach(s => {
+            sessionMap.set(s.user_id, s);
+        });
+
+        // 5️ Chuẩn hóa bảng điểm
+        const result = students.map(user => {
+            const session = sessionMap.get(user.id);
+            const submission = session?.submission?.[0];
+
+            return {
+                user_id: user.id,
+                name: user.name,
+                email: user.email,
+                state: session?.state ?? "not_started",
+                score: submission ? Number(submission.score) : 0,
+                max_score: submission ? Number(submission.max_score) : 0,
+                graded_at: submission?.graded_at ?? null,
+            };
+        });
+
+        return result;
     }
+
 
 };
 

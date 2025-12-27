@@ -58,8 +58,18 @@ module.exports = async function examSessionMiddleware(req, res, next) {
         data: {
           exam_session_id: sessionId,
           flag_type: "multi_ip",
-          details: { expected: session.ip_binding, actual: reqIp },
+          details: "Phát hiện IP không khớp {}".replace("{}", reqIp),
           flagged_by: null,
+        },
+      });
+      await prisma.audit_log.create({
+        data: {
+          event_type: "IP_CHANGE",
+          exam_session_id: sessionId,
+          user_id: req.user.id,
+          payload: `IP thay đổi từ ${session.ip_binding} sang ${reqIp}`,
+          source_ip: reqIp,
+          user_agent: reqUA,
         },
       });
     }
@@ -68,8 +78,18 @@ module.exports = async function examSessionMiddleware(req, res, next) {
         data: {
           exam_session_id: sessionId,
           flag_type: "ua_mismatch",
-          details: { expected: session.ua_hash },
+          details: "Phát hiện User-Agent không khớp",
           flagged_by: null,
+        },
+      });
+      await prisma.audit_log.create({
+        data: {
+          event_type: "BROWSER_CHANGE",
+          exam_session_id: sessionId,
+          user_id: req.user.id,
+          payload: `Trình duyệt làm bài thi đã thay đổi`,
+          source_ip: reqIp,
+          user_agent: reqUA,
         },
       });
     }

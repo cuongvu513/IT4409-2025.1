@@ -26,11 +26,12 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ## Endpoint 1 — Đăng ký user
 
-**POST** `/api/auth/register`
+## Endpoint 1.1 - đăng ký
+**POST** `/api/auth/register-request`
 
 - **Mô tả:** Tạo tài khoản mới.
 - **HTTP:** `POST`
-- **URL:** `/api/auth/register`
+- **URL:** `/api/auth/register-request`
 - **Request body:**
 
 ```php
@@ -51,7 +52,54 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 
 ```json
 {
-    "message": "User registered successfully"
+    "message": "OTP has been sent to your email"
+}
+```
+
+- **400 Bad Request** (ví dụ email đã tồn tại / validation failed)
+
+```json
+{
+    "error": "Role not found for provided role_name: stucdent"
+}
+```
+
+Notes:
+
+- Hiển thị ra lỗi
+
+---
+
+
+## Endpoint 1.2 - xác nhận otp để đăng ký
+
+**POST** `/api/auth/register-confirm`
+
+- **Mô tả:** xác thực otp để Tạo tài khoản mới.
+- **HTTP:** `POST`
+- **URL:** `/api/auth/register-confirm`
+- **Request body:**
+
+```php
+{
+    "email": "student1@gmail.com",
+    "otp": "142376"
+}
+```
+
+- **Validations:**
+    - `email`: required, phải là email hợp lệ
+    - `password`: required, tối thiểu 8 ký tự, khuyến nghị có chữ hoa, chữ thường, số và ký tự đặc biệt
+    - `role_name` : gồm [student, teacher]
+- **Responses:**
+    - **201 Created**
+
+```json
+{
+{
+    "message": "User registered successfully",
+    "user_id": "0877ed37-f73e-44a8-983b-37bc203cc8a7"
+}
 }
 ```
 
@@ -264,4 +312,95 @@ Implementation options:
 }
 ```
 
+
+
+## Endpoint 7 — Quên mật khẩu
+
+**POST `/api/auth/forgot-password`**
+
+- **Mô tả:** Quên mật khẩu
+- **HTTP:** POST
+- **URL:** **`/api/auth/forgot-password`**
+- **Request body:**
+
+```json
+{
+    "email": "buixuandat1802@gmail.com"
+}
+```
+
+- **Response body**
+- **200 Ok** 
+
+```json
+{
+    "message": "OTP has been sent to your email"
+}
+```
+
+## Endpoint 8 — xác thực otp và đặt lại mật khẩu
+
+**POST `/api/auth/reset-password`**
+
+- **Mô tả:** xác thực otp và đặt lại mật khẩu mới
+- **HTTP:** POST
+- **URL:** **`/api/auth/reset-password`**
+- **Request body:**
+
+```json
+{
+    "email": "buixuandat1802@gmail.com",
+    "otp": "246346",
+    "newPassword": "P@ss3"
+}
+```
+
+- **Response body**
+- **200 Ok** 
+```json
+{
+    "message": "Password reset successfully"
+}
+```
+
+**400 Bad Request** 
+```json
+{
+    "error": "OTP invalid or expired"
+}
+```
+
+- gửi cả otp và mk mới luôn.
 ---
+
+
+## Endpoint 9 — tìm kiếm lớp học theo tên
+
+**GET `/api/auth/classes/search`**
+
+- **Mô tả:** tìm kiếm lớp học theo tên
+- **HTTP:** GET
+- **URL:** **`/api/auth/classes/search`**
+
+- **Response body**
+- **200 Ok** 
+```json
+[
+    {
+        "id": "8409b373-5deb-43c0-9a23-dfc0cc162f84",
+        "teacher_id": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "name": "Tin học đại cương",
+        "code": "5ebscqj6",
+        "description": "Học lâp trình vào sáng t6",
+        "created_at": "2025-12-06T15:06:17.459Z",
+        "updated_at": "2025-12-06T15:06:17.459Z"
+    }
+]
+```
+
+**400 Bad Request** 
+```json
+{
+    "error": "OTP invalid or expired"
+}
+```
