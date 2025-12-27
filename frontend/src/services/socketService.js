@@ -7,11 +7,7 @@ class SocketService {
     this.connected = false;
   }
 
-  /**
-   * Kết nối tới exam timer namespace
-   * @param {string} token - JWT token để xác thực
-   * @returns {Socket} socket instance
-   */
+
   connect(token) {
     if (this.socket && this.connected) {
       console.log('[SocketService] Already connected');
