@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import teacherService from '../../services/teacherService';
+import MathRenderer from '../../components/MathRenderer';
 import styles from './TeacherQuestionsPage.module.scss';
 
 const TeacherQuestionsPage = () => {
@@ -177,7 +178,9 @@ const TeacherQuestionsPage = () => {
                                 </div>
                             </div>
 
-                            <p className={styles.qText}>{q.text}</p>
+                            <p className={styles.qText}>
+                                <MathRenderer text={q.text} />
+                            </p>
                             <div className={styles.qTags}>
                                 {q.tags?.map((t, idx) => <span key={idx}>#{t}</span>)}
                             </div>
@@ -186,7 +189,12 @@ const TeacherQuestionsPage = () => {
                             <div className={styles.qFooter}>
                                 <span>Đáp án đúng: </span>
                                 <strong>
-                                    {q.question_choice?.filter(c => c.is_correct).map(c => c.text).join(', ') || "Chưa có"}
+                                    {q.question_choice?.filter(c => c.is_correct).map(c => (
+                                        <span key={c.id}>
+                                            <MathRenderer text={c.text} />
+                                            {q.question_choice?.filter(c => c.is_correct).indexOf(c) < q.question_choice?.filter(c => c.is_correct).length - 1 ? ', ' : ''}
+                                        </span>
+                                    )) || "Chưa có"}
                                 </strong>
                             </div>
                         </div>
@@ -272,7 +280,9 @@ const TeacherQuestionsPage = () => {
                         <div className={styles.detailBody}>
                             <div className={styles.detailRow}>
                                 <span className={styles.label}>Nội dung:</span>
-                                <p className={styles.content}>{viewQuestion.text}</p>
+                                <p className={styles.content}>
+                                    <MathRenderer text={viewQuestion.text} />
+                                </p>
                             </div>
                             <div className={styles.detailRow}>
                                 <span className={styles.label}>Độ khó:</span>
@@ -291,7 +301,7 @@ const TeacherQuestionsPage = () => {
                                 <ul className={styles.choiceList}>
                                     {viewQuestion.question_choice?.map((c) => (
                                         <li key={c.id || Math.random()} className={c.is_correct ? styles.correct : ''}>
-                                            <strong>{c.label || '•'}</strong> {c.text}
+                                            <strong>{c.label || '•'}</strong> <MathRenderer text={c.text} />
                                             {c.is_correct && <i className="fa-solid fa-check-circle" style={{ marginLeft: '10px' }}></i>}
                                         </li>
                                     ))}
@@ -300,7 +310,7 @@ const TeacherQuestionsPage = () => {
                             <div className={styles.detailRow}>
                                 <span className={styles.label}>Giải thích:</span>
                                 <p className={styles.explanation}>
-                                    {viewQuestion.explanation || "Không có giải thích."}
+                                    <MathRenderer text={viewQuestion.explanation || "Không có giải thích."} />
                                 </p>
                             </div>
                         </div>
