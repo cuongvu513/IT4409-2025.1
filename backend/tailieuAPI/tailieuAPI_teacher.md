@@ -1640,3 +1640,51 @@ Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi
 ```
 
 ---
+
+
+## Endpoint 43 — giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/exam-instances/:examInstanceId/scores`**
+
+- **Mô tả:** giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi
+- **GET:** GET
+- **URL:** `/api/teacher/classes/:classId/exam-instances/:examInstanceId/scores`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+{
+[
+    {
+        "user_id": "92a15ea0-3b9a-4cf4-9a13-ff26597aa53d",
+        "name": "student11",
+        "email": "student1@gmail.com",
+        "state": "not_started",
+        "score": 0,
+        "max_score": 0,
+        "graded_at": null
+    },
+    {
+        "user_id": "92a15ea0-3b9a-4cf4-9a13-ff26597aa531",
+        "name": "student2",
+        "email": "student2@gmail.com",
+        "state": "submitted",
+        "score": 1,
+        "max_score": 2,
+        "graded_at": "2025-12-27T08:49:01.651Z"
+    }    
+]
+}
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+- **403 Forbidden**
+```json
+{
+    "error": "Lớp học không tồn tại hoặc bạn không có quyền"
+}
+```

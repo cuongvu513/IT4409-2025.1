@@ -696,5 +696,18 @@ module.exports = {
         } catch (err) {
             next(err);
         }
-    }
+    },
+
+    // giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi
+    async getStudentScoresInClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const examInstanceId = req.params.examInstanceId;
+            const scores = await teacherService.getStudentScoresInClass(teacherId, classId, examInstanceId);
+            res.json(scores);
+        } catch (error) {
+            next(error);
+        }
+    },
 };
