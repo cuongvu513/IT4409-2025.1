@@ -357,9 +357,20 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
             "updated_at": "2025-12-25T09:15:33.851Z"
         }
     ],
-    "averageScore": 5,
+    "averageScore": 6.25,
     "upcomingCount": 0,
-    "completedCount": 1
+    "completedCount": 4,
+    "notAttemptedCount": 1,
+    "notAttemptedExams": [
+        {
+            "examInstanceId": "4e02038d-1835-4acb-a4ab-edd7aaca03cb",
+            "title": "aaa",
+            "durationMinutes": 5,
+            "starts_at": "2025-12-27T07:55:00.000Z",
+            "ends_at": "2025-12-30T07:54:00.000Z",
+            "class_id": "470383ba-9827-4e6b-80bb-2aab9a3873cd"
+        }
+    ]
 }
 ```
 
