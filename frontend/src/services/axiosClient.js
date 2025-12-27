@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Tạo instance
 const axiosClient = axios.create({
-    baseURL: 'http://172.31.85.93:3000', // Nhớ đổi thành URL backend thật của bạn
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -47,7 +47,8 @@ axiosClient.interceptors.response.use(
 
                 // Gọi API refresh (Dùng axios gốc để tránh lặp interceptor)
                 // Lưu ý: Phải dùng đúng baseURL như axiosClient
-                const res = await axios.post('http://172.31.85.93:3000', {
+                const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+                const res = await axios.post(`${BACKEND_URL}/auth/refresh`, {
                     refreshToken: refreshToken
                 });
 

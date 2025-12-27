@@ -46,7 +46,7 @@ const ClassExamSessionPage = () => {
     };
 
     const [selectedStudent, setSelectedStudent] = useState('');
-    const [extraSeconds, setExtraSeconds] = useState(300);
+    const [addSeconds, setAddSeconds] = useState(300);
     const [note, setNote] = useState('');
     const [processing, setProcessing] = useState(false);
     const [selectedSession, setSelectedSession] = useState('');
@@ -73,7 +73,7 @@ const ClassExamSessionPage = () => {
 
             await teacherService.addAccommodation(examInstanceId, {
             student_id: selectedStudent,
-            add_seconds: extraSeconds,
+            add_seconds: addSeconds,
             notes: note,
             });
 
@@ -178,7 +178,7 @@ const ClassExamSessionPage = () => {
                             <button
                                 onClick={() => {
                                 setSelectedStudent(s.id);
-                                setExtraSeconds(300);
+                                setAddSeconds(300);
                                 }}
                             >
                                 ➕ Cộng giờ
@@ -206,8 +206,8 @@ const ClassExamSessionPage = () => {
                                         type="number"
                                         min={60}
                                         step={60}
-                                        value={extraSeconds}
-                                        onChange={(e) => setExtraSeconds(Number(e.target.value))}
+                                        value={addSeconds}
+                                        onChange={(e) => setAddSeconds(Number(e.target.value))}
                                     />
 
                                     <input
