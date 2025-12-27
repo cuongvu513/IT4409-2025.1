@@ -247,6 +247,10 @@ module.exports = {
       err.status = 403;
       throw err;
     }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { last_login_at: new Date() },
+    });
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1d" });
     return { user, token };
   },

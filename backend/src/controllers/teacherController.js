@@ -562,9 +562,9 @@ module.exports = {
     // Hiển thị danh sách flag vi phạm của học sinh trong lớp
     async getFlaggedStudentsInClass(req, res, next) {
         try {
-            const teacherId = req.user.id;
-            const classId = req.params.classId;
-            const flags = await teacherService.listFlaggedSessionsByClass(teacherId, classId);
+            // const teacherId = req.user.id;
+            const exam_instance_id = req.params.examInstanceId;
+            const flags = await teacherService.listFlaggedSessionsByClass(exam_instance_id);
             res.json(flags);
         } catch (error) {
             next(error);

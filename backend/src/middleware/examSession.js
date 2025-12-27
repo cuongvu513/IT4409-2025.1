@@ -62,6 +62,16 @@ module.exports = async function examSessionMiddleware(req, res, next) {
           flagged_by: null,
         },
       });
+      await prisma.audit_log.create({
+        data: {
+          event_type: "IP_CHANGE",
+          exam_session_id: sessionId,
+          user_id: req.user.id,
+          payload: `IP thay đổi từ ${session.ip_binding} sang ${reqIp}`,
+          source_ip: reqIp,
+          user_agent: reqUA,
+        },
+      });
     }
     if (session.ua_hash && session.ua_hash !== reqUAHash) {
       await prisma.session_flag.create({
@@ -70,6 +80,16 @@ module.exports = async function examSessionMiddleware(req, res, next) {
           flag_type: "ua_mismatch",
           details: "Phát hiện User-Agent không khớp",
           flagged_by: null,
+        },
+      });
+      await prisma.audit_log.create({
+        data: {
+          event_type: "BROWSER_CHANGE",
+          exam_session_id: sessionId,
+          user_id: req.user.id,
+          payload: `Trình duyệt làm bài thi đã thay đổi`,
+          source_ip: reqIp,
+          user_agent: reqUA,
         },
       });
     }

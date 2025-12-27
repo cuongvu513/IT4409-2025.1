@@ -527,3 +527,158 @@ Nếu không truyền `password`, mật khẩu mặc định sẽ là `Password1
 ```
 
 ---
+
+## Endpoint 9 - Lấy thống kê Dashboard
+
+**GET `/api/admin/dashboard`**
+
+- **Mô tả: Lấy thống kê tổng quan cho dashboard quản trị**
+- **HTTP:** GET 
+- **URL:** `/api/admin/dashboard`
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+
+```json
+{
+  "users": {
+    "total": 150
+  },
+  "classes": {
+    "total": 25
+  },
+  "exams": {
+    "total": 50,
+    "active": 3,
+    "upcoming": 5
+  },
+  "submissions": {
+    "today": 12
+  }
+}
+```
+
+**Giải thích:**
+- `users.total`: Tổng số người dùng trong hệ thống
+- `classes.total`: Tổng số lớp học
+- `exams.total`: Tổng số kỳ thi
+- `exams.active`: Số kỳ thi đang diễn ra
+- `exams.upcoming`: Số kỳ thi sắp diễn ra (trong 7 ngày tới)
+- `submissions.today`: Số bài thi đã nộp hôm nay
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+  "error": "Không có quyền truy cập"
+}
+```
+
+---
+
+## Endpoint 10 - Xuất danh sách học sinh (CSV)
+
+**GET `/api/admin/export/students?classId=xxx&status=active`**
+
+- **Mô tả: Xuất danh sách học sinh ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/admin/export/students`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Query Parameters:**
+  - `classId` (optional): Lọc theo lớp học cụ thể
+  - `status` (optional): `active`, `locked` - Lọc theo trạng thái tài khoản
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `danh-sach-hoc-sinh-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+ID,Email,Họ tên,Trạng thái,Lớp học,Ngày tạo,Đăng nhập gần nhất
+"uuid","student@example.com","Nguyễn Văn A","Hoạt động","Tin học (IT4409)","2025-01-01T00:00:00Z","2025-12-27T10:30:00Z"
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+  "error": "Không có quyền truy cập"
+}
+```
+
+---
+
+## Endpoint 11 - Xuất kết quả thi (CSV)
+
+**GET `/api/admin/export/results/:examId`**
+
+- **Mô tả: Xuất kết quả thi của một kỳ thi ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/admin/export/results/:examId`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `examId`: ID của kỳ thi cần xuất kết quả
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `ket-qua-thi-{examId}-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+Mã sinh viên,Email,Họ tên,Trạng thái,Điểm,Điểm tối đa,Phần trăm,Kết quả,Thời gian bắt đầu,Thời gian nộp bài,Thời gian chấm
+"uuid","student@example.com","Nguyễn Văn A","submitted","8.50","10.00","85.00%","Đạt","2025-12-27T09:00:00Z","2025-12-27T10:30:00Z","2025-12-27T10:31:00Z"
+```
+
+**Giải thích:**
+- `Trạng thái`: pending, started, submitted, expired, locked
+- `Phần trăm`: Tỷ lệ phần trăm điểm đạt được
+- `Kết quả`: "Đạt" hoặc "Không đạt" dựa trên điểm chuẩn
+
+- **404 Not Found** (kỳ thi không tồn tại)
+
+```json
+{
+  "error": "Không tìm thấy kỳ thi"
+}
+```
+
+---
+
+## Endpoint 12 - Xuất nhật ký thi (CSV)
+
+**GET `/api/admin/export/logs/:examId`**
+
+- **Mô tả: Xuất nhật ký hoạt động của một kỳ thi ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/admin/export/logs/:examId`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `examId`: ID của kỳ thi cần xuất nhật ký
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `nhat-ky-thi-{examId}-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi tiết
+"2025-12-27T09:00:00Z","EXAM_START","Nguyễn Văn A","student@example.com","session-uuid","192.168.1.100","Mozilla/5.0...","{"action":"started"}"
+"2025-12-27T09:30:00Z","TAB_SWITCH","Nguyễn Văn A","student@example.com","session-uuid","192.168.1.100","Mozilla/5.0...","{"count":1}"
+```
+
+**Loại sự kiện thường gặp:**
+- `EXAM_START`: Bắt đầu làm bài
+- `EXAM_SUBMIT`: Nộp bài
+- `TAB_SWITCH`: Chuyển tab
+- `ANSWER_SAVE`: Lưu câu trả lời
+-  `BROWSER_CHANGE`: Thay đổi trình duyệt
+- `IP_CHANGE`: IP làm bài thay đổi
+- **404 Not Found** (kỳ thi không tồn tại)
+
+```json
+{
+  "error": "Không tìm thấy kỳ thi"
+}
+```
+
+---

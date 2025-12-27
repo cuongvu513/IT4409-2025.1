@@ -200,5 +200,78 @@ module.exports = {
     }
   },
 
+  /**
+   * GET /admin/dashboard
+   * Lấy thống kê dashboard tổng quan
+   */
+  async getDashboard(req, res, next) {
+    try {
+      const stats = await adminService.getDashboardStats();
+      res.json(stats);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * GET /admin/export/students
+   * Xuất danh sách học sinh ra CSV
+   * Query: ?classId=xxx&status=active|locked
+   */
+  async exportStudents(req, res, next) {
+    try {
+      const { classId, status } = req.query;
+      const csv = await adminService.exportStudentList({ classId, status });
+      
+      // Set headers cho file CSV
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="danh-sach-hoc-sinh-${Date.now()}.csv"`);
+      
+      // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+      res.send('\uFEFF' + csv);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * GET /admin/export/results/:examId
+   * Xuất kết quả thi ra CSV
+   */
+  async exportResults(req, res, next) {
+    try {
+      const { examId } = req.params;
+      const csv = await adminService.exportExamResults(examId);
+      
+      // Set headers cho file CSV
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="ket-qua-thi-${examId}-${Date.now()}.csv"`);
+      
+      // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+      res.send('\uFEFF' + csv);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * GET /admin/export/logs/:examId
+   * Xuất nhật ký thi ra CSV
+   */
+  async exportLogs(req, res, next) {
+    try {
+      const { examId } = req.params;
+      const csv = await adminService.exportExamLogs(examId);
+      
+      // Set headers cho file CSV
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="nhat-ky-thi-${examId}-${Date.now()}.csv"`);
+      
+      // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+      res.send('\uFEFF' + csv);
+    } catch (err) {
+      next(err);
+    }
+  },
 
 };
