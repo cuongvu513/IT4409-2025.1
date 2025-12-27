@@ -1688,3 +1688,54 @@ Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi
     "error": "Lớp học không tồn tại hoặc bạn không có quyền"
 }
 ```
+
+## Endpoint 44 — lấy danh sách template đề thi theo lớp học (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/exam-templates`**
+
+- **Mô tả:** lấy danh sách template đề thi theo lớp học
+- **GET:** GET
+- **URL:** `/api/teacher/classes/:classId/exam-templates`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+{
+[
+    {
+        "id": "f54e9593-dd8c-4184-abb0-089c2e5e7e7c",
+        "class_id": "8409b373-5deb-43c0-9a23-dfc0cc162f84",
+        "title": "Kỳ thi cuối học kỳ 1 Môn Toán",
+        "description": "Kỳ học 1234",
+        "duration_seconds": 3600,
+        "shuffle_questions": true,
+        "passing_score": "30",
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "created_at": "2025-12-20T09:53:38.458Z"
+    },
+    {
+        "id": "c0b39423-8d22-42ae-b50f-48d4ee0923cf",
+        "class_id": "8409b373-5deb-43c0-9a23-dfc0cc162f84",
+        "title": "Kỳ thi giữa kỳ môn Toán lớp 10A1",
+        "description": "Bài thi kiểm tra kiến thức chương 1 và chương 2. Bao gồm trắc nghiệm và tự luận.",
+        "duration_seconds": 3600,
+        "shuffle_questions": true,
+        "passing_score": "5",
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "created_at": "2025-12-11T17:04:37.808Z"
+    }
+]
+}
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+- **403 Forbidden**
+```json
+{
+    "error": "Lớp học không tồn tại hoặc bạn không có quyền"
+}
+```

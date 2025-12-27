@@ -723,4 +723,16 @@ module.exports = {
             next(error);
         }
     },
+
+    // lấy danh sách template đề thi theo lớp học
+    async getExamTemplatesByClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const templates = await teacherService.getExamTemplatesByClass(teacherId, classId);
+            res.json(templates);
+        } catch (error) {
+            next(error);
+        }
+    },
 };
