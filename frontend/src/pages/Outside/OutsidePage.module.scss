@@ -3,11 +3,9 @@
 @use '../../styles/variables' as *;
 
 .pageContainer {
-    // 1. Cấu hình ảnh nền
-    background-image: url('../../assets/images/background-log-in.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed; // Giữ ảnh nền đứng yên khi cuộn (Parallax)
+    // 1. Cấu hình gradient nền (xanh bầu trời)
+    background: linear-gradient(180deg, #E3F2FD, #90CAF9);
+    background-attachment: fixed; // Giữ gradient đứng yên khi cuộn
 
     // 2. PHÁ VỠ GIỚI HẠN KHUNG (Fix lỗi khoảng trắng)
     position: fixed;
