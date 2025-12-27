@@ -236,7 +236,16 @@ const TeacherTemplatesPage = () => {
                             <div className={styles.row}>
                                 <div className={styles.formGroup}>
                                     <label>Lớp áp dụng *</label>
-                                    <select name="class_id" value={formData.class_id} onChange={handleInputChange} required>
+                                    <select
+                                        name="class_id"
+                                        value={formData.class_id}
+                                        onChange={handleInputChange}
+                                        required
+                                        // Nếu đang sửa (editingTemplate khác null) thì Disable
+                                        disabled={!!editingTemplate}
+                                        // Thêm style cho rõ ràng khi bị disabled
+                                        style={editingTemplate ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}}
+                                    >
                                         <option value="">-- Chọn lớp --</option>
                                         {classList.map(cls => (
                                             <option key={cls.id} value={cls.id}>{cls.name}</option>
