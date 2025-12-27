@@ -49,7 +49,7 @@ router.get("/export/results/:examId", teacherController.exportResults); // Xuấ
 router.get("/export/logs/:examId", teacherController.exportLogs); // Xuất nhật ký thi CSV
 
 router.get("/classes/:classId/exam-instances/:examInstanceId/scores", teacherController.getStudentScoresInClass);   // giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi
-
+router.get("/classes/:classId/exam-templates", teacherController.getExamTemplatesByClass); // lấy danh sách template đề thi theo lớp học
 
 
 module.exports = router;
