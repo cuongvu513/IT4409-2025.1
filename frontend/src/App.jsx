@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 // Layouts
 import StudentLayout from './layouts/StudentLayout';
 import TeacherLayout from './layouts/TeacherLayout';
+import AdminLayout from './layouts/AdminLayout';
 
 // Import các trang chung
 import OutsidePage from './pages/Outside/OutsidePage';
@@ -12,9 +13,10 @@ import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
 
-// Import 2 trang Dashboard mới
+// Import 3 trang Dashboard mới
 import StudentDashboardPage from './pages/Student/StudentDashboardPage';
 import TeacherDashboardPage from './pages/Teacher/TeacherDashboardPage';
+import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
 
 // trang cho teacher
 //trang danhsachlop
@@ -35,6 +37,10 @@ import TeacherClassExamPage from './pages/Teacher/TeacherClassExamPage';
 import StudentClassesPage from './pages/Student/StudentClassesPage';
 import StudentClassExamsPage from './pages/Student/StudentClassExamsPage';
 import StudentTakeExamPage from './pages/Student/StudentTakeExamPage';
+
+//trang cho admin
+import AdminUserPage from './pages/Admin/AdminUserPage';
+import AdminClassPage from './pages/Admin/AdminClassPage';
 
 function App() {
   return (
@@ -66,7 +72,14 @@ function App() {
             <Route path="questions" element={<TeacherQuestionsPage />} />
             <Route path="exam-templates" element={<TeacherTemplatesPage />} />
             <Route path="exam-templates/:templateId" element={<TeacherExamInstancesPage />} />
-            <Route path="classes/:classId/exams/:examInstanceId"element={<ClassExamSessionPage />} />
+            <Route path="classes/:classId/exams/:examInstanceId" element={<ClassExamSessionPage />} />
+          </Route>
+
+          {/* --- NHÓM ROUTE ADMIN --- */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUserPage />} />
+            <Route path="classes" element={<AdminClassPage />} />
           </Route>
 
 
