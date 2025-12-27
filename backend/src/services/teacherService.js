@@ -1480,5 +1480,85 @@ module.exports = {
         return csv;
     },
 
+    // giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi
+    async getStudentScoresInClass(teacherId, classId, examInstanceId) {
+        // 1️ Check quyền lớp học
+        const klass = await prisma.Renamedclass.findFirst({
+            where: {
+                id: classId,
+                teacher_id: teacherId,
+            },
+            select: { id: true },
+        });
+
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
+            err.status = 403;
+            throw err;
+        }
+
+        // 2️ Lấy toàn bộ sinh viên trong lớp
+        const enrollments = await prisma.enrollment_request.findMany({
+            where: {
+                class_id: classId,
+                status: "approved",
+            },
+            select: {
+                user_enrollment_request_student_idTouser: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
+        });
+
+        const students = enrollments
+            .map(e => e.user_enrollment_request_student_idTouser)
+            .filter(Boolean);
+
+        // 3️ Lấy toàn bộ session của kỳ thi
+        const sessions = await prisma.exam_session.findMany({
+            where: {
+                exam_instance_id: examInstanceId,
+            },
+            include: {
+                submission: {
+                    select: {
+                        score: true,
+                        max_score: true,
+                        graded_at: true,
+                    },
+                },
+            },
+        });
+
+        // 4️ Map session theo user_id
+        const sessionMap = new Map();
+        sessions.forEach(s => {
+            sessionMap.set(s.user_id, s);
+        });
+
+        // 5️ Chuẩn hóa bảng điểm
+        const result = students.map(user => {
+            const session = sessionMap.get(user.id);
+            const submission = session?.submission?.[0];
+
+            return {
+                user_id: user.id,
+                name: user.name,
+                email: user.email,
+                state: session?.state ?? "not_started",
+                score: submission ? Number(submission.score) : 0,
+                max_score: submission ? Number(submission.max_score) : 0,
+                graded_at: submission?.graded_at ?? null,
+            };
+        });
+
+        return result;
+    }
+
+
 };
 
