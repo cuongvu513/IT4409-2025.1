@@ -1,0 +1,354 @@
+// src/pages/Teacher/TeacherExamInstancesPage.jsx
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import teacherService from '../../services/teacherService';
+import styles from './TeacherExamInstancesPage.module.scss';
+
+const TeacherExamInstancesPage = () => {
+    const { templateId } = useParams();
+
+    // KHÔNG CẦN AuthContext hay logout nữa
+
+    // Data State
+    const [exams, setExams] = useState([]);
+    const [questions, setQuestions] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Modal & Form State
+    const [showModal, setShowModal] = useState(false);
+    const [editingExam, setEditingExam] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Modal Xem chi tiết
+    const [viewExam, setViewExam] = useState(null);
+
+    const initialForm = {
+        starts_at: '',
+        ends_at: '',
+        published: false,
+        show_answers: false,
+        selectedQuestionIds: []
+    };
+    const [formData, setFormData] = useState(initialForm);
+
+    // --- 1. LOAD DATA ---
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const [examRes, questRes] = await Promise.all([
+                    teacherService.getExamInstancesByTemplate(templateId),
+                    teacherService.getQuestions()
+                ]);
+                setExams(examRes.data);
+                setQuestions(questRes.data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [templateId]);
+
+    // Helpers
+    const toInputDateTime = (isoString) => isoString ? isoString.substring(0, 16) : '';
+    const formatDate = (str) => new Date(str).toLocaleString('vi-VN');
+    const getQuestionText = (qId) => {
+        const found = questions.find(q => q.id === qId);
+        return found ? found.text : "Câu hỏi đã bị xóa";
+    };
+
+    // --- LOGIC FORM ---
+    const handleInputChange = (e) => {
+        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        setFormData({ ...formData, [e.target.name]: value });
+    };
+
+    const handleQuestionToggle = (qId) => {
+        setFormData(prev => {
+            const current = prev.selectedQuestionIds;
+            if (current.includes(qId)) return { ...prev, selectedQuestionIds: current.filter(id => id !== qId) };
+            else return { ...prev, selectedQuestionIds: [...current, qId] };
+        });
+    };
+
+    // --- CÁC HÀM XỬ LÝ ---
+    const openCreateModal = () => {
+        setEditingExam(null);
+        setFormData(initialForm);
+        setShowModal(true);
+    };
+
+    const openEditModal = (exam) => {
+        setEditingExam(exam);
+        const currentQuestionIds = exam.exam_question ? exam.exam_question.map(eq => eq.question_id) : [];
+        setFormData({
+            starts_at: toInputDateTime(exam.starts_at),
+            ends_at: toInputDateTime(exam.ends_at),
+            published: exam.published,
+            show_answers: exam.show_answers || false,
+            selectedQuestionIds: currentQuestionIds
+        });
+        setShowModal(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Bạn có chắc chắn muốn xóa đề thi này không?")) return;
+        try {
+            await teacherService.deleteExamInstance(id);
+            setExams(prev => prev.filter(e => e.id !== id));
+            alert("Xóa thành công!");
+        } catch (error) {
+            alert(error.response?.data?.error || "Xóa thất bại");
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+
+        const payload = {
+            ...(editingExam ? {} : { templateId }),
+            starts_at: new Date(formData.starts_at).toISOString(),
+            ends_at: new Date(formData.ends_at).toISOString(),
+            published: formData.published,
+            show_answers: formData.show_answers,
+            questions: formData.selectedQuestionIds.map(id => ({ question_id: id }))
+        };
+
+        if (payload.questions.length === 0) { alert("Vui lòng chọn ít nhất 1 câu hỏi!"); setIsSubmitting(false); return; }
+
+        try {
+            if (editingExam) {
+                const res = await teacherService.updateExamInstance(editingExam.id, payload);
+                setExams(prev => prev.map(ex =>
+                    ex.id === editingExam.id ? { ...ex, ...res.data.updatedInstance, title: ex.title } : ex
+                ));
+                alert(res.data.message);
+            } else {
+                const res = await teacherService.createExam(payload);
+                const newExam = { ...res.data.newInstance, title: "Đề thi mới" };
+                setExams([newExam, ...exams]);
+                alert(res.data.message);
+            }
+            setShowModal(false);
+        } catch (error) {
+            alert(error.response?.data?.error || "Thất bại");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleViewDetail = async (id) => {
+        try {
+            const res = await teacherService.getExamInstanceDetail(id);
+            setViewExam(res.data);
+        } catch (error) {
+            console.error(error);
+            alert("Không thể tải chi tiết đề thi.");
+        }
+    };
+
+    return (
+        // XÓA .layout, .sidebar, .mainContent, <TopHeader>
+        // CHỈ GIỮ LẠI PHẦN NỘI DUNG CHÍNH (CONTENT BODY)
+        <div className={styles.contentBody}>
+            <div className={styles.backLink}>
+                <Link to="/teacher/exam-templates">← Quay lại danh sách Template</Link>
+            </div>
+
+            <div className={styles.pageHeader}>
+                <h2>Danh sách Đề thi (Instances)</h2>
+                <button className={styles.createBtn} onClick={openCreateModal}>+ Tạo Đề Thi</button>
+            </div>
+
+            {loading ? <p style={{ textAlign: 'center' }}>Đang tải dữ liệu...</p> : (
+                <div className={styles.tableContainer}>
+                    <table className={styles.dataTable}>
+                        <thead>
+                            <tr>
+                                <th>ID Đề thi</th>
+                                <th>Bắt đầu</th>
+                                <th>Kết thúc</th>
+                                <th>Trạng thái</th>
+                                <th>Đáp án</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {exams.length > 0 ? exams.map(exam => (
+                                <tr key={exam.id}>
+                                    <td style={{ fontFamily: 'monospace', color: '#007bff' }}>
+                                        {exam.title || exam.id.substring(0, 8)}
+                                    </td>
+                                    <td>{formatDate(exam.starts_at)}</td>
+                                    <td>{formatDate(exam.ends_at)}</td>
+                                    <td>
+                                        <span className={`${styles.badge} ${exam.published ? styles.pub : styles.draft}`}>
+                                            {exam.published ? 'Công bố' : 'Nháp'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {exam.show_answers ?
+                                            <span style={{ color: 'green', fontWeight: 'bold' }}>Hiện</span> :
+                                            <span style={{ color: '#666' }}>Ẩn</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div className={styles.actionButtons}>
+                                            <button
+                                                className={`${styles.btnIcon} ${styles.btnView}`}
+                                                onClick={() => handleViewDetail(exam.id)}
+                                                title="Xem chi tiết"
+                                            >
+                                                <i className="fa-solid fa-eye"></i>
+                                            </button>
+                                            <button className={`${styles.btnIcon} ${styles.btnEdit}`} onClick={() => openEditModal(exam)} title="Sửa">
+                                                <i className="fa-solid fa-pen"></i>
+                                            </button>
+                                            <button className={`${styles.btnIcon} ${styles.btnDelete}`} onClick={() => handleDelete(exam.id)} title="Xóa">
+                                                <i className="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>Chưa có đề thi nào.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {/* --- MODAL TẠO/SỬA --- */}
+            {showModal && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent}>
+                        <div className={styles.modalHeader}>
+                            <h3>{editingExam ? 'Chỉnh sửa Đề Thi' : 'Tạo Đề Thi Mới'}</h3>
+                            <button onClick={() => setShowModal(false)}>&times;</button>
+                        </div>
+                        <form onSubmit={handleSubmit} className={styles.formScroll}>
+                            <div className={styles.row}>
+                                <div className={styles.formGroup}>
+                                    <label>Bắt đầu *</label>
+                                    <input type="datetime-local" name="starts_at" value={formData.starts_at} onChange={handleInputChange} required />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label>Kết thúc *</label>
+                                    <input type="datetime-local" name="ends_at" value={formData.ends_at} onChange={handleInputChange} required />
+                                </div>
+                            </div>
+
+                            <div className={styles.row}>
+                                <div className={styles.formGroup}>
+                                    <label className={styles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            name="published"
+                                            checked={formData.published}
+                                            onChange={handleInputChange}
+                                        />
+                                        Công bố ngay
+                                    </label>
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label className={styles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            name="show_answers"
+                                            checked={formData.show_answers}
+                                            onChange={handleInputChange}
+                                        />
+                                        Hiển thị đáp án sau khi thi
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className={styles.questionSection}>
+                                <h4>Chọn câu hỏi ({formData.selectedQuestionIds.length})</h4>
+                                <div className={styles.questionList}>
+                                    {questions.length === 0 ? <p>Ngân hàng câu hỏi trống.</p> :
+                                        questions.map(q => (
+                                            <div key={q.id} className={styles.qItem}>
+                                                <input
+                                                    type="checkbox"
+                                                    id={`q-${q.id}`}
+                                                    checked={formData.selectedQuestionIds.includes(q.id)}
+                                                    onChange={() => handleQuestionToggle(q.id)}
+                                                />
+                                                <label htmlFor={`q-${q.id}`}>
+                                                    <span className={`${styles.badge} ${styles.gray}`}>{q.difficulty}</span>
+                                                    {q.text}
+                                                </label>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+
+                            <div className={styles.modalActions}>
+                                <button type="button" className={styles.btnCancel} onClick={() => setShowModal(false)}>Hủy</button>
+                                <button type="submit" className={styles.btnSubmit} disabled={isSubmitting}>
+                                    {isSubmitting ? 'Đang xử lý...' : (editingExam ? 'Cập nhật' : 'Tạo mới')}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL XEM CHI TIẾT --- */}
+            {viewExam && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent}>
+                        <div className={styles.modalHeader}>
+                            <h3>Chi tiết Đề Thi</h3>
+                            <button onClick={() => setViewExam(null)}>&times;</button>
+                        </div>
+                        <div className={styles.detailBody}>
+                            <div className={styles.infoGrid}>
+                                <div className={styles.infoItem}>
+                                    <label>ID Đề thi:</label> <span>{viewExam.id}</span>
+                                </div>
+                                <div className={styles.infoItem}>
+                                    <label>Trạng thái:</label>
+                                    <span className={`${styles.badge} ${viewExam.published ? styles.pub : styles.draft}`}>
+                                        {viewExam.published ? 'Đã công bố' : 'Bản nháp'}
+                                    </span>
+                                </div>
+                                <div className={styles.infoItem}>
+                                    <label>Bắt đầu:</label> <span>{formatDate(viewExam.starts_at)}</span>
+                                </div>
+                                <div className={styles.infoItem}>
+                                    <label>Kết thúc:</label> <span>{formatDate(viewExam.ends_at)}</span>
+                                </div>
+                            </div>
+                            <h4 style={{ marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #eee' }}>
+                                Danh sách câu hỏi ({viewExam.exam_question?.length || 0})
+                            </h4>
+                            <div className={styles.questionListPreview}>
+                                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                                    {viewExam.exam_question?.map((eq, index) => (
+                                        <li key={eq.id} style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', display: 'flex', gap: '10px' }}>
+                                            <span style={{ fontWeight: 'bold', color: '#007bff', minWidth: '60px' }}>
+                                                Câu {index + 1}:
+                                            </span>
+                                            <span style={{ flex: 1 }}>{getQuestionText(eq.question_id)}</span>
+                                            <span style={{ fontSize: '0.8rem', color: '#999' }}>({eq.points} điểm)</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                        <div className={styles.modalActions}>
+                            <button className={styles.btnCancel} onClick={() => setViewExam(null)}>Đóng</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default TeacherExamInstancesPage;
