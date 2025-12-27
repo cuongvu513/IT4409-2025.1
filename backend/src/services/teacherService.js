@@ -901,10 +901,13 @@ module.exports = {
                     where: { id: session.id },
                     data: { ends_at: newEndsAt },
                 });
+                
+                // Trả về thông tin để broadcast WebSocket update
+                return { accommodation, needsBroadcast: true, examInstanceId, studentId };
             }
         }
 
-        return accommodation;
+        return { accommodation, needsBroadcast: false };
     },
 
     // Liệt kê học sinh đang thi (có exam_session state='started') trong một lớp

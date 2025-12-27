@@ -532,7 +532,7 @@ module.exports = {
                 throw err;
             }
 
-            const accommodation = await teacherService.upsertAccommodation({
+            const result = await teacherService.upsertAccommodation({
                 teacherId,
                 examInstanceId,
                 studentId: student_id,
@@ -541,7 +541,20 @@ module.exports = {
                 notes,
             });
 
-            res.status(200).json({ accommodation, message: "Cập nhật thêm thời gian thành công" });
+            // Nếu cần broadcast WebSocket update
+            if (result.needsBroadcast) {
+                const io = req.app.get('io');
+                if (io) {
+                    const { broadcastTimeUpdate } = require('../sockets/examTimer');
+                    // Broadcast update cho học sinh cụ thể
+                    broadcastTimeUpdate(io, result.examInstanceId, result.studentId);
+                }
+            }
+
+            res.status(200).json({ 
+                accommodation: result.accommodation, 
+                message: "Cập nhật thêm thời gian thành công" 
+            });
         } catch (error) {
             next(error);
         }
