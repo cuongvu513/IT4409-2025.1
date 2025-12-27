@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
+import Pagination from '../../components/Pagination';
 import styles from './TeacherClassesPage.module.scss';
 
 const TeacherClassesPage = () => {
@@ -10,6 +11,10 @@ const TeacherClassesPage = () => {
     // --- STATE DỮ LIỆU ---
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const classesPerPage = 10;
 
     // --- STATE MODAL ---
     const [showModal, setShowModal] = useState(false);
@@ -98,9 +103,11 @@ const TeacherClassesPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {classes.map((cls, index) => (
+                            {classes
+                                .slice((currentPage - 1) * classesPerPage, currentPage * classesPerPage)
+                                .map((cls, index) => (
                                 <tr key={cls.id}>
-                                    <td>{index + 1}</td>
+                                    <td>{(currentPage - 1) * classesPerPage + index + 1}</td>
                                     <td className={styles.className}>
                                         <Link to={`/teacher/classes/${cls.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                             {cls.name}
@@ -131,6 +138,17 @@ const TeacherClassesPage = () => {
                             ))}
                         </tbody>
                     </table>
+                    
+                    {/* Pagination */}
+                    {classes.length > classesPerPage && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(classes.length / classesPerPage)}
+                            onPageChange={setCurrentPage}
+                            itemsPerPage={classesPerPage}
+                            totalItems={classes.length}
+                        />
+                    )}
                 </div>
             ) : (
                 <div className={styles.emptyState}>

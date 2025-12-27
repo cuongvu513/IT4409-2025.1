@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 // XÓA DÒNG NÀY: import TopHeader ...
 import studentService from '../../services/studentService';
+import Pagination from '../../components/Pagination';
 import styles from './StudentClassExamsPage.module.scss';
 
 const StudentClassExamsPage = () => {
@@ -12,6 +13,10 @@ const StudentClassExamsPage = () => {
     const location = useLocation();
     const [exams, setExams] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const examsPerPage = 10;
 
     useEffect(() => {
         const fetchExams = async () => {
@@ -62,8 +67,11 @@ const StudentClassExamsPage = () => {
             {loading ? (
                 <p className={styles.loading}>Đang tải dữ liệu...</p>
             ) : (
-                <div className={styles.examList}>
-                    {exams.length > 0 ? exams.map(exam => (
+                <>
+                    <div className={styles.examList}>
+                        {exams.length > 0 ? exams
+                            .slice((currentPage - 1) * examsPerPage, currentPage * examsPerPage)
+                            .map(exam => (
                         <div key={exam.id} className={styles.examCard}>
                             <div className={styles.cardLeft}>
                                 <h3 className={styles.examTitle}>{exam.title}</h3>
@@ -100,8 +108,18 @@ const StudentClassExamsPage = () => {
                             <p>Lớp này chưa có bài kiểm tra nào.</p>
                         </div>
                     )}
-                </div>
-            )}
+                </div>                    
+                    {/* Pagination */}
+                    {exams.length > examsPerPage && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(exams.length / examsPerPage)}
+                            onPageChange={setCurrentPage}
+                            itemsPerPage={examsPerPage}
+                            totalItems={exams.length}
+                        />
+                    )}
+                </>            )}
         </div>
     );
 };

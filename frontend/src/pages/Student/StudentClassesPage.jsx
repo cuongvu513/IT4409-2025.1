@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import studentService from '../../services/studentService';
+import Pagination from '../../components/Pagination';
 import styles from './StudentClassesPage.module.scss';
 
 const StudentClassesPage = () => {
@@ -16,6 +17,10 @@ const StudentClassesPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ classCode: '', note: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const classesPerPage = 9; // 3x3 grid
 
     // --- 1. HÀM LOAD DỮ LIỆU (Tách ra để tái sử dụng) ---
     const fetchClasses = async () => {
@@ -141,8 +146,11 @@ const StudentClassesPage = () => {
             {loading ? (
                 <p className={styles.loadingText}>Đang tải dữ liệu...</p>
             ) : (
-                <div className={styles.gridContainer}>
-                    {classes.length > 0 ? classes.map(cls => (
+                <>
+                    <div className={styles.gridContainer}>
+                        {classes.length > 0 ? classes
+                            .slice((currentPage - 1) * classesPerPage, currentPage * classesPerPage)
+                            .map(cls => (
                         <div key={cls.id} className={styles.classCard}>
                             <div className={styles.cardHeader}>
                                 <h3>{cls.name}</h3>
@@ -195,9 +203,20 @@ const StudentClassesPage = () => {
                         </div>
                     )}
                 </div>
+                    
+                    {/* Pagination */}
+                    {classes.length > classesPerPage && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(classes.length / classesPerPage)}
+                            onPageChange={setCurrentPage}
+                            itemsPerPage={classesPerPage}
+                            totalItems={classes.length}
+                        />
+                    )}
+                </>
             )}
 
-            {/* MODAL THAM GIA LỚP */}
             {showModal && (
                 <div className={styles.modalOverlay}>
                     <div className={styles.modalContent}>

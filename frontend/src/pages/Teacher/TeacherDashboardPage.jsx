@@ -1,6 +1,7 @@
 // src/pages/Teacher/TeacherDashboardPage.jsx
 import React, { useState, useEffect } from 'react';
 import teacherService from '../../services/teacherService';
+import Pagination from '../../components/Pagination';
 import styles from './TeacherDashboardPage.module.scss';
 
 const TeacherDashboardPage = () => {
@@ -15,6 +16,10 @@ const TeacherDashboardPage = () => {
     });
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Pagination for activities
+    const [currentPage, setCurrentPage] = useState(1);
+    const activitiesPerPage = 5;
 
     // --- STATE QUẢN LÝ MODAL TẠO LỚP ---
     const [showModal, setShowModal] = useState(false);
@@ -141,7 +146,9 @@ const TeacherDashboardPage = () => {
                     {loading ? (
                         <p className={styles.loadingText}>Đang tải dữ liệu...</p>
                     ) : activities.length > 0 ? (
-                        activities.map((act) => {
+                        activities
+                            .slice((currentPage - 1) * activitiesPerPage, currentPage * activitiesPerPage)
+                            .map((act) => {
                             const config = getActivityConfig(act.type);
                             return (
                                 <div key={act.id} className={styles.activityItem}>
@@ -159,6 +166,17 @@ const TeacherDashboardPage = () => {
                         <p className={styles.emptyText}>Chưa có hoạt động nào.</p>
                     )}
                 </div>
+                
+                {/* Pagination for activities */}
+                {activities.length > activitiesPerPage && (
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={Math.ceil(activities.length / activitiesPerPage)}
+                        onPageChange={setCurrentPage}
+                        itemsPerPage={activitiesPerPage}
+                        totalItems={activities.length}
+                    />
+                )}
             </div>
 
             {/* --- MODAL TẠO LỚP (GIỮ NGUYÊN) --- */}

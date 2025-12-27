@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import MathRenderer from '../../components/MathRenderer';
+import Pagination from '../../components/Pagination';
 import styles from './TeacherExamInstancesPage.module.scss';
 
 const TeacherExamInstancesPage = () => {
@@ -26,6 +27,12 @@ const TeacherExamInstancesPage = () => {
     // Search state2
     const [searchTerm, setSearchTerm] = useState('');
     const [difficultyFilter, setDifficultyFilter] = useState('all');
+    
+    // Pagination state
+    const [currentExamPage, setCurrentExamPage] = useState(1);
+    const [currentQuestionPage, setCurrentQuestionPage] = useState(1);
+    const examsPerPage = 10;
+    const questionsPerPage = 10;
 
     const initialForm = {
         starts_at: '',
@@ -193,7 +200,9 @@ const TeacherExamInstancesPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {exams.length > 0 ? exams.map(exam => (
+                            {exams.length > 0 ? exams
+                                .slice((currentExamPage - 1) * examsPerPage, currentExamPage * examsPerPage)
+                                .map((exam, index) => (
                                 <tr key={exam.id}>
                                     <td style={{ fontFamily: 'monospace', color: '#007bff' }}>
                                         {exam.title || exam.id.substring(0, 8)}
@@ -234,6 +243,17 @@ const TeacherExamInstancesPage = () => {
                             )}
                         </tbody>
                     </table>
+                    
+                    {/* Pagination for exams */}
+                    {exams.length > examsPerPage && (
+                        <Pagination
+                            currentPage={currentExamPage}
+                            totalPages={Math.ceil(exams.length / examsPerPage)}
+                            onPageChange={setCurrentExamPage}
+                            itemsPerPage={examsPerPage}
+                            totalItems={exams.length}
+                        />
+                    )}
                 </div>
             )}
 
@@ -308,7 +328,9 @@ const TeacherExamInstancesPage = () => {
                                 <div className={styles.questionList}>
                                     {questions.length === 0 ? <p>Ngân hàng câu hỏi trống.</p> :
                                         filteredQuestions.length === 0 ? <p>Không tìm thấy câu hỏi phù hợp.</p> :
-                                        filteredQuestions.map(q => (
+                                        filteredQuestions
+                                            .slice((currentQuestionPage - 1) * questionsPerPage, currentQuestionPage * questionsPerPage)
+                                            .map(q => (
                                             <div key={q.id} className={styles.qItem}>
                                                 <input
                                                     type="checkbox"
@@ -323,6 +345,17 @@ const TeacherExamInstancesPage = () => {
                                             </div>
                                         ))}
                                 </div>
+                                
+                                {/* Pagination for questions in modal */}
+                                {filteredQuestions.length > questionsPerPage && (
+                                    <Pagination
+                                        currentPage={currentQuestionPage}
+                                        totalPages={Math.ceil(filteredQuestions.length / questionsPerPage)}
+                                        onPageChange={setCurrentQuestionPage}
+                                        itemsPerPage={questionsPerPage}
+                                        totalItems={filteredQuestions.length}
+                                    />
+                                )}
                             </div>
 
                             <div className={styles.modalActions}>

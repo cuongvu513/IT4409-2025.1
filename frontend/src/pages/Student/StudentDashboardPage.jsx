@@ -3,6 +3,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import studentService from '../../services/studentService';
+import Pagination from '../../components/Pagination';
 import styles from './StudentDashboardPage.module.scss';
 
 const StudentDashboardPage = () => {
@@ -17,6 +18,10 @@ const StudentDashboardPage = () => {
         completedCount: 0
     });
     const [loading, setLoading] = useState(true);
+    
+    // Pagination for classes
+    const [currentPage, setCurrentPage] = useState(1);
+    const classesPerPage = 6;
 
     // --- STATE CHO MODAL THAM GIA LỚP ---
     const [showModal, setShowModal] = useState(false);
@@ -107,9 +112,12 @@ const StudentDashboardPage = () => {
                 {loading ? (
                     <p style={{ textAlign: 'center', color: '#999' }}>Đang tải dữ liệu...</p>
                 ) : dashboardData.classes.length > 0 ? (
-                    // Hiển thị dạng lưới các lớp học
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-                        {dashboardData.classes.map(cls => (
+                    <>
+                        {/* Hiển thị dạng lưới các lớp học */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                            {dashboardData.classes
+                                .slice((currentPage - 1) * classesPerPage, currentPage * classesPerPage)
+                                .map(cls => (
                             <div key={cls.id} className={styles.classCard} style={{ border: '1px solid #eee', padding: '20px', borderRadius: '10px', background: 'white' }}>
                                 <h3 style={{ margin: '0 0 10px', color: '#333' }}>{cls.name}</h3>
                                 <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '15px' }}>{cls.description || "Không có"}</p>
@@ -125,8 +133,20 @@ const StudentDashboardPage = () => {
                                     Vào lớp
                                 </button>
                             </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                        
+                        {/* Pagination */}
+                        {dashboardData.classes.length > classesPerPage && (
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={Math.ceil(dashboardData.classes.length / classesPerPage)}
+                                onPageChange={setCurrentPage}
+                                itemsPerPage={classesPerPage}
+                                totalItems={dashboardData.classes.length}
+                            />
+                        )}
+                    </>
                 ) : (
                     // Empty State
                     <div className={styles.emptyState}>

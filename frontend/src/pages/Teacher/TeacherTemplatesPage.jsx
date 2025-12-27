@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'; // Xóa useContext, AuthContext
 import { Link } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
+import Pagination from '../../components/Pagination';
 import styles from './TeacherTemplatesPage.module.scss';
 
 const TeacherTemplatesPage = () => {
@@ -14,6 +15,10 @@ const TeacherTemplatesPage = () => {
 
     // State Tìm kiếm
     const [keyword, setKeyword] = useState('');
+    
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const templatesPerPage = 10;
 
     // State Modal & Form
     const [showModal, setShowModal] = useState(false);
@@ -170,7 +175,9 @@ const TeacherTemplatesPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {templates.length > 0 ? templates.map(tpl => (
+                            {templates.length > 0 ? templates
+                                .slice((currentPage - 1) * templatesPerPage, currentPage * templatesPerPage)
+                                .map(tpl => (
                                 <tr key={tpl.id}>
                                     <td>
                                         <Link
@@ -213,6 +220,17 @@ const TeacherTemplatesPage = () => {
                             )}
                         </tbody>
                     </table>
+                    
+                    {/* Pagination */}
+                    {templates.length > templatesPerPage && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={Math.ceil(templates.length / templatesPerPage)}
+                            onPageChange={setCurrentPage}
+                            itemsPerPage={templatesPerPage}
+                            totalItems={templates.length}
+                        />
+                    )}
                 </div>
             )}
 
