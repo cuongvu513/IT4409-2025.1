@@ -1128,6 +1128,8 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 }
 ```
 
+
+
 ## Endpoint 32 — Giáo viên hủy công bố đề thi  ( Dành cho giáo viên)
 
 **POST`/api/teacher/exam-instances/:id/unpublish`**
@@ -1153,5 +1155,536 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 ```json
 {
     "error": "Unauthorized"
+}
+```
+
+---
+
+## Endpoint 33 — Hiển thị học sinh đang thi trong lớp (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/active-students`**
+
+- **Mô tả:** Trả về danh sách học sinh đang có phiên thi ở trạng thái `started` trong lớp chỉ định.
+- **HTTP:** GET
+- **URL:** `/api/teacher/classes/:classId/active-students`
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+
+**200 OK**
+
+```json
+[
+    { "id": "a2c1...", "name": "Nguyễn Văn A" },
+    { "id": "b3d4...", "name": "Trần Thị B" }
+]
+```
+
+- **403 Forbidden** (lớp không thuộc giáo viên)
+
+```json
+{ "error": "Lớp học không tồn tại hoặc bạn không có quyền" }
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{ "error": "Unauthorized" }
+```
+---
+
+## Endpoint 34 — Thêm thời gian thi cho học sinh  (Dành cho giáo viên)
+
+**POST `/api/teacher/exam-instances/:idKythi/accommodations`**
+
+- **Mô tả:** Giáo viên cộng thêm thời gian làm bài cho một học sinh cụ thể trong đề thi.
+- Nếu học sinh đã có phiên thi đang diễn ra, thời gian kết thúc phiên sẽ được kéo dài (không vượt quá `ends_at` của đề thi).
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Request body:**
+
+```json
+{
+    "student_id": "<uuid-hoc-sinh>",
+    "extra_seconds": 600,
+    "add_seconds": 300,
+    "notes": "Thêm 10-15 phút do xác nhận y tế"
+}
+```
+
+- **200 OK**
+
+```json
+{
+    "accommodation": {
+        "id": "...",
+        "user_id": "...",
+        "exam_instance_id": "...",
+        "extra_seconds": 600,
+        "notes": "Thêm 10 phút do xác nhận y tế",
+        "created_at": "2025-12-23T01:00:00.000Z"
+    },
+    "message": "Cập nhật thêm thời gian thành công"
+}
+```
+
+- **400 Bad Request**
+
+```json
+{ "error": "Thiếu student_id hoặc extra_seconds/add_seconds không hợp lệ" }
+```
+
+- **403 Forbidden** (đề thi không thuộc giáo viên)
+
+```json
+{ "error": "Đề thi không tồn tại hoặc bạn không có quyền" }
+```
+
+- **400 Bad Request** (học sinh không thuộc lớp/không được duyệt)
+
+```json
+{ "error": "Học sinh không thuộc lớp của đề thi hoặc chưa được duyệt" }
+```
+
+---
+
+## Endpoint 35 — Danh sách vi phạm của học sinh trong lớp (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:examID/flags`**
+
+- **Mô tả:** Trả về các record trong `session_flag` thuộc lớp do giáo viên sở hữu.
+- **HTTP:** GET
+- **URL:** `/api/teacher/classes/:examID/flags`
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+
+```json
+[{
+        "id": "604920e8-6fc0-4a76-a9c0-b97f8c4193cc",
+        "flag_type": "ua_mismatch",
+        "details": "Phát hiện User-Agent không khớp",
+        "created_at": "2025-12-27T05:49:54.984Z",
+        "session_id": "42e3d31c-b1d7-4007-bc4f-7dd8a542bebd",
+        "exam_instance_id": "f9c7e7c0-5636-4c8c-8947-5645e28a9cb7",
+        "exam_template": {
+            "id": "196e5932-28c5-40da-b254-bba8668bcc18",
+            "title": "Đề thi Kiểm tra",
+            "class_id": "1864fd85-bf81-4e26-828b-1dcf2b57cc6a"
+        },
+        "student": {
+            "id": "5d0ca9ae-d6f4-4633-8ca6-d41cf548d8fd",
+            "name": "student11",
+            "email": "student1@gmail.com"
+        },
+        "flagged_by": null
+    }, {
+        "id": "d25cfc35-176f-40e6-9e9f-9411231407b3",
+        "flag_type": "ua_mismatch",
+        "details": "Phát hiện User-Agent không khớp",
+        "created_at": "2025-12-27T05:49:24.989Z",
+        "session_id": "42e3d31c-b1d7-4007-bc4f-7dd8a542bebd",
+        "exam_instance_id": "f9c7e7c0-5636-4c8c-8947-5645e28a9cb7",
+        "exam_template": {
+            "id": "196e5932-28c5-40da-b254-bba8668bcc18",
+            "title": "Đề thi Kiểm tra",
+            "class_id": "1864fd85-bf81-4e26-828b-1dcf2b57cc6a"
+        },
+        "student": {
+            "id": "5d0ca9ae-d6f4-4633-8ca6-d41cf548d8fd",
+            "name": "student11",
+            "email": "student1@gmail.com"
+        },
+        "flagged_by": null
+    }
+]
+```
+
+- **401 Unauthorized / 403 Forbidden** nếu không có quyền hoặc token không hợp lệ.
+
+---
+
+## Endpoint 36 — Khóa thủ công phiên thi (Dành cho giáo viên)
+
+**POST `/api/teacher/exam-sessions/:session_id/lock`**
+
+- **Mô tả:** Giáo viên tự khóa một `exam_session` của lớp mình.
+- **HTTP:** POST
+- **URL:** `/api/teacher/exam-sessions/:session_id/lock`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body (optional):**
+
+```json
+{ "reason": "Khóa vì mất focus nhiều lần" }
+```
+
+- **Response body:**
+
+```json
+{
+    "sessionId": "sess-123",
+    "state": "locked",
+    "message": "Khóa phiên thi thành công"
+}
+```
+
+- **400 / 404** nếu phiên không tồn tại, không thuộc giáo viên, đã hết hạn hoặc đã nộp.
+
+---
+
+## Endpoint 37 — Mở khóa thủ công phiên thi (Dành cho giáo viên)
+
+**POST `/api/teacher/exam-sessions/:session_id/unlock`**
+
+- **Mô tả:** Giáo viên mở khóa lại phiên đang ở trạng thái `locked`.
+- **HTTP:** POST
+- **URL:** `/api/teacher/exam-sessions/:session_id/unlock`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body (optional):**
+
+```json
+{ "reason": "Cho phép tiếp tục sau khi kiểm tra" }
+```
+
+- **Response body:**
+
+```json
+{
+    "sessionId": "sess-123",
+    "state": "started",
+    "message": "Mở khóa phiên thi thành công"
+}
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+
+## Endpoint 37 — Lấy tất cả exam_instance của 1 lớp học (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/exam-instances`**
+
+- **Mô tả:** Giáo viên lấy danh sách đề thi trong lớp học.
+- **GET:** GET
+- **URL:** `/api/teacher/classes/:classId/exam-instances`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+[
+    {
+        "id": "d1b7ceae-db5c-4a07-81d5-dfc05deb72dd",
+        "template_id": "f54e9593-dd8c-4184-abb0-089c2e5e7e7c",
+        "starts_at": "2026-12-15T01:00:00.000Z",
+        "ends_at": "2026-12-16T02:30:00.000Z",
+        "published": false,
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "show_answers": false,
+        "created_at": "2025-12-20T09:59:01.840Z"
+    },
+    {
+        "id": "7d19364a-f5ae-4f81-bcec-bd405f4a9460",
+        "template_id": "c0b39423-8d22-42ae-b50f-48d4ee0923cf",
+        "starts_at": "2025-12-15T01:00:00.000Z",
+        "ends_at": "2025-12-15T02:30:00.000Z",
+        "published": false,
+        "created_by": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+        "show_answers": false,
+        "created_at": "2025-12-13T08:48:24.824Z"
+    }
+]
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+
+- **403 Forbidden**
+```json
+{
+    "error": "Lớp học không tồn tại hoặc bạn không có quyền"
+}
+```
+
+## Endpoint 38 — Lấy tiến độ làm bài thi của sinh viên trong lớp (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/exam-instances/:examInstanceId/progress`**
+
+- **Mô tả:** Lấy tiến độ làm bài thi của sinh viên trong lớp.
+- **GET:** GET
+- **URL:** `/api/teacher/classes/:classId/exam-instances/:examInstanceId/progress`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+{
+  "not_started": [
+    { "id": "u1", "full_name": "Nguyễn Văn A" }
+  ],
+  "in_progress": [
+    {
+      "id": "u2",
+      "full_name": "Trần Văn B",
+      "started_at": "2025-01-10T08:10:00Z",
+      "ends_at": "2025-01-10T09:40:00Z"
+    }
+  ],
+  "finished": [
+    {
+      "id": "u3",
+      "full_name": "Lê Văn C",
+      "state": "submitted"
+    }
+  ]
+}
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+- **403 Forbidden**
+```json
+{
+    "error": "Lớp học không tồn tại hoặc bạn không có quyền"
+}
+```
+
+## Endpoint 39 — Lấy dashboard (Dành cho giáo viên)
+
+**GET `/api/teacher/dashboard`**
+
+- **Mô tả:** Lấy thông tin hiển thị dashboard.
+- **GET:** GET
+- **URL:** `/api/teacher/dashboard`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+{
+    "stats": {
+        "totalClasses": 5,
+        "totalStudents": 2,
+        "totalExams": 18,
+        "totalQuestions": 14,
+        "totalTemplates": 3
+    },
+    "recentActivities": [
+        {
+            "id": "440a10d5-715b-4ebf-b900-c2d245c71a3c",
+            "type": "create_class",
+            "description": "Tạo lớp học \"TIN HỌC ĐẠI CƯƠNG\"",
+            "timestamp": "2025-12-24T07:21:15.112Z"
+        },
+        {
+            "id": "5dceff08-479a-45f4-b4e7-b9a22450d1d8",
+            "type": "create_question",
+            "description": "Thêm câu hỏi: \"Tính đáp án của 5!...\"",
+            "timestamp": "2025-12-24T07:23:32.332Z"
+        },
+        {
+            "id": "f9a9619c-d768-4333-aff1-65327d87b792",
+            "type": "create_exam_instance",
+            "description": "Tạo đề thi \"Kỳ thi cuối học kỳ 1 Môn Toán\"",
+            "timestamp": "2025-12-23T02:18:15.268Z"
+        },
+        {
+            "id": "7d7d207c-4b1b-48ed-b6cc-a1d38c28e6ac",
+            "type": "create_exam_instance",
+            "description": "Tạo đề thi \"Kỳ thi cuối học kỳ 1 Môn Toán\"",
+            "timestamp": "2025-12-23T01:49:41.368Z"
+        },
+        {
+            "id": "c386540f-e9b6-429a-a602-257d01cfa15b",
+            "type": "create_exam_instance",
+            "description": "Tạo đề thi \"Kỳ thi cuối học kỳ 1 Môn Toán\"",
+            "timestamp": "2025-12-23T01:19:34.898Z"
+        },
+        {
+            "id": "e14b75af-4e5b-41b0-afaa-9591801f7efd",
+            "type": "create_question",
+            "description": "Thêm câu hỏi: \"2 + 2 = ?...\"",
+            "timestamp": "2025-12-23T01:16:27.025Z"
+        }
+    ]
+}
+```
+
+- **400** Lấy thông tin dashboard thất bại
+
+---
+
+## Endpoint 40 - Xuất danh sách học sinh trong lớp (CSV)
+
+**GET `/api/teacher/export/students/:classId`**
+
+- **Mô tả: Xuất danh sách học sinh trong lớp học ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/teacher/export/students/:classId`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `classId`: ID của lớp học cần xuất danh sách
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `danh-sach-hoc-sinh-{classId}-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+ID,Email,Họ tên,Trạng thái,Ngày tham gia lớp,Ngày tạo tài khoản,Đăng nhập gần nhất
+"uuid","student@example.com","Nguyễn Văn A","Hoạt động","2025-09-01T00:00:00Z","2025-08-15T00:00:00Z","2025-12-27T10:30:00Z"
+```
+
+- **404 Not Found** (lớp học không tồn tại hoặc không có quyền)
+
+```json
+{
+  "error": "Không tìm thấy lớp học hoặc bạn không có quyền truy cập"
+}
+```
+
+---
+
+## Endpoint 41 - Xuất kết quả thi (CSV)
+
+**GET `/api/teacher/export/results/:examId`**
+
+- **Mô tả: Xuất kết quả thi của một kỳ thi ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/teacher/export/results/:examId`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `examId`: ID của kỳ thi cần xuất kết quả
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `ket-qua-thi-{examId}-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+ID,Email,Họ tên,Trạng thái,Điểm,Điểm tối đa,Phần trăm,Kết quả,Thời gian bắt đầu,Thời gian nộp bài,Thời gian chấm
+"uuid","student@example.com","Nguyễn Văn A","submitted","8.50","10.00","85.00%","Đạt","2025-12-27T09:00:00Z","2025-12-27T10:30:00Z","2025-12-27T10:31:00Z"
+```
+
+**Giải thích:**
+- `Trạng thái`: pending, started, submitted, expired, locked
+- `Phần trăm`: Tỷ lệ phần trăm điểm đạt được
+- `Kết quả`: "Đạt" hoặc "Không đạt" dựa trên điểm chuẩn
+
+- **403 Forbidden** (không có quyền truy cập kỳ thi)
+
+```json
+{
+  "error": "Bạn không có quyền truy cập kỳ thi này"
+}
+```
+
+- **404 Not Found** (kỳ thi không tồn tại)
+
+```json
+{
+  "error": "Không tìm thấy kỳ thi"
+}
+```
+
+---
+
+## Endpoint 42 - Xuất nhật ký thi (CSV)
+
+**GET `/api/teacher/export/logs/:examId`**
+
+- **Mô tả: Xuất nhật ký hoạt động của một kỳ thi ra file CSV**
+- **HTTP:** GET 
+- **URL:** `/api/teacher/export/logs/:examId`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `examId`: ID của kỳ thi cần xuất nhật ký
+
+- **Response:** File CSV với định dạng UTF-8 (BOM)
+- **Content-Type:** `text/csv; charset=utf-8`
+- **Filename:** `nhat-ky-thi-{examId}-{timestamp}.csv`
+
+**Cấu trúc CSV:**
+```
+Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi tiết
+"2025-12-27T09:00:00Z","EXAM_START","Nguyễn Văn A","student@example.com","session-uuid","192.168.1.100","Mozilla/5.0...","{"action":"started"}"
+"2025-12-27T09:30:00Z","TAB_SWITCH","Nguyễn Văn A","student@example.com","session-uuid","192.168.1.100","Mozilla/5.0...","{"count":1}"
+```
+
+**Loại sự kiện thường gặp:**
+- `EXAM_START`: Bắt đầu làm bài
+- `EXAM_SUBMIT`: Nộp bài
+- `TAB_SWITCH`: Chuyển tab
+- `HEARTBEAT`: Tín hiệu định kỳ
+- `ANSWER_SAVE`: Lưu câu trả lời
+
+- **403 Forbidden** (không có quyền truy cập kỳ thi)
+
+```json
+{
+  "error": "Bạn không có quyền truy cập kỳ thi này"
+}
+```
+
+- **404 Not Found** (kỳ thi không tồn tại)
+
+```json
+{
+  "error": "Không tìm thấy kỳ thi"
+}
+```
+
+---
+
+
+## Endpoint 43 — giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi (Dành cho giáo viên)
+
+**GET `/api/teacher/classes/:classId/exam-instances/:examInstanceId/scores`**
+
+- **Mô tả:** giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi
+- **GET:** GET
+- **URL:** `/api/teacher/classes/:classId/exam-instances/:examInstanceId/scores`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+
+
+- **Response body:**
+
+```json
+{
+[
+    {
+        "user_id": "92a15ea0-3b9a-4cf4-9a13-ff26597aa53d",
+        "name": "student11",
+        "email": "student1@gmail.com",
+        "state": "not_started",
+        "score": 0,
+        "max_score": 0,
+        "graded_at": null
+    },
+    {
+        "user_id": "92a15ea0-3b9a-4cf4-9a13-ff26597aa531",
+        "name": "student2",
+        "email": "student2@gmail.com",
+        "state": "submitted",
+        "score": 1,
+        "max_score": 2,
+        "graded_at": "2025-12-27T08:49:01.651Z"
+    }    
+]
+}
+```
+
+- **400 / 404** nếu không ở trạng thái locked, hết hạn hoặc không thuộc giáo viên.
+
+- **403 Forbidden**
+```json
+{
+    "error": "Lớp học không tồn tại hoặc bạn không có quyền"
 }
 ```

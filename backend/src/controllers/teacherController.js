@@ -75,7 +75,7 @@ module.exports = {
             await teacherService.deleteClass(classId, teacherId);
             res.status(204).end();
         } catch (error) {
-            const err = new Error('Xóa lớp học thất bại');
+            const err = new Error('Xóa lớp học thất bại: Không được xóa lớp học có sinh viên đang tham gia');
             err.status = 400;
             next(err);
         }
@@ -201,7 +201,7 @@ module.exports = {
             await teacherService.deleteQuestion(questionId, teacherId);
             res.status(200).json({ message: "Xóa câu hỏi thành công" });
         } catch (error) {
-            const err = new Error('Xóa câu hỏi thất bại');
+            const err = new Error('Xóa câu hỏi thất bại: Không được xóa câu hỏi đã được sử dụng trong đề thi');
             console.error("Error stack:", error.stack);
             err.status = 400;
             next(err);
@@ -322,7 +322,10 @@ module.exports = {
             // console.error("Error stack:", error.stack);
             // // const err = new Error("Xóa mẫu đề thi thất bại");
             // err.status = 400;
-            next(error);
+            const err = new Error('Xóa mẫu đề thi thất bại: Không được xóa mẫu đề thi đã có đề thi được tạo từ nó');
+            err.status = 400;
+            next(err);
+
         }
     },
 
@@ -415,7 +418,9 @@ module.exports = {
             res.json({ message: "Xóa đề thi thành công" });
             res.status(200).end();
         } catch (error) {
-            next(error);
+            const err = new Error("Xóa đề thi thất bại: Đề thi đã được công bố hoặc có sinh viên tham gia làm bài");
+            err.status = 400;
+            next(err);
         }
     },
 
@@ -492,5 +497,217 @@ module.exports = {
             next(error);
         }
     },
-};
 
+    // Thêm/ghi đè thời gian cộng thêm cho học sinh trong một đề thi
+    async upsertAccommodation(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const examInstanceId = req.params.id;
+            let { student_id, extra_seconds, add_seconds, notes } = req.body || {};
+
+            // validate input
+            if (!student_id) {
+                const err = new Error("Thiếu student_id");
+                err.status = 400;
+                throw err;
+            }
+            // at least one of extra_seconds or add_seconds
+            const hasExtra = extra_seconds !== undefined && extra_seconds !== null;
+            const hasAdd = add_seconds !== undefined && add_seconds !== null;
+            if (!hasExtra && !hasAdd) {
+                const err = new Error("Cần cung cấp extra_seconds (tuyệt đối) hoặc add_seconds (cộng dồn)");
+                err.status = 400;
+                throw err;
+            }
+            const parsedExtra = hasExtra ? parseInt(extra_seconds, 10) : undefined;
+            const parsedAdd = hasAdd ? parseInt(add_seconds, 10) : undefined;
+            if (hasExtra && (Number.isNaN(parsedExtra) || parsedExtra < 0)) {
+                const err = new Error("extra_seconds phải là số không âm");
+                err.status = 400;
+                throw err;
+            }
+            if (hasAdd && (Number.isNaN(parsedAdd) || parsedAdd < 0)) {
+                const err = new Error("add_seconds phải là số không âm");
+                err.status = 400;
+                throw err;
+            }
+
+            const accommodation = await teacherService.upsertAccommodation({
+                teacherId,
+                examInstanceId,
+                studentId: student_id,
+                extraSeconds: parsedExtra,
+                addSeconds: parsedAdd,
+                notes,
+            });
+
+            res.status(200).json({ accommodation, message: "Cập nhật thêm thời gian thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Hiển thị các học sinh đang có phiên thi 'started' trong một lớp
+    async getActiveStudentsInClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const students = await teacherService.listActiveStudentsInClass(teacherId, classId);
+            res.json(students);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Hiển thị danh sách flag vi phạm của học sinh trong lớp
+    async getFlaggedStudentsInClass(req, res, next) {
+        try {
+            // const teacherId = req.user.id;
+            const exam_instance_id = req.params.examInstanceId;
+            const flags = await teacherService.listFlaggedSessionsByClass(exam_instance_id);
+            res.json(flags);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Khóa thủ công phiên thi
+    async lockExamSession(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const sessionId = req.params.id;
+            const { reason } = req.body || {};
+            const result = await teacherService.lockExamSession(sessionId, teacherId, reason);
+            res.json({ ...result, message: "Khóa phiên thi thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Mở khóa thủ công phiên thi
+    async unlockExamSession(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const sessionId = req.params.id;
+            const { reason } = req.body || {};
+            const result = await teacherService.unlockExamSession(sessionId, teacherId, reason);
+            res.json({ ...result, message: "Mở khóa phiên thi thành công" });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Lấy tất cả exam_instance của 1 lớp học
+    async getExamInstancesByClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const instances = await teacherService.getExamInstancesByClass(teacherId, classId);
+            res.json(instances);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Lấy tiến độ làm bài thi của sinh viên trong lớp
+    async getExamProgressByClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const examInstanceId = req.params.examInstanceId;
+            const progress = await teacherService.getExamProgressByClass(teacherId, classId, examInstanceId);
+            res.json(progress);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Lấy thông tin dashboard của giáo viên
+    async getDashboard(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const dashboardData = await teacherService.getDashboardStats(teacherId);
+            res.json(dashboardData);
+        } catch (error) {
+            const err = new Error("Lấy thông tin dashboard thất bại");
+            err.status = 400;
+            next(err);
+        }
+    },
+
+    /**
+     * GET /teacher/export/students/:classId
+     * Xuất danh sách học sinh trong lớp ra CSV
+     */
+    async exportStudents(req, res, next) {
+        try {
+            const { classId } = req.params;
+            const teacherId = req.user.id;
+            const csv = await teacherService.exportStudentList(classId, teacherId);
+
+            // Set headers cho file CSV
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="danh-sach-hoc-sinh-${classId}-${Date.now()}.csv"`);
+
+            // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+            res.send('\uFEFF' + csv);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    /**
+     * GET /teacher/export/results/:examId
+     * Xuất kết quả thi ra CSV
+     */
+    async exportResults(req, res, next) {
+        try {
+            const { examId } = req.params;
+            const teacherId = req.user.id;
+            const csv = await teacherService.exportExamResults(examId, teacherId);
+
+            // Set headers cho file CSV
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="ket-qua-thi-${examId}-${Date.now()}.csv"`);
+
+            // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+            res.send('\uFEFF' + csv);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    /**
+     * GET /teacher/export/logs/:examId
+     * Xuất nhật ký thi ra CSV
+     */
+    async exportLogs(req, res, next) {
+        try {
+            const { examId } = req.params;
+            const teacherId = req.user.id;
+            const csv = await teacherService.exportExamLogs(examId, teacherId);
+
+            // Set headers cho file CSV
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="nhat-ky-thi-${examId}-${Date.now()}.csv"`);
+
+            // Gửi CSV với BOM để Excel đọc UTF-8 đúng
+            res.send('\uFEFF' + csv);
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    // giáo viên lấy danh sách điểm của sinh viên trong lớp ở một kỳ thi
+    async getStudentScoresInClass(req, res, next) {
+        try {
+            const teacherId = req.user.id;
+            const classId = req.params.classId;
+            const examInstanceId = req.params.examInstanceId;
+            const scores = await teacherService.getStudentScoresInClass(teacherId, classId, examInstanceId);
+            res.json(scores);
+        } catch (error) {
+            next(error);
+        }
+    },
+};

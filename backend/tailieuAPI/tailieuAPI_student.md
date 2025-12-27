@@ -149,6 +149,10 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 ]
 ```
 
+- upcoming: bài thi chưa bắt đầu
+- ongoing: bài thi đang diễn ra
+- ended: bài thi đã kết thúc
+
 - **401 Unauthorized** (missing/invalid token)
 
 ```json
@@ -182,6 +186,7 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
             "text": "2 + 2 = ?",
             "ordinal": 1,
             "points": 1,
+            "multichoice": true,
             "choices": [
                 {"id": "...","label": "A","order": 0,"text": "3"},
                 {"id": "...","label": "B","order": 1,"text": "4"}
@@ -212,6 +217,7 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
         "text": "2 + 2 = ?",
         "ordinal": 1,
         "points": 1,
+        "multichoice": true,            
         "choices": [
             {"id": "...","label": "A","order": 0,"text": "3"},
             {"id": "...","label": "B","order": 1,"text": "4"}
@@ -295,5 +301,83 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 - Điểm tính tự động bằng cách so khớp tập `answer.selected_choice_ids` (hoặc `choice_id` cũ) với tập các lựa chọn `question_choice.is_correct = true`. Chỉ chấm đúng nếu khớp hoàn toàn (không thiếu, không thừa).
 - Trường `details` (chi tiết từng câu đúng/sai) chỉ hiển thị nếu giáo viên cấu hình `show_answers = true` trong `exam_template`.
 
+## Endpoint 10 — hủy yêu cầu tham gia lớp học
+
+**POST `/api/student/classes/:id/cancel-enrollment`**
+
+- **Mô tả:**  hủy yêu cầu tham gia lớp học.
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Body:** (không cần)
 
 
+- **Response body:**
+
+- **204 No Content** 
+
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+## Endpoint 10 — Lấy dashboard sinh viên
+
+**GET `/api/student/dashboard`**
+
+- **Mô tả:**  Lấy dashboard sinh viên
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Body:** (không cần)
+
+
+- **Response body:**
+
+- **200 Ok** 
+```json
+{
+    "classes": [
+        {
+            "id": "8409b373-5deb-43c0-9a23-dfc0cc162f84",
+            "teacher_id": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+            "name": "Tin học đại cương",
+            "code": "5ebscqj6",
+            "description": "Học lâp trình vào sáng t6",
+            "created_at": "2025-12-06T15:06:17.459Z",
+            "updated_at": "2025-12-06T15:06:17.459Z"
+        },
+        {
+            "id": "470383ba-9827-4e6b-80bb-2aab9a3873cd",
+            "teacher_id": "a47756e3-57a3-4cc6-abf7-a7641203e96d",
+            "name": "tin hoc",
+            "code": "6ey1dbl0",
+            "description": "đâsasd",
+            "created_at": "2025-12-25T09:15:33.851Z",
+            "updated_at": "2025-12-25T09:15:33.851Z"
+        }
+    ],
+    "averageScore": 6.25,
+    "upcomingCount": 0,
+    "completedCount": 4,
+    "notAttemptedCount": 1,
+    "notAttemptedExams": [
+        {
+            "examInstanceId": "4e02038d-1835-4acb-a4ab-edd7aaca03cb",
+            "title": "aaa",
+            "durationMinutes": 5,
+            "starts_at": "2025-12-27T07:55:00.000Z",
+            "ends_at": "2025-12-30T07:54:00.000Z",
+            "class_id": "470383ba-9827-4e6b-80bb-2aab9a3873cd"
+        }
+    ]
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+    "error": "Unauthorized"
+}
+```
