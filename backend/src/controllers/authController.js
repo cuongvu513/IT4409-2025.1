@@ -41,7 +41,7 @@ module.exports = {
       const result = await authService.login(req.body);
       const user = result.user || result;
       let token = result.token;
-      if (!token) token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
+      if (!token) token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1d" });
 
       const refresh = await tokenService.generateRefreshToken(user.id, req.ip);
       res.json({ message: "Login successful", user, token, refreshToken: refresh.token });
@@ -67,7 +67,7 @@ module.exports = {
       const newRefresh = await tokenService.generateRefreshToken(user.id, req.ip);
 
       const jwt = require("jsonwebtoken");
-      const newAccess = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
+      const newAccess = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1d" });
 
       res.json({ user, token: newAccess, refreshToken: newRefresh.token });
     } catch (err) {

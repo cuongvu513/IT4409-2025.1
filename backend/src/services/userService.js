@@ -13,11 +13,13 @@ function flattenUser(u) {
     id: u.id || null,
     email: u.email || null,
     name: u.name || null,
+    is_active: u.is_active,
     password_hash: u.password_hash || null,
     bio: u.bio || null,
     role_name: u.auth_role?.name || null,
     
   };
+  // console.log("flattenUser:", out);
   return cleanObject(out);
 }
 
@@ -63,11 +65,13 @@ module.exports = {
         id: true,
         email: true,
         password_hash: true,
+        is_active: true,
         name: true,
         bio: true,
         auth_role: { select: { name: true } }, 
       },
     });
+    // console.log("getUserByEmail:", user);
     return flattenUser(user);
   },
 
