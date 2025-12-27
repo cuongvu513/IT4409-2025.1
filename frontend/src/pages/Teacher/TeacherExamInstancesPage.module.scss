@@ -170,15 +170,30 @@
     }
 }
 
+.checkboxRow {
+    display: flex;
+    gap: 30px;
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
 .checkboxLabel {
     display: flex;
     align-items: center;
     gap: 10px;
     cursor: pointer;
+    font-size: 0.95rem;
 
     input {
         width: 18px;
         height: 18px;
+        cursor: pointer;
+    }
+    
+    span {
+        user-select: none;
     }
 }
 

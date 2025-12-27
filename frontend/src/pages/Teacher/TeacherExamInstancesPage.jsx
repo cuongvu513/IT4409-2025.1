@@ -64,8 +64,15 @@ const TeacherExamInstancesPage = () => {
     }, [templateId]);
 
     // Helpers
-    const toInputDateTime = (isoString) => isoString ? isoString.substring(0, 16) : '';
-    const formatDate = (str) => new Date(str).toLocaleString('vi-VN');
+    const toInputDateTime = (isoString) => {
+        if (!isoString) return '';
+        // Convert UTC to +7 timezone (Vietnam) for display
+        const date = new Date(isoString);
+        const offset = 7 * 60; // +7 hours in minutes
+        const localDate = new Date(date.getTime() + offset * 60000);
+        return localDate.toISOString().substring(0, 16);
+    };
+    const formatDate = (str) => new Date(str).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
     const getQuestionText = (qId) => {
         const found = questions.find(q => q.id === qId);
         return found ? found.text : "Câu hỏi đã bị xóa";
@@ -131,10 +138,25 @@ const TeacherExamInstancesPage = () => {
         e.preventDefault();
         setIsSubmitting(true);
 
+        // Keep the datetime as +7 timezone when sending to backend
+        const startsAtLocal = new Date(formData.starts_at);
+        const endsAtLocal = new Date(formData.ends_at);
+        
+        // Format as ISO string with +07:00 timezone offset
+        const formatWithTimezone = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
+        };
+
         const payload = {
             ...(editingExam ? {} : { templateId }),
-            starts_at: new Date(formData.starts_at).toISOString(),
-            ends_at: new Date(formData.ends_at).toISOString(),
+            starts_at: formatWithTimezone(startsAtLocal),
+            ends_at: formatWithTimezone(endsAtLocal),
             published: formData.published,
             show_answers: formData.show_answers,
             questions: formData.selectedQuestionIds.map(id => ({ question_id: id }))
@@ -277,29 +299,25 @@ const TeacherExamInstancesPage = () => {
                                 </div>
                             </div>
 
-                            <div className={styles.row}>
-                                <div className={styles.formGroup}>
-                                    <label className={styles.checkboxLabel}>
-                                        <input
-                                            type="checkbox"
-                                            name="published"
-                                            checked={formData.published}
-                                            onChange={handleInputChange}
-                                        />
-                                        Công bố ngay
-                                    </label>
-                                </div>
-                                <div className={styles.formGroup}>
-                                    <label className={styles.checkboxLabel}>
-                                        <input
-                                            type="checkbox"
-                                            name="show_answers"
-                                            checked={formData.show_answers}
-                                            onChange={handleInputChange}
-                                        />
-                                        Hiển thị đáp án sau khi thi
-                                    </label>
-                                </div>
+                            <div className={styles.checkboxRow}>
+                                <label className={styles.checkboxLabel}>
+                                    <input
+                                        type="checkbox"
+                                        name="published"
+                                        checked={formData.published}
+                                        onChange={handleInputChange}
+                                    />
+                                    <span>Công bố ngay</span>
+                                </label>
+                                <label className={styles.checkboxLabel}>
+                                    <input
+                                        type="checkbox"
+                                        name="show_answers"
+                                        checked={formData.show_answers}
+                                        onChange={handleInputChange}
+                                    />
+                                    <span>Hiển thị đáp án sau khi thi</span>
+                                </label>
                             </div>
 
                             <div className={styles.questionSection}>
