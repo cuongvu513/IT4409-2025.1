@@ -18,10 +18,13 @@ const StudentLayout = () => {
     else if (location.pathname.includes('/exams')) pageTitle = "Đề thi của tôi";
     else if (location.pathname.includes('/exam/take')) pageTitle = "Làm bài kiểm tra";
 
+    const isExamRoute = location.pathname.startsWith('/student/exam/take');
+
     return (
         <div className={styles.layout}>
             {/* --- SIDEBAR --- */}
-            <aside className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''}`}>
+            {!isExamRoute && (
+                <aside className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''}`}>
                 <div className={styles.logo}>EduTest <span>HS</span></div>
                 <nav className={styles.nav}>
                     <Link
@@ -48,6 +51,7 @@ const StudentLayout = () => {
                     </button>
                 </div>
             </aside>
+            )}
 
             {/* Overlay for mobile when sidebar open */}
             {sidebarOpen && <div className={styles.mobileOverlay} onClick={() => setSidebarOpen(false)} />}
