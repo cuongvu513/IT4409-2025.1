@@ -63,6 +63,30 @@ const TeacherQuestionsPage = () => {
         setFormData({ ...formData, choices: newChoices });
     };
 
+    // Thêm đáp án mới
+    const handleAddChoice = () => {
+        const newChoice = {
+            order: formData.choices.length + 1,
+            text: '',
+            is_correct: false
+        };
+        setFormData({ ...formData, choices: [...formData.choices, newChoice] });
+    };
+
+    // Xóa đáp án (tối thiểu phải giữ 2 đáp án)
+    const handleRemoveChoice = (index) => {
+        if (formData.choices.length <= 2) {
+            alert("Cần ít nhất 2 đáp án!");
+            return;
+        }
+        const newChoices = formData.choices.filter((_, i) => i !== index);
+        // Cập nhật lại order
+        newChoices.forEach((choice, i) => {
+            choice.order = i + 1;
+        });
+        setFormData({ ...formData, choices: newChoices });
+    };
+
     // --- CÁC HÀM XỬ LÝ ---
     const handleOpenCreate = () => {
         setEditingQuestion(null);
@@ -214,6 +238,13 @@ const TeacherQuestionsPage = () => {
                             <div className={styles.formGroup}>
                                 <label>Nội dung câu hỏi *</label>
                                 <textarea name="text" value={formData.text} onChange={handleInputChange} required rows="2" />
+                                {/* Preview LaTeX */}
+                                {formData.text && (
+                                    <div className={styles.previewBox}>
+                                        <strong>Preview:</strong>
+                                        <MathRenderer text={formData.text} />
+                                    </div>
+                                )}
                             </div>
 
                             <div className={styles.row}>
@@ -242,20 +273,54 @@ const TeacherQuestionsPage = () => {
                                             onChange={() => handleCorrectSelect(index)}
                                             style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                                         />
-                                        <input
-                                            type="text"
-                                            placeholder={`Đáp án ${index + 1}`}
-                                            value={choice.text}
-                                            onChange={(e) => handleChoiceChange(index, e.target.value)}
-                                            className={choice.is_correct ? styles.correctInput : ''}
-                                        />
+                                        <div style={{ flex: 1 }}>
+                                            <input
+                                                type="text"
+                                                placeholder={`Đáp án ${index + 1}`}
+                                                value={choice.text}
+                                                onChange={(e) => handleChoiceChange(index, e.target.value)}
+                                                className={choice.is_correct ? styles.correctInput : ''}
+                                            />
+                                            {/* Preview LaTeX cho từng đáp án */}
+                                            {choice.text && (
+                                                <div className={styles.choicePreview}>
+                                                    <MathRenderer text={choice.text} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        {/* Nút xóa đáp án */}
+                                        {formData.choices.length > 2 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveChoice(index)}
+                                                className={styles.removeChoiceBtn}
+                                                title="Xóa đáp án"
+                                            >
+                                                X
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
+                                {/* Nút thêm đáp án */}
+                                <button
+                                    type="button"
+                                    onClick={handleAddChoice}
+                                    className={styles.addChoiceBtn}
+                                >
+                                     Thêm đáp án
+                                </button>
                             </div>
 
                             <div className={styles.formGroup}>
                                 <label>Giải thích (Optional)</label>
                                 <textarea name="explanation" value={formData.explanation} onChange={handleInputChange} rows="2" />
+                                {/* Preview LaTeX cho giải thích */}
+                                {formData.explanation && (
+                                    <div className={styles.previewBox}>
+                                        <strong>Preview:</strong>
+                                        <MathRenderer text={formData.explanation} />
+                                    </div>
+                                )}
                             </div>
 
                             <div className={styles.modalActions}>
