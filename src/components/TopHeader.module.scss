@@ -19,6 +19,22 @@
     }
 }
 
+/* Mobile menu button (hamburger) */
+.menuButton {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    margin-right: 10px;
+    cursor: pointer;
+    color: $text-color;
+}
+
+@media (max-width: 900px) {
+    .menuButton { display: block; }
+    .topHeader h3 { font-size: 1rem; }
+}
+
 .profileWrapper {
     position: relative;
 }

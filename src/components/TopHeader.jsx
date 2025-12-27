@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import authService from '../services/authService';
 import styles from './TopHeader.module.scss';
 
-const TopHeader = ({ title }) => {
+const TopHeader = ({ title, onMenuClick }) => {
     const { user, logout, fetchUserProfile } = useContext(AuthContext);
 
     // State Dropdown
@@ -100,6 +100,11 @@ const TopHeader = ({ title }) => {
 
     return (
         <header className={styles.topHeader}>
+            {onMenuClick && (
+                <button className={styles.menuButton} onClick={onMenuClick} aria-label="Toggle menu">
+                    <i className="fa-solid fa-bars"></i>
+                </button>
+            )}
             <h3>{title}</h3>
 
             {user && (
