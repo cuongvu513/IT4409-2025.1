@@ -47,6 +47,6 @@ initExamTimerSocket(io);
 app.set('io', io);
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server running at http://172.31.85.93:${PORT}`);
-  console.log(`📡 WebSocket server ready on ws://172.31.85.93:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`📡 WebSocket server ready on ws://localhost:${PORT}`);
 });

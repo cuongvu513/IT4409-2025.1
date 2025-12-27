@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import studentService from '../../services/studentService';
+import socketService from '../../services/socketService';
 import MathRenderer from '../../components/MathRenderer';
 import styles from './StudentTakeExamPage.module.scss';
 
@@ -22,6 +23,7 @@ const StudentTakeExamPage = () => {
     const [loading, setLoading] = useState(true);
     const [timeLeft, setTimeLeft] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [socketConnected, setSocketConnected] = useState(false);
 
     // --- STATE KẾT QUẢ ---
     const [reviewMode, setReviewMode] = useState(false);
@@ -31,6 +33,7 @@ const StudentTakeExamPage = () => {
     const timerRef = useRef(null);
     const heartbeatRef = useRef(null);
     const isInitRef = useRef(false);
+    const socketInitRef = useRef(false);
 
     // --- 1. KHỞI TẠO BÀI THI ---
     useEffect(() => {
@@ -78,6 +81,16 @@ const StudentTakeExamPage = () => {
                     }
                 });
                 setUserAnswers(savedAnswers);
+                
+                // D. KẾT NỐI SOCKET với examId từ URL params và JWT token từ localStorage
+                // examId là UUID string, KHÔNG parse thành number
+                const jwtToken = localStorage.getItem('accessToken');
+                if (jwtToken) {
+                    initializeSocket(jwtToken, examId);
+                } else {
+                    console.warn('[StudentTakeExam] No JWT token found, socket disabled');
+                }
+                
                 setLoading(false);
 
             } catch (error) {
@@ -89,13 +102,57 @@ const StudentTakeExamPage = () => {
 
         initExam();
 
-        // Không cleanup timer ở đây để tránh lỗi F5 mất timer
+        // Cleanup socket khi component unmount
+        return () => {
+            if (socketService.isConnected()) {
+                socketService.disconnect();
+            }
+        };
     }, [examId]);
 
 
-    // --- 2. LOGIC ĐỒNG HỒ (CHẠY KHI CÓ SESSION) ---
+    // --- 1.5. KHỞI TẠO SOCKET CONNECTION ---
+    const initializeSocket = (jwtToken, examInstanceId) => {
+        if (socketInitRef.current) return;
+        socketInitRef.current = true;
+
+        console.log('[StudentTakeExam] Initializing socket connection...');
+        console.log('[StudentTakeExam] JWT Token:', jwtToken ? 'Present' : 'Missing');
+        console.log('[StudentTakeExam] Exam Instance ID:', examInstanceId);
+        
+        // Kết nối socket với JWT token (không phải session token)
+        socketService.connect(jwtToken);
+        
+        // Subscribe để nhận cập nhật thời gian
+        socketService.subscribeToExam(
+            examInstanceId,
+            // onTimeUpdate
+            (data) => {
+                console.log('[StudentTakeExam] Time update received:', data);
+                console.log('[StudentTakeExam] Setting timeLeft to:', data.remainingSeconds);
+                setTimeLeft(data.remainingSeconds);
+                setSocketConnected(true);
+            },
+            // onError
+            (error) => {
+                console.error('[StudentTakeExam] Socket error:', error);
+                // Fallback về timer cục bộ nếu socket lỗi
+                setSocketConnected(false);
+            },
+            // onExpired
+            (data) => {
+                console.log('[StudentTakeExam] Time expired or exam ended');
+                setTimeLeft(0);
+                alert('Hết thời gian làm bài! Bài thi sẽ được nộp tự động.');
+                handleSubmitExam();
+            }
+        );
+    };
+
+
+    // --- 2. LOGIC ĐỒNG HỒ DỰ PHÒNG (CHỈ CHẠY NẾU SOCKET KHÔNG KẾT NỐI) ---
     useEffect(() => {
-        if (!sessionData || reviewMode) return;
+        if (!sessionData || reviewMode || socketConnected) return;
 
         const endTime = new Date(sessionData.ends_at).getTime();
 
@@ -119,7 +176,7 @@ const StudentTakeExamPage = () => {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [sessionData, reviewMode]);
+    }, [sessionData, reviewMode, socketConnected]);
 
 
     // --- 3. HEARTBEAT & ANTI-CHEAT ---
@@ -205,6 +262,12 @@ const StudentTakeExamPage = () => {
 
             clearInterval(timerRef.current);
             clearInterval(heartbeatRef.current);
+            
+            // Ngắt kết nối socket
+            if (socketService.isConnected()) {
+                socketService.unsubscribeFromExam(examId);
+            }
+            
             localStorage.removeItem(`exam_session_${examId}`);
 
             setExamResult(result);
@@ -260,6 +323,12 @@ const StudentTakeExamPage = () => {
                     <div className={styles.timerCard}>
                         <h3>Thời gian còn lại</h3>
                         <div className={styles.timer}>{formatTime(timeLeft)}</div>
+                        {socketConnected && (
+                            <div className={styles.socketStatus}>
+                                <span className={styles.socketIndicator}>🟢</span>
+                                <span className={styles.socketText}>Realtime</span>
+                            </div>
+                        )}
                     </div>
                 )}
 

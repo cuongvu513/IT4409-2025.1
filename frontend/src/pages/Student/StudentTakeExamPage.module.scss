@@ -43,6 +43,34 @@
             animation: blink 1s infinite;
         }
     }
+
+    .socketStatus {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 10px;
+        font-size: 0.85rem;
+        color: #666;
+
+        .socketIndicator {
+            font-size: 0.6rem;
+            animation: pulse 2s infinite;
+        }
+
+        .socketText {
+            font-weight: 500;
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
 }
 
 .questionPalette {

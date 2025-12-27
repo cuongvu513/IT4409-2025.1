@@ -42,17 +42,22 @@ function calculateRemainingTime(examSession) {
  * Lấy thông tin exam session của học sinh
  */
 async function getExamSession(userId, examInstanceId) {
-  // Kiểm tra xem có exam session nào không
-  const anySession = await prisma.exam_session.findFirst({
-    where: {
-      user_id: userId,
-      exam_instance_id: examInstanceId,
-    },
-    select: {
-      id: true,
-      state: true
-    }
-  });
+  try {
+    console.log(`[getExamSession] userId: ${userId}, examInstanceId: ${examInstanceId}`);
+    
+    // Kiểm tra xem có exam session nào không
+    const anySession = await prisma.exam_session.findFirst({
+      where: {
+        user_id: userId,
+        exam_instance_id: examInstanceId,
+      },
+      select: {
+        id: true,
+        state: true
+      }
+    });
+
+    console.log(`[getExamSession] anySession:`, anySession);
 
   if (!anySession) {
     // Kiểm tra xem exam_instance có tồn tại và học sinh có quyền tham gia không
@@ -119,7 +124,13 @@ async function getExamSession(userId, examInstanceId) {
     }
   });
 
+  console.log(`[getExamSession] Final examSession:`, examSession);
   return examSession;
+  } catch (error) {
+    console.error(`[getExamSession] Error:`, error);
+    console.error(`[getExamSession] Error stack:`, error.stack);
+    throw error;
+  }
 }
 
 /**
@@ -166,6 +177,8 @@ function initExamTimerSocket(io) {
         console.log(`[ExamTimer] Subscribe request - User: ${socket.userId}, Exam: ${examInstanceId}`);
         
         const examSession = await getExamSession(socket.userId, examInstanceId);
+        
+        console.log(`[ExamTimer] getExamSession result:`, JSON.stringify(examSession, null, 2));
         
         // Kiểm tra lỗi chi tiết
         if (!examSession || examSession.error) {
@@ -264,7 +277,8 @@ function initExamTimerSocket(io) {
         }
       } catch (error) {
         console.error("[ExamTimer] Subscribe error:", error);
-        socket.emit("error", { message: "Lỗi khi đăng ký nhận thời gian thi" });
+        console.error("[ExamTimer] Error stack:", error.stack);
+        socket.emit("error", { message: "Lỗi khi đăng ký nhận thời gian thi", details: error.message });
       }
     });
 
@@ -272,7 +286,45 @@ function initExamTimerSocket(io) {
     socket.on("unsubscribe", ({ examInstanceId }) => {
       const roomName = `exam-${examInstanceId}`;
       socket.leave(roomName);
+      
+      // Dừng interval khi unsubscribe
+      if (timerIntervals.has(socket.id)) {
+        clearInterval(timerIntervals.get(socket.id));
+        timerIntervals.delete(socket.id);
+      }
+      
       console.log(`[ExamTimer] User ${socket.userId} unsubscribed from ${roomName}`);
+    });
+
+    // Lấy thời gian còn lại theo yêu cầu (on-demand)
+    socket.on("get-remaining-time", async ({ examInstanceId }) => {
+      try {
+        console.log(`[ExamTimer] Get remaining time - User: ${socket.userId}, Exam: ${examInstanceId}`);
+        
+        const examSession = await getExamSession(socket.userId, examInstanceId);
+        
+        if (!examSession || examSession.error) {
+          socket.emit("error", { 
+            code: examSession?.error || "NO_SESSION",
+            message: examSession?.message || "Không tìm thấy phiên thi"
+          });
+          return;
+        }
+
+        const remainingTime = calculateRemainingTime(examSession);
+        
+        socket.emit("remaining-time", {
+          examInstanceId,
+          examSessionId: examSession.id,
+          remainingSeconds: remainingTime,
+          state: examSession.state,
+          started_at: examSession.started_at,
+          ends_at: examSession.ends_at
+        });
+      } catch (error) {
+        console.error("[ExamTimer] Get remaining time error:", error);
+        socket.emit("error", { message: "Lỗi khi lấy thời gian còn lại" });
+      }
     });
 
     // Lấy danh sách tất cả exam sessions đang active
@@ -292,6 +344,88 @@ function initExamTimerSocket(io) {
       } catch (error) {
         console.error("[ExamTimer] Get active sessions error:", error);
         socket.emit("error", { message: "Lỗi khi lấy danh sách phiên thi" });
+      }
+    });
+
+    // Heartbeat để kiểm tra kết nối
+    socket.on("ping", () => {
+      socket.emit("pong", { timestamp: Date.now() });
+    });
+
+    // Pause timer (nếu cần tạm dừng nhận cập nhật)
+    socket.on("pause-timer", () => {
+      if (timerIntervals.has(socket.id)) {
+        clearInterval(timerIntervals.get(socket.id));
+        timerIntervals.delete(socket.id);
+        console.log(`[ExamTimer] Timer paused for socket ${socket.id}`);
+      }
+    });
+
+    // Resume timer (tiếp tục nhận cập nhật)
+    socket.on("resume-timer", async ({ examInstanceId }) => {
+      try {
+        // Nếu đã có interval thì không tạo mới
+        if (timerIntervals.has(socket.id)) {
+          return;
+        }
+
+        const examSession = await getExamSession(socket.userId, examInstanceId);
+        
+        if (!examSession || examSession.error) {
+          socket.emit("error", { 
+            code: examSession?.error || "NO_SESSION",
+            message: examSession?.message || "Không tìm thấy phiên thi"
+          });
+          return;
+        }
+
+        // Tạo interval mới
+        const intervalId = setInterval(async () => {
+          try {
+            const updatedSession = await getExamSession(socket.userId, examInstanceId);
+            
+            if (!updatedSession || updatedSession.state === "submitted") {
+              socket.emit("exam-ended", {
+                examInstanceId,
+                examSessionId: updatedSession?.id,
+                state: updatedSession?.state
+              });
+              
+              clearInterval(intervalId);
+              timerIntervals.delete(socket.id);
+              return;
+            }
+
+            const remainingTime = calculateRemainingTime(updatedSession);
+            
+            socket.emit("time-update", {
+              examInstanceId,
+              examSessionId: updatedSession.id,
+              remainingSeconds: remainingTime,
+              state: updatedSession.state,
+              started_at: updatedSession.started_at,
+              ends_at: updatedSession.ends_at
+            });
+
+            if (remainingTime === 0) {
+              socket.emit("time-expired", {
+                examInstanceId,
+                examSessionId: updatedSession.id
+              });
+              
+              clearInterval(intervalId);
+              timerIntervals.delete(socket.id);
+            }
+          } catch (error) {
+            console.error(`[ExamTimer] Error in resumed interval for socket ${socket.id}:`, error);
+          }
+        }, 1000);
+
+        timerIntervals.set(socket.id, intervalId);
+        console.log(`[ExamTimer] Timer resumed for socket ${socket.id}`);
+      } catch (error) {
+        console.error("[ExamTimer] Resume timer error:", error);
+        socket.emit("error", { message: "Lỗi khi tiếp tục timer" });
       }
     });
 
