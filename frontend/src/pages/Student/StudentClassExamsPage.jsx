@@ -16,7 +16,7 @@ const StudentClassExamsPage = () => {
     useEffect(() => {
         const fetchExams = async () => {
             try {
-                setLoading(true);
+                // setLoading(true);
                 const res = await studentService.getExamsByClass(classId);
                 setExams(res.data || []);
             } catch (error) {
@@ -25,7 +25,10 @@ const StudentClassExamsPage = () => {
                 setLoading(false);
             }
         };
+        setLoading(true);
         fetchExams();
+        const intervalId = setInterval(fetchExams, 5000);
+        return () => clearInterval(intervalId);
     }, [classId]);
 
     const handleTakeExam = (examId) => {
