@@ -30,9 +30,7 @@ const TeacherExamInstancesPage = () => {
     
     // Pagination state
     const [currentExamPage, setCurrentExamPage] = useState(1);
-    const [currentQuestionPage, setCurrentQuestionPage] = useState(1);
     const examsPerPage = 10;
-    const questionsPerPage = 10;
 
     const initialForm = {
         starts_at: '',
@@ -107,6 +105,8 @@ const TeacherExamInstancesPage = () => {
     const openCreateModal = () => {
         setEditingExam(null);
         setFormData(initialForm);
+        setSearchTerm('');
+        setDifficultyFilter('all');
         setShowModal(true);
     };
 
@@ -120,6 +120,9 @@ const TeacherExamInstancesPage = () => {
             show_answers: exam.show_answers || false,
             selectedQuestionIds: currentQuestionIds
         });
+        // Reset search filters when editing
+        setSearchTerm('');
+        setDifficultyFilter('all');
         setShowModal(true);
     };
 
@@ -287,93 +290,82 @@ const TeacherExamInstancesPage = () => {
                             <h3>{editingExam ? 'Chỉnh sửa Đề Thi' : 'Tạo Đề Thi Mới'}</h3>
                             <button onClick={() => setShowModal(false)}>&times;</button>
                         </div>
-                        <form onSubmit={handleSubmit} className={styles.formScroll}>
-                            <div className={styles.row}>
-                                <div className={styles.formGroup}>
-                                    <label>Bắt đầu *</label>
-                                    <input type="datetime-local" name="starts_at" value={formData.starts_at} onChange={handleInputChange} required />
-                                </div>
-                                <div className={styles.formGroup}>
-                                    <label>Kết thúc *</label>
-                                    <input type="datetime-local" name="ends_at" value={formData.ends_at} onChange={handleInputChange} required />
-                                </div>
-                            </div>
-
-                            <div className={styles.checkboxRow}>
-                                <label className={styles.checkboxLabel}>
-                                    <input
-                                        type="checkbox"
-                                        name="published"
-                                        checked={formData.published}
-                                        onChange={handleInputChange}
-                                    />
-                                    <span>Công bố ngay</span>
-                                </label>
-                                <label className={styles.checkboxLabel}>
-                                    <input
-                                        type="checkbox"
-                                        name="show_answers"
-                                        checked={formData.show_answers}
-                                        onChange={handleInputChange}
-                                    />
-                                    <span>Hiển thị đáp án sau khi thi</span>
-                                </label>
-                            </div>
-
-                            <div className={styles.questionSection}>
-                                <h4>Chọn câu hỏi ({formData.selectedQuestionIds.length})</h4>
-                                
-                                <div className={styles.filterRow}>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Tìm kiếm câu hỏi theo nội dung hoặc tags..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className={styles.searchInput}
-                                    />
-                                    <select 
-                                        value={difficultyFilter}
-                                        onChange={(e) => setDifficultyFilter(e.target.value)}
-                                        className={styles.difficultyFilter}
-                                    >
-                                        <option value="all">Tất cả độ khó</option>
-                                        <option value="easy">Dễ</option>
-                                        <option value="medium">Trung bình</option>
-                                        <option value="hard">Khó</option>
-                                    </select>
+                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+                            <div className={styles.formScroll}>
+                                <div className={styles.row}>
+                                    <div className={styles.formGroup}>
+                                        <label>Bắt đầu *</label>
+                                        <input type="datetime-local" name="starts_at" value={formData.starts_at} onChange={handleInputChange} required />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label>Kết thúc *</label>
+                                        <input type="datetime-local" name="ends_at" value={formData.ends_at} onChange={handleInputChange} required />
+                                    </div>
                                 </div>
 
-                                <div className={styles.questionList}>
-                                    {questions.length === 0 ? <p>Ngân hàng câu hỏi trống.</p> :
-                                        filteredQuestions.length === 0 ? <p>Không tìm thấy câu hỏi phù hợp.</p> :
-                                        filteredQuestions
-                                            .slice((currentQuestionPage - 1) * questionsPerPage, currentQuestionPage * questionsPerPage)
-                                            .map(q => (
-                                            <div key={q.id} className={styles.qItem}>
-                                                <input
-                                                    type="checkbox"
-                                                    id={`q-${q.id}`}
-                                                    checked={formData.selectedQuestionIds.includes(q.id)}
-                                                    onChange={() => handleQuestionToggle(q.id)}
-                                                />
-                                                <label htmlFor={`q-${q.id}`}>
-                                                    <span className={`${styles.badge} ${styles.gray}`}>{q.difficulty}</span>
-                                                    <MathRenderer text={q.text} />
-                                                </label>
-                                            </div>
-                                        ))}
+                                <div className={styles.checkboxRow}>
+                                    <label className={styles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            name="published"
+                                            checked={formData.published}
+                                            onChange={handleInputChange}
+                                        />
+                                        <span>Công bố ngay</span>
+                                    </label>
+                                    <label className={styles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            name="show_answers"
+                                            checked={formData.show_answers}
+                                            onChange={handleInputChange}
+                                        />
+                                        <span>Hiển thị đáp án sau khi thi</span>
+                                    </label>
                                 </div>
-                                
-                                {/* Pagination for questions in modal */}
-                                {filteredQuestions.length > questionsPerPage && (
-                                    <Pagination
-                                        currentPage={currentQuestionPage}
-                                        totalPages={Math.ceil(filteredQuestions.length / questionsPerPage)}
-                                        onPageChange={setCurrentQuestionPage}
-                                        itemsPerPage={questionsPerPage}
-                                        totalItems={filteredQuestions.length}
-                                    />
-                                )}
+
+                                <div className={styles.questionSection}>
+                                    <h4>Chọn câu hỏi ({formData.selectedQuestionIds.length})</h4>
+                                    
+                                    <div className={styles.filterRow}>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Tìm kiếm câu hỏi theo nội dung hoặc tags..."
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className={styles.searchInput}
+                                        />
+                                        <select 
+                                            value={difficultyFilter}
+                                            onChange={(e) => setDifficultyFilter(e.target.value)}
+                                            className={styles.difficultyFilter}
+                                        >
+                                            <option value="all">Tất cả độ khó</option>
+                                            <option value="easy">Dễ</option>
+                                            <option value="medium">Trung bình</option>
+                                            <option value="hard">Khó</option>
+                                        </select>
+                                    </div>
+
+                                    <div className={styles.questionList}>
+                                        {questions.length === 0 ? <p>Ngân hàng câu hỏi trống.</p> :
+                                            filteredQuestions.length === 0 ? <p>Không tìm thấy câu hỏi phù hợp.</p> :
+                                            filteredQuestions.map(q => (
+                                                <div key={q.id} className={styles.qItem}>
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`q-${q.id}`}
+                                                        checked={formData.selectedQuestionIds.includes(q.id)}
+                                                        onChange={() => handleQuestionToggle(q.id)}
+                                                    />
+                                                    <label htmlFor={`q-${q.id}`}>
+                                                        <span className={`${styles.badge} ${styles.gray}`}>{q.difficulty}</span>
+                                                        <MathRenderer text={q.text} />
+                                                    </label>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </div>
                             </div>
 
                             <div className={styles.modalActions}>
