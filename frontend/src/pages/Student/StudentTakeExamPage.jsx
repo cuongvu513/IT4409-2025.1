@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import studentService from '../../services/studentService';
+import MathRenderer from '../../components/MathRenderer';
 import styles from './StudentTakeExamPage.module.scss';
 
 const StudentTakeExamPage = () => {
@@ -315,7 +316,7 @@ const StudentTakeExamPage = () => {
                             <div key={q.id} id={`q-${q.id}`} className={styles.questionBlock}>
                                 <div className={styles.qTitle}>
                                     <span className={styles.qIndex}>Câu {index + 1}:</span>
-                                    <span>{q.text}</span>
+                                    <MathRenderer text={q.text} />
                                     {/* Hiển thị loại câu hỏi */}
                                     <span className={styles.qType}>{q.multichoice ? "(Nhiều đáp án)" : "(Một đáp án)"}</span>
                                     <span className={styles.points}>({q.points} điểm)</span>
@@ -345,7 +346,7 @@ const StudentTakeExamPage = () => {
                                                 </div>
 
                                                 <span className={styles.choiceLabel}>{choice.label}</span>
-                                                <span className={styles.choiceText}>{choice.text}</span>
+                                                <MathRenderer text={choice.text} />
                                             </div>
                                         );
                                     })}
