@@ -231,14 +231,20 @@ module.exports = {
   async login({ email, password }) {
     const user = await userService.getUserByEmail(email);
     if (!user) {
-      const err = new Error("Invalid credentials");
+      const err = new Error("Thông tin đăng nhập không hợp lệ");
       err.status = 401;
       throw err;
     }
+    console.log(user);
     const ok = await comparePassword(password, user.password_hash);
     if (!ok) {
-      const err = new Error("Invalid credentials");
+      const err = new Error("Thông tin đăng nhập không hợp lệ");
       err.status = 401;
+      throw err;
+    }
+    if (user.is_active === false) {
+      const err = new Error("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+      err.status = 403;
       throw err;
     }
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1d" });

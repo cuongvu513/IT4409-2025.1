@@ -339,6 +339,13 @@ module.exports = {
             err.status = 404;
             throw err;
         }
+        const examInstance = await prisma.exam_instance.findMany({ where: { id: session.exam_instance_id } });
+        if (!examInstance.published){
+            const err = new Error("Đề thi đã bị hủy hoặc tạm dừng");
+            err.status = 500;
+            throw err;
+        }
+
         if (session.user_id !== studentId) {
             const err = new Error("Bạn không có quyền truy cập phiên này");
             err.status = 403;
@@ -429,7 +436,7 @@ module.exports = {
 
         // đếm mất focus
         const focusLost = !!payload.focusLost;
-        const threshold = Number(process.env.EXAM_FOCUS_LOST_THRESHOLD || 5);
+        const threshold = Number(process.env.EXAM_FOCUS_LOST_THRESHOLD || 100000000000000000000000000000000000000000000);
         let locked = false;
         if (focusLost) {
             updates.focus_lost_count = session.focus_lost_count + 1;
