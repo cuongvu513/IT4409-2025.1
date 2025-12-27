@@ -1,29 +1,39 @@
 # =========================
-# Node.js dependencies
+# Node.js / Package managers
 # =========================
 node_modules/
+package-lock.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
+pnpm-debug.log*
+lerna-debug.log*
 
 # =========================
-# Build output (nếu có)
+# Build output
 # =========================
 dist/
+dist-ssr/
 build/
 .out/
 .cache/
 .tmp/
+coverage/
 
 # =========================
 # Environment variables
 # =========================
 .env
-.env.local
-.env.development
-.env.production
-.env.test
+.env.*
+*.local
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+debug.log*
+error.log*
 
 # =========================
 # OS system files
@@ -35,19 +45,10 @@ Thumbs.db
 # IDE / Editor files
 # =========================
 .vscode/
+!.vscode/extensions.json
 .idea/
 *.swp
-
-# =========================
-# Logs
-# =========================
-logs/
-*.log
-npm-debug.log*
-debug.log*
-error.log*
-
-# =========================
-# Optional: nếu bạn có test hoặc coverage
-# =========================
-coverage/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
