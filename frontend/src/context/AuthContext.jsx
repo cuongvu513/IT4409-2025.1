@@ -61,8 +61,10 @@ export const AuthProvider = ({ children }) => {
             // Bước D: Điều hướng ngay lập tức
             if (userData.role_name === 'teacher') {
                 navigate('/teacher/dashboard');
-            } else {
+            } else if (userData.role_name === 'student') {
                 navigate('/student/dashboard');
+            } else {
+                navigate('/admin/dashboard');
             }
         } catch (error) {
             console.error("Login failed", error);
