@@ -73,7 +73,7 @@ const ClassExamSessionPage = () => {
 
             await teacherService.addAccommodation(examInstanceId, {
             student_id: selectedStudent,
-            extra_seconds: extraSeconds,
+            add_seconds: extraSeconds,
             notes: note,
             });
 
