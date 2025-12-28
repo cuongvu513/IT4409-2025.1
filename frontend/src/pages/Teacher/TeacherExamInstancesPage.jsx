@@ -42,16 +42,22 @@ const TeacherExamInstancesPage = () => {
     const [formData, setFormData] = useState(initialForm);
 
     // --- 1. LOAD DATA ---
+    // also load template info so we can get the class_id
+    const [templateInfo, setTemplateInfo] = useState(null);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [examRes, questRes] = await Promise.all([
+                const [examRes, questRes, tplRes] = await Promise.all([
                     teacherService.getExamInstancesByTemplate(templateId),
-                    teacherService.getQuestions()
+                    teacherService.getQuestions(),
+                    teacherService.getExamTemplates() // get all templates and find the one we want
                 ]);
                 setExams(examRes.data);
                 setQuestions(questRes.data);
+                const foundTpl = (tplRes.data || []).find(t => t.id === templateId);
+                setTemplateInfo(foundTpl || null);
             } catch (error) {
                 console.error(error);
             } finally {
@@ -278,6 +284,13 @@ const TeacherExamInstancesPage = () => {
                                                 <button className={`${styles.btnIcon} ${styles.btnDelete}`} onClick={() => handleDelete(exam.id)} title="Xóa">
                                                     <i className="fa-solid fa-trash"></i>
                                                 </button>
+                                            <Link
+                                                to={`/teacher/classes/${templateInfo?.class_id || templateId}/exams/${exam.id}`}
+                                                className={styles.btnManage}
+                                                title="Quản lý phiên thi"
+                                            >
+                                                <i className="fa-solid fa-gauge"></i>
+                                            </Link>
                                             </div>
                                         </td>
                                     </tr>
