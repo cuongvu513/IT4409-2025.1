@@ -16,16 +16,15 @@
 /* Toolbar */
 .toolbar {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 15px;
     margin-bottom: 20px;
     flex-wrap: wrap;
-    gap: 15px;
+    align-items: center;
 }
 
 .searchBox {
     flex: 1;
-    max-width: 400px;
+    min-width: 250px;
     display: flex;
     align-items: center;
     border: 1px solid #ddd;
@@ -42,16 +41,23 @@
         outline: none;
         width: 100%;
         padding: 10px 0;
-        font-size: 0.95rem;
     }
 
     &:focus-within {
         border-color: $primary-color;
-        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
     }
 }
 
+.select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+}
+
 .totalLabel {
+    margin-left: auto;
     font-size: 0.9rem;
     color: #666;
 }
@@ -78,6 +84,7 @@
         padding: 12px 15px;
         border-bottom: 1px solid #f0f0f0;
         color: #333;
+        font-size: 0.9rem;
         vertical-align: middle;
     }
 
@@ -86,33 +93,18 @@
     }
 }
 
-.className {
+.examTitle {
     color: $primary-color;
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
 }
 
-.desc {
-    font-size: 0.8rem;
+.duration {
     color: #888;
-    margin: 0;
-    max-width: 200px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.8rem;
 }
 
-.codeTag {
-    background-color: #e3f2fd;
-    color: #0d47a1;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.teacherInfo {
+.classInfo {
     display: flex;
     flex-direction: column;
 
@@ -126,12 +118,69 @@
     }
 }
 
-.center {
-    text-align: center;
+.timeInfo {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8rem;
+
+    .start {
+        color: #28a745;
+    }
+
+    .end {
+        color: #dc3545;
+    }
 }
 
-/* Button */
-.btnView {
+/* Status Badges */
+.badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+
+    &.ongoing {
+        background: #e9f9ee;
+        color: #28a745;
+    }
+
+    &.upcoming {
+        background: #e3f2fd;
+        color: #007bff;
+    }
+
+    &.ended {
+        background: #f1f3f5;
+        color: #6c757d;
+    }
+
+    &.suspended {
+        background: #fff3cd;
+        color: #856404;
+    }
+}
+
+/* Progress Bar */
+.progress {
+    font-size: 0.8rem;
+
+    .progressBar {
+        width: 100px;
+        height: 6px;
+        background: #eee;
+        border-radius: 3px;
+        margin-top: 5px;
+        overflow: hidden;
+
+        div {
+            height: 100%;
+            background: $primary-color;
+        }
+    }
+}
+
+.btnAction {
     width: 32px;
     height: 32px;
     border-radius: 4px;
@@ -139,7 +188,6 @@
     background: #e7f1ff;
     cursor: pointer;
     color: #007bff;
-    transition: 0.2s;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -149,7 +197,6 @@
     }
 }
 
-/* Pagination */
 .pagination {
     display: flex;
     justify-content: flex-end;
@@ -158,15 +205,11 @@
     margin-top: 20px;
 
     button {
-        width: 36px;
-        height: 36px;
+        padding: 6px 12px;
         border: 1px solid #ddd;
         background: white;
         border-radius: 4px;
         cursor: pointer;
-        display: flex;
-        justify-content: center;
-        align-items: center;
 
         &:disabled {
             opacity: 0.5;
@@ -181,7 +224,6 @@
     span {
         font-size: 0.9rem;
         color: #666;
-        margin: 0 10px;
     }
 }
 
@@ -189,44 +231,4 @@
     text-align: center;
     color: #999;
     padding: 40px;
-}
-
-.actionGroup {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.btnAction {
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: 0.2s;
-
-    // Style cho nút Xem (Màu xanh dương)
-    &.view {
-        color: #007bff;
-        border-color: #b8daff;
-
-        &:hover {
-            background: #e7f1ff;
-        }
-    }
-
-    // --- STYLE MỚI CHO NÚT EXPORT (Màu xanh lá) ---
-    &.export {
-        color: #198754;
-        border-color: #a3cfbb;
-
-        &:hover {
-            background: #d1e7dd;
-            transform: translateY(-1px);
-        }
-    }
 }

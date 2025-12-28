@@ -41,7 +41,28 @@ const adminService = {
 
     getClassDetail(id) {
         return axiosClient.get(`/api/admin/classes/${id}`);
+    },
+
+    exportStudents(classId, status) {
+        // Gọi API với query params: ?classId=...&status=...
+        return axiosClient.get('/api/admin/export/students', {
+            params: {
+                classId: classId, // Lọc theo lớp
+                status: status    // Lọc theo trạng thái (active/locked)
+            },
+            responseType: 'blob' // Bắt buộc để tải file
+        });
+    },
+
+    //endpoint dùng cho quản lí kỳ thi
+    getExams(params) {
+        return axiosClient.get('/api/admin/exams', { params });
+    },
+
+    getExamDetail(id) {
+        return axiosClient.get(`/api/admin/exams/${id}`);
     }
+
 };
 
 export default adminService;
