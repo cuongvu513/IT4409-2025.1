@@ -41,6 +41,7 @@ import StudentTakeExamPage from './pages/Student/StudentTakeExamPage';
 //trang cho admin
 import AdminUserPage from './pages/Admin/AdminUserPage';
 import AdminClassPage from './pages/Admin/AdminClassPage';
+import AdminClassDetailPage from './pages/Admin/AdminClassDetailPage';
 
 function App() {
   return (
@@ -80,6 +81,7 @@ function App() {
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="users" element={<AdminUserPage />} />
             <Route path="classes" element={<AdminClassPage />} />
+            <Route path="classes/:id" element={<AdminClassDetailPage />} />
           </Route>
 
 

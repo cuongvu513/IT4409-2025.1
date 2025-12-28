@@ -27,7 +27,7 @@ const TeacherExamInstancesPage = () => {
     // Search state2
     const [searchTerm, setSearchTerm] = useState('');
     const [difficultyFilter, setDifficultyFilter] = useState('all');
-    
+
     // Pagination state
     const [currentExamPage, setCurrentExamPage] = useState(1);
     const examsPerPage = 10;
@@ -92,12 +92,12 @@ const TeacherExamInstancesPage = () => {
 
     // Filter questions based on search and difficulty
     const filteredQuestions = questions.filter(q => {
-        const matchesSearch = searchTerm === '' || 
+        const matchesSearch = searchTerm === '' ||
             q.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (q.tags && q.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
-        
+
         const matchesDifficulty = difficultyFilter === 'all' || q.difficulty === difficultyFilter;
-        
+
         return matchesSearch && matchesDifficulty;
     });
 
@@ -110,20 +110,42 @@ const TeacherExamInstancesPage = () => {
         setShowModal(true);
     };
 
-    const openEditModal = (exam) => {
+    // --- SỬA  ---
+    const openEditModal = async (exam) => {
         setEditingExam(exam);
-        const currentQuestionIds = exam.exam_question ? exam.exam_question.map(eq => eq.question_id) : [];
-        setFormData({
-            starts_at: toInputDateTime(exam.starts_at),
-            ends_at: toInputDateTime(exam.ends_at),
-            published: exam.published,
-            show_answers: exam.show_answers || false,
-            selectedQuestionIds: currentQuestionIds
-        });
-        // Reset search filters when editing
-        setSearchTerm('');
-        setDifficultyFilter('all');
-        setShowModal(true);
+
+        try {
+            // 1. Gọi API lấy chi tiết đề thi để có danh sách câu hỏi chính xác
+            // (Vì API danh sách thường không trả về field exam_question đầy đủ)
+            const res = await teacherService.getExamInstanceDetail(exam.id);
+            const fullExamData = res.data;
+
+            // 2. Lấy list ID câu hỏi từ dữ liệu chi tiết
+            const currentQuestionIds = fullExamData.exam_question && Array.isArray(fullExamData.exam_question)
+                ? fullExamData.exam_question.map(item => item.question_id)
+                : [];
+
+            console.log("IDs câu hỏi đã chọn:", currentQuestionIds);
+
+            // 3. Fill dữ liệu vào Form
+            setFormData({
+                starts_at: toInputDateTime(fullExamData.starts_at),
+                ends_at: toInputDateTime(fullExamData.ends_at),
+                published: fullExamData.published,
+                show_answers: fullExamData.show_answers || false,
+                selectedQuestionIds: currentQuestionIds //  Gán vào đây thì checkbox mới hiện
+            });
+
+            // Reset bộ lọc tìm kiếm trong modal
+            setSearchTerm('');
+            setDifficultyFilter('all');
+
+            // 4. Mở Modal
+            setShowModal(true);
+        } catch (error) {
+            console.error(error);
+            alert("Không thể tải thông tin chi tiết đề thi để sửa.");
+        }
     };
 
     const handleDelete = async (id) => {
@@ -144,7 +166,7 @@ const TeacherExamInstancesPage = () => {
         // Keep the datetime as +7 timezone when sending to backend
         const startsAtLocal = new Date(formData.starts_at);
         const endsAtLocal = new Date(formData.ends_at);
-        
+
         // Format as ISO string with +07:00 timezone offset
         const formatWithTimezone = (date) => {
             const year = date.getFullYear();
@@ -228,47 +250,47 @@ const TeacherExamInstancesPage = () => {
                             {exams.length > 0 ? exams
                                 .slice((currentExamPage - 1) * examsPerPage, currentExamPage * examsPerPage)
                                 .map((exam, index) => (
-                                <tr key={exam.id}>
-                                    <td style={{ fontFamily: 'monospace', color: '#007bff' }}>
-                                        {exam.title || exam.id.substring(0, 8)}
-                                    </td>
-                                    <td>{formatDate(exam.starts_at)}</td>
-                                    <td>{formatDate(exam.ends_at)}</td>
-                                    <td>
-                                        <span className={`${styles.badge} ${exam.published ? styles.pub : styles.draft}`}>
-                                            {exam.published ? 'Công bố' : 'Nháp'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {exam.show_answers ?
-                                            <span style={{ color: 'green', fontWeight: 'bold' }}>Hiện</span> :
-                                            <span style={{ color: '#666' }}>Ẩn</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <div className={styles.actionButtons}>
-                                            <button
-                                                className={`${styles.btnIcon} ${styles.btnView}`}
-                                                onClick={() => handleViewDetail(exam.id)}
-                                                title="Xem chi tiết"
-                                            >
-                                                <i className="fa-solid fa-eye"></i>
-                                            </button>
-                                            <button className={`${styles.btnIcon} ${styles.btnEdit}`} onClick={() => openEditModal(exam)} title="Sửa">
-                                                <i className="fa-solid fa-pen"></i>
-                                            </button>
-                                            <button className={`${styles.btnIcon} ${styles.btnDelete}`} onClick={() => handleDelete(exam.id)} title="Xóa">
-                                                <i className="fa-solid fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )) : (
+                                    <tr key={exam.id}>
+                                        <td style={{ fontFamily: 'monospace', color: '#007bff' }}>
+                                            {exam.title || exam.id.substring(0, 8)}
+                                        </td>
+                                        <td>{formatDate(exam.starts_at)}</td>
+                                        <td>{formatDate(exam.ends_at)}</td>
+                                        <td>
+                                            <span className={`${styles.badge} ${exam.published ? styles.pub : styles.draft}`}>
+                                                {exam.published ? 'Công bố' : 'Nháp'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {exam.show_answers ?
+                                                <span style={{ color: 'green', fontWeight: 'bold' }}>Hiện</span> :
+                                                <span style={{ color: '#666' }}>Ẩn</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div className={styles.actionButtons}>
+                                                <button
+                                                    className={`${styles.btnIcon} ${styles.btnView}`}
+                                                    onClick={() => handleViewDetail(exam.id)}
+                                                    title="Xem chi tiết"
+                                                >
+                                                    <i className="fa-solid fa-eye"></i>
+                                                </button>
+                                                <button className={`${styles.btnIcon} ${styles.btnEdit}`} onClick={() => openEditModal(exam)} title="Sửa">
+                                                    <i className="fa-solid fa-pen"></i>
+                                                </button>
+                                                <button className={`${styles.btnIcon} ${styles.btnDelete}`} onClick={() => handleDelete(exam.id)} title="Xóa">
+                                                    <i className="fa-solid fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )) : (
                                 <tr><td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>Chưa có đề thi nào.</td></tr>
                             )}
                         </tbody>
                     </table>
-                    
+
                     {/* Pagination for exams */}
                     {exams.length > examsPerPage && (
                         <Pagination
@@ -326,16 +348,16 @@ const TeacherExamInstancesPage = () => {
 
                                 <div className={styles.questionSection}>
                                     <h4>Chọn câu hỏi ({formData.selectedQuestionIds.length})</h4>
-                                    
+
                                     <div className={styles.filterRow}>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             placeholder="Tìm kiếm câu hỏi theo nội dung hoặc tags..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                             className={styles.searchInput}
                                         />
-                                        <select 
+                                        <select
                                             value={difficultyFilter}
                                             onChange={(e) => setDifficultyFilter(e.target.value)}
                                             className={styles.difficultyFilter}
@@ -350,20 +372,20 @@ const TeacherExamInstancesPage = () => {
                                     <div className={styles.questionList}>
                                         {questions.length === 0 ? <p>Ngân hàng câu hỏi trống.</p> :
                                             filteredQuestions.length === 0 ? <p>Không tìm thấy câu hỏi phù hợp.</p> :
-                                            filteredQuestions.map(q => (
-                                                <div key={q.id} className={styles.qItem}>
-                                                    <input
-                                                        type="checkbox"
-                                                        id={`q-${q.id}`}
-                                                        checked={formData.selectedQuestionIds.includes(q.id)}
-                                                        onChange={() => handleQuestionToggle(q.id)}
-                                                    />
-                                                    <label htmlFor={`q-${q.id}`}>
-                                                        <span className={`${styles.badge} ${styles.gray}`}>{q.difficulty}</span>
-                                                        <MathRenderer text={q.text} />
-                                                    </label>
-                                                </div>
-                                            ))}
+                                                filteredQuestions.map(q => (
+                                                    <div key={q.id} className={styles.qItem}>
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`q-${q.id}`}
+                                                            checked={formData.selectedQuestionIds.includes(q.id)}
+                                                            onChange={() => handleQuestionToggle(q.id)}
+                                                        />
+                                                        <label htmlFor={`q-${q.id}`}>
+                                                            <span className={`${styles.badge} ${styles.gray}`}>{q.difficulty}</span>
+                                                            <MathRenderer text={q.text} />
+                                                        </label>
+                                                    </div>
+                                                ))}
                                     </div>
                                 </div>
                             </div>
