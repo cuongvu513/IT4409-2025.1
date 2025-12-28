@@ -7,6 +7,8 @@ CREATE TYPE "enrollment_status" AS ENUM ('pending', 'approved', 'rejected', 'can
 -- CreateEnum
 CREATE TYPE "session_state" AS ENUM ('pending', 'started', 'submitted', 'expired', 'locked');
 
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp",
+
 -- CreateTable
 CREATE TABLE "accommodation" (
     "id" UUID NOT NULL DEFAULT uuid_generate_v4(),

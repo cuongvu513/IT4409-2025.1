@@ -8,20 +8,6 @@
     margin: 0 auto;
 }
 
-.backLink {
-    margin-bottom: 20px;
-
-    a {
-        text-decoration: none;
-        color: #666;
-        font-weight: 600;
-
-        &:hover {
-            color: $primary-color;
-        }
-    }
-}
-
 .pageHeader {
     display: flex;
     justify-content: space-between;
@@ -394,4 +380,26 @@
     border: 1px solid #eee;
     border-radius: 6px;
     background: white;
+}
+
+.btnManage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  text-decoration: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+  }
+
+  i {
+    font-size: 14px;
+  }
 }

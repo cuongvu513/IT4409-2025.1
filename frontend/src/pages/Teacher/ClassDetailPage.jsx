@@ -3,6 +3,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import styles from './ClassDetailPage.module.scss';
+import ExamInstanceForm from '../../components/ExamInstanceForm/ExamInstanceForm';
+
 
 const ClassDetailPage = () => {
     const { id } = useParams();
@@ -19,6 +21,72 @@ const ClassDetailPage = () => {
     const [requests, setRequests] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const notificationRef = useRef(null);
+
+    // state to show templates list modal and selected template
+    const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+    const [templates, setTemplates] = useState([]);
+    const [templateAction, setTemplateAction] = useState(null);
+    // 'create' | 'view'
+
+    const [templatesLoading, setTemplatesLoading] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState(null);
+    // open instance form modal
+    const [showInstanceForm, setShowInstanceForm] = useState(false);
+
+    const openTemplatesModal = async () => {
+        try {
+            setShowTemplatesModal(true);
+            setTemplatesLoading(true);
+            const res = await teacherService.getExamTemplatesByClass(id);
+            setTemplates(res.data || []);
+        } catch (err) {
+            console.error('Lỗi lấy templates:', err);
+            setTemplates([]);
+        } finally {
+            setTemplatesLoading(false);
+        }
+    };
+
+    const openTemplatesModalForCreate = () => {
+        setTemplateAction('create');
+        openTemplatesModal();
+    };
+
+    const openTemplatesModalForView = () => {
+        setTemplateAction('view');
+        openTemplatesModal();
+    };
+
+    const handleSelectTemplate = (template) => {
+        setShowTemplatesModal(false);
+
+        if (templateAction === 'create') {
+            setSelectedTemplate(template);
+            setShowInstanceForm(true);
+        }
+
+        if (templateAction === 'view') {
+            navigate(`/teacher/exam-templates/${template.id}`);
+        }
+    };
+
+    const handleInstanceCreated = (newInstance) => {
+        setShowInstanceForm(false);
+        const templateIdToNavigate = selectedTemplate?.id;
+        setSelectedTemplate(null);
+        alert('Đã tạo đề thi thành công');
+        // Prefer navigating to the template's exam-instances page
+        if (templateIdToNavigate) {
+            navigate(`/teacher/exam-templates/${templateIdToNavigate}`);
+        } else if (newInstance && (newInstance.template_id || newInstance.id)) {
+            // fallback to the template_id returned by backend, or to instance detail
+            if (newInstance.template_id) {
+                navigate(`/teacher/exam-templates/${newInstance.template_id}`);
+            } else {
+                navigate(`/teacher/exam-instances/${newInstance.id}`);
+            }
+        }
+    };
 
     // 1. Load chi tiết lớp
     const fetchClassData = async () => {
@@ -107,6 +175,27 @@ const ClassDetailPage = () => {
                         <span className={styles.codeTag}>{classInfo.code}</span>
                     </div>
 
+                      {/* ACTION BUTTONS + NOTIFICATION */}
+                    <div className={styles.headerActions}>
+                        {/* API 44 – Danh sách template */}
+                        <button
+                            className={styles.actionBtn}
+                            onClick={() => openTemplatesModalForCreate()}
+                            title="Tạo đề thi từ Template có sẵn"
+                            style={{ background: 'linear-gradient(135deg,#059669,#047857)', marginLeft: '6px' }}
+                        >
+                            📄 Tạo đề từ Template
+                        </button>
+                        
+                        <button
+                            className={styles.actionBtn}
+                            onClick={() => openTemplatesModalForView()}
+                            title="Danh sách đề thi của lớp"
+                            style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', marginLeft: '8px' }}
+                        >
+                            📚 Danh sách đề thi
+                        </button>
+                    </div>
                     {/* --- CHUÔNG THÔNG BÁO --- */}
                     <div className={styles.notificationWrapper} ref={notificationRef}>
                         <div
@@ -166,16 +255,65 @@ const ClassDetailPage = () => {
                     </div>
                 </div>
 
+                {/* Templates list modal */}
+                {showTemplatesModal && (
+                    <div className={styles.modalOverlay} onClick={() => setShowTemplatesModal(false)}>
+                        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ width: 700 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ margin: 0 }}>Chọn Template để tạo Đề Thi</h3>
+                                <button onClick={() => setShowTemplatesModal(false)}>&times;</button>
+                            </div>
+
+                            <div style={{ marginTop: 12 }}>
+                                {templatesLoading ? (
+                                    <p>Đang tải templates...</p>
+                                ) : templates.length === 0 ? (
+                                    <p>Không có template nào cho lớp này.</p>
+                                ) : (
+                                    <div style={{ display: 'grid', gap: 8 }}>
+                                        {templates.map(t => (
+                                            <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 10, border: '1px solid #eee', borderRadius: 8 }}>
+                                                <div>
+                                                    <div style={{ fontWeight: 700 }}>{t.title}</div>
+                                                    <div style={{ fontSize: '0.9rem', color: '#666' }}>{t.description}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#999', marginTop: 6 }}>Thời lượng: {t.duration_seconds ? Math.round(t.duration_seconds / 60) + ' phút' : '-'}</div>
+                                                </div>
+                                                <div>
+                                                    <button className={styles.actionBtn} onClick={() => handleSelectTemplate(t)}>✨ Dùng template này</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Create Exam Instance form modal (uses ExamInstanceForm) */}
+                {showInstanceForm && selectedTemplate && (
+                    <div className={styles.modalOverlay} onClick={() => setShowInstanceForm(false)}>
+                        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ width: 800 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ margin: 0 }}>Tạo Đề Thi từ: {selectedTemplate.title}</h3>
+                                <button onClick={() => setShowInstanceForm(false)}>&times;</button>
+                            </div>
+                            <div style={{ marginTop: 10 }}>
+                                <ExamInstanceForm
+                                    templateId={selectedTemplate.id}
+                                    classId={id}
+                                    onCreated={handleInstanceCreated}
+                                    onClose={() => setShowInstanceForm(false)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <p className={styles.description}>{classInfo.description}</p>
                 <div className={styles.metaInfo}>
                     <span>Ngày tạo: {new Date(classInfo.created_at).toLocaleDateString('vi-VN')}</span>
                     <span>Sĩ số: <strong>{listStudent.length}</strong> học viên</span>
-                    <button
-                        className={styles.btnPrimary}
-                        onClick={() => navigate(`/teacher/classes/${id}/exams`)}
-                    >
-                        Quản lý bài thi
-                    </button>
                 </div>
             </div>
 
