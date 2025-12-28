@@ -182,6 +182,7 @@ const ClassDetailPage = () => {
                             className={styles.actionBtn}
                             onClick={() => openTemplatesModalForCreate()}
                             title="Tạo đề thi từ Template có sẵn"
+                            aria-label="Tạo đề thi từ Template"
                             style={{ background: 'linear-gradient(135deg,#059669,#047857)', marginLeft: '6px' }}
                         >
                             📄 Tạo đề từ Template
@@ -191,6 +192,7 @@ const ClassDetailPage = () => {
                             className={styles.actionBtn}
                             onClick={() => openTemplatesModalForView()}
                             title="Danh sách đề thi của lớp"
+                            aria-label="Danh sách đề thi"
                             style={{ background: 'linear-gradient(135deg,#2563eb,#1d4ed8)', marginLeft: '8px' }}
                         >
                             📚 Danh sách đề thi
@@ -257,11 +259,11 @@ const ClassDetailPage = () => {
 
                 {/* Templates list modal */}
                 {showTemplatesModal && (
-                    <div className={styles.modalOverlay} onClick={() => setShowTemplatesModal(false)}>
-                        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ width: 700 }}>
+                    <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Chọn Template" onClick={() => setShowTemplatesModal(false)}>
+                        <div className={`${styles.modalContent} ${styles.wide}`} onClick={(e) => e.stopPropagation()}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3 style={{ margin: 0 }}>Chọn Template để tạo Đề Thi</h3>
-                                <button onClick={() => setShowTemplatesModal(false)}>&times;</button>
+                                <h3 style={{ margin: 0 }}>Chọn Template để tạo/xem Đề Thi</h3>
+                                <button onClick={() => setShowTemplatesModal(false)} aria-label="Đóng">&times;</button>
                             </div>
 
                             <div style={{ marginTop: 12 }}>
@@ -272,14 +274,14 @@ const ClassDetailPage = () => {
                                 ) : (
                                     <div style={{ display: 'grid', gap: 8 }}>
                                         {templates.map(t => (
-                                            <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 10, border: '1px solid #eee', borderRadius: 8 }}>
-                                                <div>
-                                                    <div style={{ fontWeight: 700 }}>{t.title}</div>
-                                                    <div style={{ fontSize: '0.9rem', color: '#666' }}>{t.description}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: '#999', marginTop: 6 }}>Thời lượng: {t.duration_seconds ? Math.round(t.duration_seconds / 60) + ' phút' : '-'}</div>
+                                            <div key={t.id} className={styles.templateItem}>
+                                                <div className={styles.templateInfo}>
+                                                    <div className={styles.templateTitle}>{t.title}</div>
+                                                    <div className={styles.templateDesc}>{t.description}</div>
+                                                    <div className={styles.templateMeta}>Thời lượng: {t.duration_seconds ? Math.round(t.duration_seconds / 60) + ' phút' : '-'}</div>
                                                 </div>
-                                                <div>
-                                                    <button className={styles.actionBtn} onClick={() => handleSelectTemplate(t)}>✨ Dùng template này</button>
+                                                <div className={styles.templateActions}>
+                                                    <button className={styles.actionBtn} onClick={() => handleSelectTemplate(t)} aria-label={`Dùng template ${t.title}`}>✨ Dùng template này</button>
                                                 </div>
                                             </div>
                                         ))}
@@ -292,11 +294,11 @@ const ClassDetailPage = () => {
 
                 {/* Create Exam Instance form modal (uses ExamInstanceForm) */}
                 {showInstanceForm && selectedTemplate && (
-                    <div className={styles.modalOverlay} onClick={() => setShowInstanceForm(false)}>
-                        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ width: 800 }}>
+                    <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Tạo Đề Thi" onClick={() => setShowInstanceForm(false)}>
+                        <div className={`${styles.modalContent} ${styles.wide}`} onClick={(e) => e.stopPropagation()}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h3 style={{ margin: 0 }}>Tạo Đề Thi từ: {selectedTemplate.title}</h3>
-                                <button onClick={() => setShowInstanceForm(false)}>&times;</button>
+                                <button onClick={() => setShowInstanceForm(false)} aria-label="Đóng">&times;</button>
                             </div>
                             <div style={{ marginTop: 10 }}>
                                 <ExamInstanceForm

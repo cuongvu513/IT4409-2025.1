@@ -385,7 +385,149 @@
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
 
+/* Template item inside modal */
+.templateItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.templateInfo {
+  max-width: calc(100% - 140px);
+}
+
+.templateTitle {
+  font-weight: 700;
+}
+
+.templateDesc {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.templateMeta {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 6px;
+}
+
+.templateActions {
+  display: flex;
+  align-items: center;
+}
+
 /* Slightly wider modal when needed */
 .modalContent.wide {
   width: 800px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .contentBody {
+    padding: 16px;
+  }
+
+  .infoCard {
+    padding: 16px;
+  }
+
+  .infoHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .infoHeader h2 {
+    font-size: 1.2rem;
+  }
+
+  .codeTag {
+    font-size: 0.95rem;
+    padding: 4px 8px;
+  }
+
+  .headerActions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .actionBtn {
+    flex: 1 1 auto;
+    width: auto;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+  }
+
+  .notificationWrapper {
+    margin-left: 0;
+    margin-top: 6px;
+    align-self: flex-end;
+  }
+
+  .modalContent {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    padding: 12px;
+    box-shadow: none;
+    overflow: auto;
+  }
+
+  .studentSection {
+    padding: 16px;
+  }
+
+  .metaInfo {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .studentTable {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .studentTable th,
+  .studentTable td {
+    white-space: nowrap;
+    min-width: 120px;
+  }
+
+  /* Template item becomes stacked on small screens */
+  .templateItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .templateActions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 420px) {
+  .actionBtn {
+    font-size: 0.85rem;
+    padding: 8px 10px;
+  }
+
+  .codeTag {
+    font-size: 0.85rem;
+  }
+
+  .modalContent {
+    padding: 10px;
+  }
 }
