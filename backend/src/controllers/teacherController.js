@@ -724,7 +724,7 @@ module.exports = {
         }
     },
 
-    // lấy danh sách template đề thi theo lớp học
+    // Lấy danh sách template đề thi theo lớp học
     async getExamTemplatesByClass(req, res, next) {
         try {
             const teacherId = req.user.id;

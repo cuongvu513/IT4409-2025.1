@@ -219,6 +219,14 @@ module.exports = {
                 .filter(id => !providedIds.has(id));
 
             if (idsToDelete.length > 0) {
+                // Trước khi xóa choices, phải xóa các answer tham chiếu đến chúng
+                await tx.answer.deleteMany({
+                    where: { 
+                        choice_id: { in: idsToDelete }
+                    }
+                });
+                
+                // Sau đó mới xóa choices
                 await tx.question_choice.deleteMany({
                     where: { id: { in: idsToDelete } }
                 });
