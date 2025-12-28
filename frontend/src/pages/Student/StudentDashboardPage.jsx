@@ -114,20 +114,19 @@ const StudentDashboardPage = () => {
                 ) : dashboardData.classes.length > 0 ? (
                     <>
                         {/* Hiển thị dạng lưới các lớp học */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                        <div className={styles.classesGrid}>
                             {dashboardData.classes
                                 .slice((currentPage - 1) * classesPerPage, currentPage * classesPerPage)
                                 .map(cls => (
-                            <div key={cls.id} className={styles.classCard} style={{ border: '1px solid #eee', padding: '20px', borderRadius: '10px', background: 'white' }}>
-                                <h3 style={{ margin: '0 0 10px', color: '#333' }}>{cls.name}</h3>
-                                <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '15px' }}>{cls.description || "Không có"}</p>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#999' }}>
+                            <div key={cls.id} className={styles.classCard}>
+                                <h3 className={styles.classTitle}>{cls.name}</h3>
+                                <p className={styles.classDesc}>{cls.description || "Không có"}</p>
+                                <div className={styles.classMeta}>
                                     <span>Mã: {cls.code}</span>
                                     <span>{formatDate(cls.created_at)}</span>
                                 </div>
                                 <button
                                     className={styles.primaryBtn}
-                                    style={{ width: '100%', marginTop: '15px', padding: '8px' }}
                                     onClick={() => navigate(`/student/classes/${cls.id}/exams`)}
                                 >
                                     Vào lớp

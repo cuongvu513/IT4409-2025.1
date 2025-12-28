@@ -107,16 +107,16 @@ const TeacherClassesPage = () => {
                                 .slice((currentPage - 1) * classesPerPage, currentPage * classesPerPage)
                                 .map((cls, index) => (
                                 <tr key={cls.id}>
-                                    <td>{(currentPage - 1) * classesPerPage + index + 1}</td>
-                                    <td className={styles.className}>
+                                    <td data-label="STT">{(currentPage - 1) * classesPerPage + index + 1}</td>
+                                    <td data-label="Tên lớp" className={styles.className}>
                                         <Link to={`/teacher/classes/${cls.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                             {cls.name}
                                         </Link>
                                     </td>
-                                    <td><span className={styles.codeTag}>{cls.code}</span></td>
-                                    <td>{cls.description}</td>
-                                    <td>{formatDate(cls.created_at)}</td>
-                                    <td>
+                                    <td data-label="Mã lớp"><span className={styles.codeTag}>{cls.code}</span></td>
+                                    <td data-label="Mô tả">{cls.description}</td>
+                                    <td data-label="Ngày tạo">{formatDate(cls.created_at)}</td>
+                                    <td data-label="Hành động">
                                         <div className={styles.actionButtons}>
                                             <Link
                                                 to={`/teacher/classes/${cls.id}`}

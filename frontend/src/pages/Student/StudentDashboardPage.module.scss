@@ -163,6 +163,44 @@
     border: 1px solid #eee;
 }
 
+/* Classes grid and card styles */
+.classesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+}
+
+.classCard {
+    border: 1px solid #eee;
+    padding: 20px;
+    border-radius: 10px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.classTitle {
+    margin: 0 0 6px 0;
+    color: #333;
+    font-size: 1.05rem;
+}
+
+.classDesc {
+    color: #666;
+    font-size: 0.95rem;
+    margin: 0 0 6px 0;
+    flex: 1 1 auto;
+}
+
+.classMeta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #999;
+}
+
+
 .sectionHeader {
     display: flex;
     justify-content: space-between;
@@ -344,4 +382,72 @@
         transform: translateY(0);
         opacity: 1;
     }
+}
+
+/* Responsive tweaks */
+@media (max-width: 800px) {
+  .contentBody {
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  .welcomeBanner {
+    padding: 18px;
+
+    h1 {
+      font-size: 1.3rem;
+    }
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .contentSection {
+    padding: 18px;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .viewMore {
+    align-self: flex-end;
+  }
+
+  .classesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .classCard {
+    padding: 14px;
+  }
+
+  .modalContent {
+    width: 95%;
+    max-width: 720px;
+    padding: 18px;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .modalActions button {
+    width: 100%;
+  }
+
+  /* If layout/sidebar used, collapse it */
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    display: none;
+  }
 }
