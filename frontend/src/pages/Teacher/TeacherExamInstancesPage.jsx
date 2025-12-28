@@ -224,10 +224,6 @@ const TeacherExamInstancesPage = () => {
         // XÓA .layout, .sidebar, .mainContent, <TopHeader>
         // CHỈ GIỮ LẠI PHẦN NỘI DUNG CHÍNH (CONTENT BODY)
         <div className={styles.contentBody}>
-            <div className={styles.backLink}>
-                <Link to="/teacher/exam-templates">← Quay lại danh sách Template</Link>
-            </div>
-
             <div className={styles.pageHeader}>
                 <h2>Danh sách Đề thi (Instances)</h2>
                 <button className={styles.createBtn} onClick={openCreateModal}>+ Tạo Đề Thi</button>
