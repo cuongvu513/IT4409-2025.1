@@ -61,6 +61,13 @@ const adminService = {
 
     getExamDetail(id) {
         return axiosClient.get(`/api/admin/exams/${id}`);
+    },
+
+    exportExamResults(examId) {
+        return axiosClient.get(`/api/admin/export/results/${examId}`, {
+            // QUAN TRỌNG: Báo cho axios biết server trả về file
+            responseType: 'blob'
+        });
     }
 
 };

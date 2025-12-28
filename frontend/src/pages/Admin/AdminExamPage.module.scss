@@ -232,3 +232,35 @@
     color: #999;
     padding: 40px;
 }
+
+.btnAction {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid #b8daff;
+    background: #e7f1ff;
+    cursor: pointer;
+    color: #007bff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    &:hover {
+        background: #d0e8ff;
+    }
+
+    /* --- STYLE MỚI CHO NÚT EXPORT --- */
+    &.export {
+        color: #198754;
+        /* Chữ màu xanh lá */
+        border-color: #a3cfbb;
+        /* Viền xanh nhạt */
+        background-color: #f0fff4;
+
+        &:hover {
+            background-color: #d1e7dd;
+            transform: translateY(-1px);
+            /* Hiệu ứng nảy lên nhẹ */
+        }
+    }
+}
