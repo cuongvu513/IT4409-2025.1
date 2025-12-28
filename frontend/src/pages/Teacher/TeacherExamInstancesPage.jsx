@@ -253,23 +253,23 @@ const TeacherExamInstancesPage = () => {
                                 .slice((currentExamPage - 1) * examsPerPage, currentExamPage * examsPerPage)
                                 .map((exam, index) => (
                                     <tr key={exam.id}>
-                                        <td style={{ fontFamily: 'monospace', color: '#007bff' }}>
+                                        <td data-label="ID Đề thi" style={{ fontFamily: 'monospace', color: '#007bff' }}>
                                             {exam.title || exam.id.substring(0, 8)}
                                         </td>
-                                        <td>{formatDate(exam.starts_at)}</td>
-                                        <td>{formatDate(exam.ends_at)}</td>
-                                        <td>
+                                        <td data-label="Bắt đầu">{formatDate(exam.starts_at)}</td>
+                                        <td data-label="Kết thúc">{formatDate(exam.ends_at)}</td>
+                                        <td data-label="Trạng thái">
                                             <span className={`${styles.badge} ${exam.published ? styles.pub : styles.draft}`}>
                                                 {exam.published ? 'Công bố' : 'Nháp'}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-label="Đáp án">
                                             {exam.show_answers ?
                                                 <span style={{ color: 'green', fontWeight: 'bold' }}>Hiện</span> :
                                                 <span style={{ color: '#666' }}>Ẩn</span>
                                             }
                                         </td>
-                                        <td>
+                                        <td data-label="Thao tác">
                                             <div className={styles.actionButtons}>
                                                 <button
                                                     className={`${styles.btnIcon} ${styles.btnView}`}
@@ -300,32 +300,6 @@ const TeacherExamInstancesPage = () => {
                         </tbody>
                     </table>
 
-                    {/* Mobile list (visible on small screens) */}
-                    <div className={styles.mobileList} role="list" aria-label="Danh sách đề thi (mobile)">
-                        {exams.length > 0 ? exams
-                            .slice((currentExamPage - 1) * examsPerPage, currentExamPage * examsPerPage)
-                            .map(exam => (
-                                <div key={exam.id} className={styles.mobileCard} role="listitem" aria-label={`Đề thi ${exam.title || exam.id.substring(0,8)}`}>
-                                    <div className={styles.mobileHeader}>
-                                        <div className={styles.mobileTitle}>{exam.title || exam.id.substring(0,8)}</div>
-                                        <div className={styles.mobileMeta}>{formatDate(exam.starts_at)} - {formatDate(exam.ends_at)}</div>
-                                    </div>
-                                    <div className={styles.mobileBody}>
-                                        <div><strong>Trạng thái: </strong><span className={`${styles.badge} ${exam.published ? styles.pub : styles.draft}`}>{exam.published ? 'Công bố' : 'Nháp'}</span></div>
-                                        <div><strong>Đáp án: </strong>{exam.show_answers ? <span style={{ color: 'green', fontWeight: 'bold' }}>Hiện</span> : <span style={{ color: '#666' }}>Ẩn</span>}</div>
-                                    </div>
-                                    <div className={styles.mobileActions}>
-                                        <button aria-label="Xem chi tiết" className={`${styles.btnIcon} ${styles.btnView}`} onClick={() => handleViewDetail(exam.id)} title="Xem chi tiết"><i className="fa-solid fa-eye"></i></button>
-                                        <button aria-label="Sửa đề thi" className={`${styles.btnIcon} ${styles.btnEdit}`} onClick={() => openEditModal(exam)} title="Sửa"><i className="fa-solid fa-pen"></i></button>
-                                        <button aria-label="Xóa đề thi" className={`${styles.btnIcon} ${styles.btnDelete}`} onClick={() => handleDelete(exam.id)} title="Xóa"><i className="fa-solid fa-trash"></i></button>
-                                        <Link aria-label="Quản lý phiên thi" to={`/teacher/classes/${templateInfo?.class_id || templateId}/exams/${exam.id}`} className={styles.btnManage} title="Quản lý phiên thi"><i className="fa-solid fa-gauge"></i></Link>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className={styles.mobileEmpty} style={{ padding: '20px', textAlign: 'center' }}>Chưa có đề thi nào.</div>
-                            )}
-                    </div>
-
                     {/* Pagination for exams */}
                     {exams.length > examsPerPage && (
                         <Pagination
@@ -341,11 +315,11 @@ const TeacherExamInstancesPage = () => {
 
             {/* --- MODAL TẠO/SỬA --- */}
             {showModal && (
-                <div className={styles.modalOverlay} role="presentation">
-                    <div className={styles.modalContent} role="dialog" aria-modal="true" aria-label={editingExam ? 'Chỉnh sửa Đề Thi' : 'Tạo Đề Thi Mới'}>
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modalContent}>
                         <div className={styles.modalHeader}>
                             <h3>{editingExam ? 'Chỉnh sửa Đề Thi' : 'Tạo Đề Thi Mới'}</h3>
-                            <button onClick={() => setShowModal(false)} aria-label="Đóng">&times;</button>
+                            <button onClick={() => setShowModal(false)}>&times;</button>
                         </div>
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                             <div className={styles.formScroll}>
