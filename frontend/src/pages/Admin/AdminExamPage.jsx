@@ -42,6 +42,42 @@ const AdminExamPage = () => {
         return () => clearTimeout(timeoutId);
     }, [filters]);
 
+    const handleExportResults = async (examId, examTitle) => {
+        if (!window.confirm(`Bạn muốn xuất kết quả của kỳ thi: "${examTitle}"?`)) return;
+
+        try {
+            // 1. Gọi API Endpoint 11
+            const response = await adminService.exportExamResults(examId);
+
+            // 2. Tạo URL ảo cho file
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            // 3. Đặt tên file: ket-qua-[ten-ky-thi]-[timestamp].csv
+            const timestamp = new Date().toISOString().slice(0, 10);
+            // Làm sạch tên file (bỏ dấu tiếng việt, ký tự lạ)
+            const safeName = examTitle.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+            link.setAttribute('download', `ket-qua-${safeName}-${timestamp}.csv`);
+
+            // 4. Kích hoạt tải xuống
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error("Export error:", error);
+            // Kiểm tra nếu lỗi 404
+            if (error.response?.status === 404) {
+                alert("Không tìm thấy kỳ thi này (404).");
+            } else {
+                alert("Xuất file thất bại. Vui lòng thử lại.");
+            }
+        }
+    };
+
     // Handlers
     const handleFilterChange = (e) => {
         setFilters(prev => ({ ...prev, [e.target.name]: e.target.value, page: 1 }));
@@ -143,13 +179,26 @@ const AdminExamPage = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <button
-                                                    className={styles.btnAction}
-                                                    title="Xem chi tiết"
-                                                    onClick={() => navigate(`/admin/exams/${exam.id}`)}
-                                                >
-                                                    <i className="fa-solid fa-eye"></i>
-                                                </button>
+                                                {/* Cột Hành động */}
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    {/* Nút Xem chi tiết (Cũ) */}
+                                                    <button
+                                                        className={styles.btnAction}
+                                                        onClick={() => navigate(`/admin/exams/${exam.id}`)}
+                                                        title="Xem chi tiết"
+                                                    >
+                                                        <i className="fa-solid fa-eye"></i>
+                                                    </button>
+
+                                                    {/* --- NÚT XUẤT CSV (MỚI) --- */}
+                                                    <button
+                                                        className={`${styles.btnAction} ${styles.export}`}
+                                                        onClick={() => handleExportResults(exam.id, exam.title)}
+                                                        title="Xuất kết quả thi (CSV)"
+                                                    >
+                                                        <i className="fa-solid fa-file-csv"></i>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     )) : (
