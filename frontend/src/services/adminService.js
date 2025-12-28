@@ -31,6 +31,16 @@ const adminService = {
         const payload = newPassword ? { password: newPassword } : {};
         return axiosClient.post(`/api/admin/users/${userId}/reset-password`, payload);
 
+    },
+
+    // endpoint dùng cho quản lí classes
+    getAllClasses(params) {
+        return axiosClient.get('/api/admin/classes', { params });
+
+    },
+
+    getClassDetail(id) {
+        return axiosClient.get(`/api/admin/classes/${id}`);
     }
 };
 
