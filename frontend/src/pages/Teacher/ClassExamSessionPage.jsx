@@ -164,10 +164,10 @@ const ClassExamSessionPage = () => {
         <div className={styles.contentBody}>
         <div className={styles.header}>
             <h2>Quản lý phiên thi</h2>
-            <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                <button className={styles.exportBtn} onClick={handleExportResults}>⬇️ Xuất kết quả (CSV)</button>
-                <button className={styles.exportBtn} onClick={handleExportLogs}>⬇️ Xuất nhật ký (CSV)</button>
-                <button className={styles.backButton} onClick={() => navigate(-1)}>← Quay lại</button>
+            <div className={styles.headerActions}>
+                <button className={styles.exportBtn} onClick={handleExportResults} aria-label="Xuất kết quả CSV">⬇️ Xuất kết quả (CSV)</button>
+                <button className={styles.exportBtn} onClick={handleExportLogs} aria-label="Xuất nhật ký CSV">⬇️ Xuất nhật ký (CSV)</button>
+                <button className={styles.backButton} onClick={() => navigate(-1)} aria-label="Quay lại">← Quay lại</button>
             </div>
         </div>
 
