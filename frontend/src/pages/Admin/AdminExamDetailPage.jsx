@@ -65,7 +65,7 @@ const AdminExamDetailPage = () => {
                     <div className={styles.infoRow}><label>Bắt đầu:</label> <span>{formatDate(exam.starts_at)}</span></div>
                     <div className={styles.infoRow}><label>Kết thúc:</label> <span>{formatDate(exam.ends_at)}</span></div>
                     <div className={styles.infoRow}><label>Thời lượng:</label> <span>{formatDuration(exam.duration_seconds)}</span></div>
-                    <div className={styles.infoRow}><label>Điểm đạt:</label> <span>{exam.passing_score} điểm</span></div>
+                    <div className={styles.infoRow}><label>Điểm đạt:</label> <span>{exam.passing_score}/10 điểm</span></div>
                     <div className={styles.tags}>
                         {exam.published && <span className={styles.tagGreen}>Đã công bố</span>}
                         {exam.show_answers ? <span className={styles.tagBlue}>Hiện đáp án</span> : <span className={styles.tagGray}>Ẩn đáp án</span>}
@@ -111,7 +111,7 @@ const AdminExamDetailPage = () => {
                                     <td>
                                         {ses.score !== null ? (
                                             <span className={parseFloat(ses.score) >= parseFloat(exam.passing_score) ? styles.pass : styles.fail}>
-                                                {ses.score} / {ses.max_score}
+                                                {ses.score * 10 / ses.max_score} / 10
                                             </span>
                                         ) : '--'}
                                     </td>
