@@ -26,7 +26,7 @@ const AdminClassDetailPage = () => {
         fetchData();
         // Cứ mỗi 5 giây gọi API một lần (Chạy ngầm - Không Loading)
         const intervalId = setInterval(() => {
-            fetchData(true);
+            fetch(true);
         }, 5000);
 
         // Dọn dẹp khi thoát trang hoặc khi filters thay đổi (để tạo interval mới với filter mới)

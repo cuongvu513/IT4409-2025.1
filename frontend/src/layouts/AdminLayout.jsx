@@ -13,6 +13,7 @@ const AdminLayout = () => {
     let pageTitle = "Dashboard Quản trị";
     if (location.pathname.includes('/users')) pageTitle = "Quản lý Người dùng";
     else if (location.pathname.includes('/classes')) pageTitle = "Quản lý Lớp học";
+    else if (location.pathname.includes('/exams')) pageTitle = "Quản lý Kỳ thi";
 
     return (
         <div className={styles.layout}>
@@ -37,6 +38,12 @@ const AdminLayout = () => {
                         className={location.pathname.includes('/classes') ? styles.active : ''}
                     >
                         <i className="fa-solid fa-school"></i> Quản lý Lớp học
+                    </Link>
+                    <Link
+                        to="/admin/exams"
+                        className={location.pathname.includes('/exams') ? styles.active : ''}
+                    >
+                        <i className="fa-solid fa-file-signature"></i> Quản lý Kỳ thi
                     </Link>
                 </nav>
                 <div className={styles.sidebarFooter}>

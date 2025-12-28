@@ -42,6 +42,8 @@ import StudentTakeExamPage from './pages/Student/StudentTakeExamPage';
 import AdminUserPage from './pages/Admin/AdminUserPage';
 import AdminClassPage from './pages/Admin/AdminClassPage';
 import AdminClassDetailPage from './pages/Admin/AdminClassDetailPage';
+import AdminExamPage from './pages/Admin/AdminExamPage';
+import AdminExamDetailPage from './pages/Admin/AdminExamDetailPage';
 
 function App() {
   return (
@@ -82,6 +84,8 @@ function App() {
             <Route path="users" element={<AdminUserPage />} />
             <Route path="classes" element={<AdminClassPage />} />
             <Route path="classes/:id" element={<AdminClassDetailPage />} />
+            <Route path="exams" element={<AdminExamPage />} />
+            <Route path="exams/:id" element={<AdminExamDetailPage />} />
           </Route>
 
 

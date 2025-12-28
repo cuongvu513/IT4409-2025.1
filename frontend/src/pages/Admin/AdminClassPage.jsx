@@ -62,6 +62,44 @@ const AdminClassPage = () => {
         return () => clearInterval(intervalId);
     }, [filters]);
 
+    // --- HÀM XUẤT FILE CSV 
+    const handleExport = async (classId, className) => {
+        // 1. Hỏi người dùng muốn xuất trạng thái nào
+        const status = window.prompt(
+            `Xuất danh sách học sinh lớp "${className}".\n\nNhập trạng thái muốn lọc (active / locked) hoặc để trống để lấy tất cả:`,
+            "active"
+        );
+
+        // Nếu bấm Cancel thì hủy
+        if (status === null) return;
+
+        try {
+            // 2. Gọi API exportStudents đã định nghĩa ở Bước 1
+            const response = await adminService.exportStudents(classId, status.trim());
+
+            // 3. Tạo file và tải xuống
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Đặt tên file: danh-sach-[ten_lop]-[status]-[time].csv
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const safeName = className.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const statusSuffix = status ? `-${status}` : '-all';
+
+            link.setAttribute('download', `ds-${safeName}${statusSuffix}-${timestamp}.csv`);
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error("Export error:", error);
+            alert("Xuất file thất bại. Kiểm tra lại API hoặc quyền truy cập.");
+        }
+    };
+
     // --- HANDLERS ---
     const handleSearchChange = (e) => {
         setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }));
@@ -131,13 +169,25 @@ const AdminClassPage = () => {
                                             <td className={styles.center}>{cls.exam_count}</td>
                                             <td>{formatDate(cls.created_at)}</td>
                                             <td>
-                                                <button
-                                                    className={styles.btnView}
-                                                    title="Xem chi tiết"
-                                                    onClick={() => navigate(`/admin/classes/${cls.id}`)} // <--- THÊM SỰ KIỆN NÀY
-                                                >
-                                                    <i className="fa-solid fa-eye"></i>
-                                                </button>
+                                                <div className={styles.actionGroup}>
+                                                    {/* Nút Xem chi tiết cũ */}
+                                                    <button
+                                                        className={`${styles.btnAction} ${styles.view}`}
+                                                        onClick={() => navigate(`/admin/classes/${cls.id}`)}
+                                                        title="Xem chi tiết"
+                                                    >
+                                                        <i className="fa-solid fa-eye"></i>
+                                                    </button>
+
+                                                    {/* --- NÚT XUẤT CSV MỚI --- */}
+                                                    <button
+                                                        className={`${styles.btnAction} ${styles.export}`}
+                                                        onClick={() => handleExport(cls.id, cls.name)}
+                                                        title="Xuất danh sách học sinh (CSV)"
+                                                    >
+                                                        <i className="fa-solid fa-file-csv"></i>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     )) : (
