@@ -1,0 +1,80 @@
+@use '../../styles/variables' as *;
+
+.formWrap {
+  padding: 6px 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+}
+
+.checkboxRow {
+  display: flex;
+  gap: 20px;
+}
+
+.questionSection {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.filterRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.questionsList {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #f0f0f0;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.qItem {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 6px 4px;
+  border-bottom: 1px dashed #f3f3f3;
+}
+
+.diff {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-right: 6px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.submit {
+  background: #0d6efd;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
+.cancel {
+  background: white;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border-radius: 8px;
+}

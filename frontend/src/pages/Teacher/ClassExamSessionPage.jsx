@@ -117,13 +117,58 @@ const ClassExamSessionPage = () => {
         }
     };
 
+    // Helper to extract filename from content-disposition header
+    const getFilenameFromDisp = (disp) => {
+        if (!disp) return null;
+        const match = /filename\*=UTF-8''([^;\n]+)/i.exec(disp) || /filename="?([^";\n]+)"?/i.exec(disp);
+        return match ? decodeURIComponent(match[1]) : null;
+    };
+
+    const downloadBlob = (blob, filename) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportResults = async () => {
+        try {
+            const res = await teacherService.exportResults(examInstanceId);
+            const filename = getFilenameFromDisp(res.headers['content-disposition']) || `ket-qua-${examInstanceId}.csv`;
+            const blob = new Blob([res.data], { type: res.headers['content-type'] || 'text/csv' });
+            downloadBlob(blob, filename);
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.error || 'Không thể xuất kết quả');
+        }
+    };
+
+    const handleExportLogs = async () => {
+        try {
+            const res = await teacherService.exportLogs(examInstanceId);
+            const filename = getFilenameFromDisp(res.headers['content-disposition']) || `nhat-ky-${examInstanceId}.csv`;
+            const blob = new Blob([res.data], { type: res.headers['content-type'] || 'text/csv' });
+            downloadBlob(blob, filename);
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.error || 'Không thể xuất nhật ký');
+        }
+    };
 
 
     return (
         <div className={styles.contentBody}>
         <div className={styles.header}>
             <h2>Quản lý phiên thi</h2>
-            <button onClick={() => navigate(-1)}>← Quay lại</button>
+            <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                <button className={styles.exportBtn} onClick={handleExportResults}>⬇️ Xuất kết quả (CSV)</button>
+                <button className={styles.exportBtn} onClick={handleExportLogs}>⬇️ Xuất nhật ký (CSV)</button>
+                <button className={styles.backButton} onClick={() => navigate(-1)}>← Quay lại</button>
+            </div>
         </div>
 
         {loading ? (

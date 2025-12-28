@@ -2,6 +2,20 @@
 import axiosClient from './axiosClient';
 
 const teacherService = {
+    // API 43 — lấy điểm theo kỳ thi
+    getExamScores(classId, examInstanceId) {
+        return axiosClient.get(
+            `/api/teacher/classes/${classId}/exam-instances/${examInstanceId}/scores`
+        );
+    },
+
+    // API 44 — lấy template đề thi theo lớp
+    getExamTemplatesByClass(classId) {
+        return axiosClient.get(
+            `/api/teacher/classes/${classId}/exam-templates`
+        );
+    },
+
     // exams theo lớp
     getExamInstances(classId) {
         return axiosClient.get(`/api/teacher/classes/${classId}/exam-instances`);
@@ -185,6 +199,17 @@ const teacherService = {
     // --- ENDPOINT 24: LẤY CHI TIẾT ĐỀ THI ---
     getExamInstanceDetail(id) {
         return axiosClient.get(`/api/teacher/exam-instances/${id}`);
+    },
+
+    // --- ENDPOINT 41: XUẤT KẾT QUẢ THI (CSV) ---
+    exportResults(examId) {
+        // responseType blob so we can download CSV
+        return axiosClient.get(`/api/teacher/export/results/${examId}`, { responseType: 'blob' });
+    },
+
+    // --- ENDPOINT 42: XUẤT NHẬT KÝ THI (CSV) ---
+    exportLogs(examId) {
+        return axiosClient.get(`/api/teacher/export/logs/${examId}`, { responseType: 'blob' });
     }
 
 };

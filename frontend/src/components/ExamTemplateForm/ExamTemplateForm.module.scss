@@ -1,0 +1,73 @@
+@use '../../styles/variables' as *;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+}
+
+.rowInline {
+  display: flex;
+  gap: 16px;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.input, .textarea {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #e6e6e6;
+  font-size: 0.95rem;
+}
+
+.textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.submit {
+  background: #0d6efd;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cancel {
+  background: white;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.error {
+  color: #c62828;
+  background: #fff3f2;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.required {
+  color: #c62828;
+  margin-left: 4px;
+}
