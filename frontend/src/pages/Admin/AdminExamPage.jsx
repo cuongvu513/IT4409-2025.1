@@ -3,8 +3,10 @@ import React, { useEffect, useState } from 'react';
 import adminService from '../../services/adminService';
 import styles from './AdminExamPage.module.scss'; // Tạo file css ở bước 4
 import { useNavigate } from 'react-router-dom';
+import { useModal } from '../../context/ModalContext';
 
 const AdminExamPage = () => {
+    const { showConfirm, showAlert } = useModal();
     const [exams, setExams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
@@ -42,40 +44,48 @@ const AdminExamPage = () => {
         return () => clearTimeout(timeoutId);
     }, [filters]);
 
-    const handleExportResults = async (examId, examTitle) => {
-        if (!window.confirm(`Bạn muốn xuất kết quả của kỳ thi: "${examTitle}"?`)) return;
+    const handleExportResults = (examId, examTitle) => {
+        showConfirm(
+            "Xuất kết quả thi", // Tiêu đề
+            `Bạn có muốn xuất kết quả của kỳ thi: "${examTitle}" ra file CSV không?`, // Nội dung
+            async () => {
+                // Callback này chạy khi bấm "Đồng ý"
+                try {
+                    // 1. Gọi API Endpoint 11
+                    const response = await adminService.exportExamResults(examId);
 
-        try {
-            // 1. Gọi API Endpoint 11
-            const response = await adminService.exportExamResults(examId);
+                    // 2. Tạo URL ảo cho file
+                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
 
-            // 2. Tạo URL ảo cho file
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
+                    // 3. Đặt tên file: ket-qua-[ten-ky-thi]-[timestamp].csv
+                    const timestamp = new Date().toISOString().slice(0, 10);
+                    const safeName = examTitle.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-            // 3. Đặt tên file: ket-qua-[ten-ky-thi]-[timestamp].csv
-            const timestamp = new Date().toISOString().slice(0, 10);
-            // Làm sạch tên file (bỏ dấu tiếng việt, ký tự lạ)
-            const safeName = examTitle.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                    link.setAttribute('download', `ket-qua-${safeName}-${timestamp}.csv`);
 
-            link.setAttribute('download', `ket-qua-${safeName}-${timestamp}.csv`);
+                    // 4. Kích hoạt tải xuống
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    window.URL.revokeObjectURL(url);
 
-            // 4. Kích hoạt tải xuống
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
+                    // 5. Thông báo thành công
+                    showAlert("Thành công", "Đã xuất file kết quả thi thành công!");
 
-        } catch (error) {
-            console.error("Export error:", error);
-            // Kiểm tra nếu lỗi 404
-            if (error.response?.status === 404) {
-                alert("Không tìm thấy kỳ thi này (404).");
-            } else {
-                alert("Xuất file thất bại. Vui lòng thử lại.");
+                } catch (error) {
+                    console.error("Export error:", error);
+
+                    // 6. Xử lý lỗi
+                    if (error.response?.status === 404) {
+                        showAlert("Lỗi", "Không tìm thấy kỳ thi này (404).");
+                    } else {
+                        showAlert("Thất bại", "Xuất file thất bại. Vui lòng thử lại.");
+                    }
+                }
             }
-        }
+        );
     };
 
     // Handlers

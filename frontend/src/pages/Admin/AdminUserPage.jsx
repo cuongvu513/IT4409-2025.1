@@ -2,8 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import adminService from '../../services/adminService';
 import styles from './AdminUserPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const AdminUserPage = () => {
+    const { showConfirm, showAlert } = useModal();
     // --- STATE DỮ LIỆU ---
     const [stats, setStats] = useState(null);
     const [users, setUsers] = useState([]);
@@ -63,65 +65,61 @@ const AdminUserPage = () => {
     }, [filters]);
 
     // --- HÀM XỬ LÝ KHÓA / MỞ KHÓA (MỚI) ---
-    const handleToggleStatus = async (user) => {
+    const handleToggleStatus = (user) => {
         const isLocked = user.status === 'locked';
         const actionName = isLocked ? "Mở khóa" : "Khóa";
 
-        if (!window.confirm(`Bạn có chắc chắn muốn ${actionName} tài khoản "${user.name}"?`)) {
-            return;
-        }
+        // Thay window.confirm bằng showConfirm
+        showConfirm(
+            `${actionName} tài khoản`, // Tiêu đề
+            `Bạn có chắc chắn muốn ${actionName.toLowerCase()} tài khoản "${user.name}" không?`, // Nội dung
+            async () => {
+                // Callback này chạy khi bấm "Đồng ý"
+                try {
+                    if (isLocked) {
+                        // Gọi API 5: Mở khóa
+                        await adminService.unlockUser(user.id);
+                    } else {
+                        // Gọi API 4: Khóa
+                        await adminService.lockUser(user.id);
+                    }
 
-        try {
-            if (isLocked) {
-                // Gọi API 5: Mở khóa
-                await adminService.unlockUser(user.id);
-            } else {
-                // Gọi API 4: Khóa
-                await adminService.lockUser(user.id);
+                    // Cập nhật lại UI ngay lập tức
+                    setUsers(prevUsers => prevUsers.map(u =>
+                        u.id === user.id
+                            ? { ...u, status: isLocked ? 'active' : 'locked' }
+                            : u
+                    ));
+
+                    // Thay alert thành công bằng showAlert
+                    showAlert("Thành công", `${actionName} tài khoản thành công!`);
+
+                } catch (error) {
+                    // Xử lý lỗi (ví dụ: không thể khóa chính mình)
+                    const errorMsg = error.response?.data?.error || `${actionName} thất bại!`;
+                    showAlert("Lỗi", errorMsg);
+                }
             }
-
-            // Cập nhật lại UI ngay lập tức (Không cần load lại API list)
-            setUsers(prevUsers => prevUsers.map(u =>
-                u.id === user.id
-                    ? { ...u, status: isLocked ? 'active' : 'locked' }
-                    : u
-            ));
-
-            alert(`${actionName} thành công!`);
-
-        } catch (error) {
-            // Xử lý lỗi 403 (Không thể khóa chính mình)
-            const errorMsg = error.response?.data?.error || `${actionName} thất bại!`;
-            alert(errorMsg);
-        }
+        );
     };
 
     // --- HÀM XỬ LÝ RESET PASSWORD (MỚI) ---
     const handleResetPassword = async (user) => {
-        // 1. Hiển thị hộp thoại nhập
-        const newPass = window.prompt(
-            `Nhập mật khẩu mới cho user "${user.name}":\n(Để trống sẽ đặt về mặc định: Password123)`
-        );
+        // Vẫn dùng prompt của trình duyệt để nhập liệu
+        const newPass = window.prompt(`Nhập mật khẩu mới cho "${user.name}":`);
 
-        // Nếu bấm Cancel (null) thì dừng lại
-        if (newPass === null) return;
+        if (newPass === null) return; // Hủy bỏ
 
         try {
-            // 2. Gọi API Endpoint 6
-            // Nếu newPass là chuỗi rỗng "" -> API sẽ dùng mặc định
             const res = await adminService.resetUserPassword(user.id, newPass);
 
-            // 3. Hiển thị kết quả
-            alert(
-                `✅ Đặt lại mật khẩu thành công!\n\n` +
-                `Mật khẩu tạm thời là: ${res.data.temporary_password}\n` +
-                `Hãy gửi mật khẩu này cho người dùng.`
+            // Dùng showAlert để báo kết quả cho đẹp
+            showAlert(
+                "Thành công",
+                `Mật khẩu tạm thời là: ${res.data.temporary_password}`
             );
-
         } catch (error) {
-            // Xử lý lỗi 403 (Không được reset chính mình) hoặc lỗi khác
-            const errorMsg = error.response?.data?.error || "Đặt lại mật khẩu thất bại!";
-            alert(`⚠️ Lỗi: ${errorMsg}`);
+            showAlert("Lỗi", error.response?.data?.error || "Thất bại");
         }
     };
 
