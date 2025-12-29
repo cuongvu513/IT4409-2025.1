@@ -1586,6 +1586,29 @@ module.exports = {
             orderBy: { created_at: "desc" }
         });
         return templates;
+    },
+    async removeStudentFromClass(teacherId, classId, studentId){
+        // Kiểm tra quyền sở hữu lớp học
+        const klass = await prisma.Renamedclass.findFirst({
+            where: { 
+                id: classId,
+                teacher_id: teacherId
+            }
+        });
+        if (!klass) {
+            const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền truy cập");
+            err.status = 400;
+            throw err;
+        }
+        // Xóa yêu cầu tham gia lớp học của học sinh
+        const deleted = await prisma.enrollment_request.deleteMany({
+            where: {
+                class_id: classId,
+                student_id: studentId,
+                status: 'approved'
+            }
+        });
+        return deleted;
     }
 
 };
