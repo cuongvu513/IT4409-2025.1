@@ -5,9 +5,11 @@ import teacherService from '../../services/teacherService';
 import MathRenderer from '../../components/MathRenderer';
 import Pagination from '../../components/Pagination';
 import styles from './TeacherExamInstancesPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const TeacherExamInstancesPage = () => {
     const { templateId } = useParams();
+    const { showConfirm, showAlert } = useModal();
 
     // KHÔNG CẦN AuthContext hay logout nữa
 
@@ -154,15 +156,21 @@ const TeacherExamInstancesPage = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa đề thi này không?")) return;
-        try {
-            await teacherService.deleteExamInstance(id);
-            setExams(prev => prev.filter(e => e.id !== id));
-            alert("Xóa thành công!");
-        } catch (error) {
-            alert(error.response?.data?.error || "Xóa thất bại");
-        }
+    const handleDelete = (id) => {
+        // 3. THAY THẾ window.confirm BẰNG showConfirm
+        showConfirm(
+            "Xóa đề thi", // Tiêu đề
+            "Bạn có chắc chắn muốn xóa đề thi này không? Hành động này không thể hoàn tác.", // Nội dung
+            async () => { // Callback: Hàm này sẽ chạy khi bấm "Đồng ý"
+                try {
+                    await teacherService.deleteExamInstance(id);
+                    setExams(prev => prev.filter(e => e.id !== id));
+                    showAlert("Thành công", "Xóa đề thi thành công!"); // Thay alert thường
+                } catch (error) {
+                    showAlert("Lỗi", error.response?.data?.error || "Xóa thất bại");
+                }
+            }
+        );
     };
 
     const handleSubmit = async (e) => {
@@ -193,7 +201,7 @@ const TeacherExamInstancesPage = () => {
             questions: formData.selectedQuestionIds.map(id => ({ question_id: id }))
         };
 
-        if (payload.questions.length === 0) { alert("Vui lòng chọn ít nhất 1 câu hỏi!"); setIsSubmitting(false); return; }
+        if (payload.questions.length === 0) { showAlert("Vui lòng chọn ít nhất 1 câu hỏi!"); setIsSubmitting(false); return; }
 
         try {
             if (editingExam) {
@@ -201,16 +209,16 @@ const TeacherExamInstancesPage = () => {
                 setExams(prev => prev.map(ex =>
                     ex.id === editingExam.id ? { ...ex, ...res.data.updatedInstance, title: ex.title } : ex
                 ));
-                alert(res.data.message);
+                showAlert("Thành công", res.data.message);
             } else {
                 const res = await teacherService.createExam(payload);
                 const newExam = { ...res.data.newInstance, title: "Đề thi mới" };
                 setExams([newExam, ...exams]);
-                alert(res.data.message);
+                showAlert("Thành công", res.data.message);
             }
             setShowModal(false);
         } catch (error) {
-            alert(error.response?.data?.error || "Thất bại");
+            showAlert("Thất bại", error.response?.data?.error || "Có lỗi xảy ra");
         } finally {
             setIsSubmitting(false);
         }
@@ -222,7 +230,7 @@ const TeacherExamInstancesPage = () => {
             setViewExam(res.data);
         } catch (error) {
             console.error(error);
-            alert("Không thể tải chi tiết đề thi.");
+            showAlert("Lỗi", "Không thể tải chi tiết đề thi.");
         }
     };
 
@@ -284,13 +292,13 @@ const TeacherExamInstancesPage = () => {
                                                 <button className={`${styles.btnIcon} ${styles.btnDelete}`} onClick={() => handleDelete(exam.id)} title="Xóa">
                                                     <i className="fa-solid fa-trash"></i>
                                                 </button>
-                                            <Link
-                                                to={`/teacher/classes/${templateInfo?.class_id || templateId}/exams/${exam.id}`}
-                                                className={styles.btnManage}
-                                                title="Quản lý phiên thi"
-                                            >
-                                                <i className="fa-solid fa-gauge"></i>
-                                            </Link>
+                                                <Link
+                                                    to={`/teacher/classes/${templateInfo?.class_id || templateId}/exams/${exam.id}`}
+                                                    className={styles.btnManage}
+                                                    title="Quản lý phiên thi"
+                                                >
+                                                    <i className="fa-solid fa-gauge"></i>
+                                                </Link>
                                             </div>
                                         </td>
                                     </tr>

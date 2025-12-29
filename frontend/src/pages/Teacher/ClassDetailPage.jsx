@@ -5,13 +5,15 @@ import teacherService from '../../services/teacherService';
 import styles from './ClassDetailPage.module.scss';
 import ExamInstanceForm from '../../components/ExamInstanceForm/ExamInstanceForm';
 import ExamTemplateForm from '../../components/ExamTemplateForm/ExamTemplateForm';
-
+import { useModal } from '../../context/ModalContext';
 
 const ClassDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    // KHÔNG CẦN AuthContext hay TopHeader ở đây nữa vì TeacherLayout đã lo
+    // --- LẤY HÀM TỪ MODAL CONTEXT ---
+    const { showConfirm, showAlert } = useModal();
+
 
     // --- State Dữ liệu ---
     const [classData, setClassData] = useState(null);
@@ -156,18 +158,47 @@ const ClassDetailPage = () => {
     const handleProcessRequest = async (requestId, status) => {
         try {
             const res = await teacherService.respondToEnrollment(requestId, status);
-            alert(res.data.message);
+
+            // Thay alert thường bằng showAlert đẹp
+            showAlert("Thành công", res.data.message);
 
             // Xóa khỏi danh sách chờ
             setRequests(prev => prev.filter(req => req.id !== requestId));
 
             // Nếu duyệt -> Load lại lớp để thấy sinh viên mới
             if (status === 'approved') {
-                fetchClassData();
+                fetchClassData(true); // true để load ngầm không hiện spinner
             }
         } catch (error) {
-            alert(error.response?.data?.error || "Xử lý thất bại");
+            // Thay alert lỗi bằng showAlert
+            showAlert("Thất bại", error.response?.data?.error || "Xử lý thất bại");
         }
+    };
+
+    // ---  XÓA HỌC SINH (Endpoint 45) ---
+    const handleRemoveStudent = (enrollmentId, studentId, studentName) => {
+        showConfirm(
+            "Xóa học sinh",
+            `Bạn có chắc chắn muốn xóa học sinh "${studentName}" khỏi lớp không?`,
+            async () => {
+                try {
+                    // Gọi API mới: truyền classId (id) và studentId
+                    await teacherService.removeStudentFromClass(id, studentId);
+
+                    showAlert("Thành công", "Xóa học sinh khỏi lớp thành công!");
+
+                    // Cập nhật UI: Dùng enrollmentId để lọc bỏ dòng tương ứng trong bảng
+                    setClassData(prev => ({
+                        ...prev,
+                        listStudent: prev.listStudent.filter(item => item.id !== enrollmentId)
+                    }));
+
+                } catch (error) {
+                    console.error(error);
+                    showAlert("Thất bại", error.response?.data?.error || "Xóa học sinh thất bại");
+                }
+            }
+        );
     };
 
     if (loading) return <div style={{ padding: '30px', textAlign: 'center' }}>Đang tải dữ liệu...</div>;
@@ -192,7 +223,7 @@ const ClassDetailPage = () => {
                         <span className={styles.codeTag}>{classInfo.code}</span>
                     </div>
 
-                      {/* ACTION BUTTONS + NOTIFICATION */}
+                    {/* ACTION BUTTONS + NOTIFICATION */}
                     <div className={styles.headerActions}>
                         {/* API 44 – Danh sách template */}
                         <button
@@ -204,7 +235,7 @@ const ClassDetailPage = () => {
                         >
                             📄 Tạo đề từ Template
                         </button>
-                        
+
                         <button
                             className={styles.actionBtn}
                             onClick={() => openTemplatesModalForView()}
@@ -371,7 +402,17 @@ const ClassDetailPage = () => {
                                     </td>
                                     <td>{new Date(item.requested_at).toLocaleDateString('vi-VN')}</td>
                                     <td>
-                                        <button className={styles.removeBtn}>Xóa</button>
+                                        <button
+                                            className={styles.removeBtn}
+                                            onClick={() => handleRemoveStudent(
+                                                item.id,              // enrollmentId (id của bản ghi trong bảng)
+                                                item.studentInfo.id,  // studentId (id của học sinh)
+                                                item.studentInfo.name // Tên
+                                            )}
+                                            title="Xóa học sinh khỏi lớp"
+                                        >
+                                            Xóa
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
