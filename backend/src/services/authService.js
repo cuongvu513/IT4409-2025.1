@@ -4,11 +4,13 @@ const userService = require("./userService");
 const { hashPassword, comparePassword, hashOtp, compareOtp } = require("../utils/hash");
 const { sendResetOtpEmail } = require("./emailService");
 const crypto = require("crypto");
+const { registerRequest } = require("../controllers/authController");
 
 const JWT_SECRET = process.env.JWT_SECRET || "Password123!!!";
 
 module.exports = {
-  // async register(data) {
+  
+  // async registerRequest(data) {
   //   const { email, password, name, role_id, role_name } = data;
 
   //   if (!email || !password || !name) {
@@ -64,7 +66,6 @@ module.exports = {
   //   return  {message: "User registered successfully"};
   // },
 
-  // Đăng ký
   async registerRequest(data) {
     const { email, password, name, role_id, role_name } = data;
 
