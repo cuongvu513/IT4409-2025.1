@@ -108,7 +108,7 @@ const StudentDashboardPage = () => {
 
                 {/* Ô 4: Điểm TB */}
                 <div className={styles.card}>
-                    <p>Điểm trung bình</p>
+                    <p>Điểm trung bình (Thang 10)</p>
                     <h3>{dashboardData.averageScore ? Number(dashboardData.averageScore).toFixed(1) : '--'}</h3>
                 </div>
             </div>

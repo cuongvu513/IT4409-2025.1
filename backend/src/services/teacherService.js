@@ -1054,7 +1054,7 @@ module.exports = {
             throw err;
         }
 
-        if (session.state === "submitted") {
+        if (session.state === "submitted" || session.state === "expired") {
             const err = new Error("Không thể khóa phiên đã nộp hoặc đã hết hạn");
             err.status = 400;
             throw err;
@@ -1394,11 +1394,10 @@ module.exports = {
                 continue;
             }
 
-            // 5.4 Đã kết thúc (submitted / started nhưng hết giờ)
-            // Tất cả các trường hợp còn lại đều được tính là đã nộp bài
+            // 5.4 Đã kết thúc (submitted / expired / started nhưng hết giờ)
             result.finished.push({
                 ...user,
-                state: session.state === "started" && session.ends_at && now > session.ends_at ? "submitted" : session.state,
+                state: session.state,
                 started_at: session.started_at,
                 ends_at: session.ends_at
             });

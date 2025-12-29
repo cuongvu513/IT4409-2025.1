@@ -3,6 +3,118 @@ const prisma = require("../prisma");
 const JWT_SECRET = process.env.JWT_SECRET || "Password123!!!";
 
 /**
+ * Tự động nộp bài và tính điểm khi hết thời gian
+ */
+async function autoSubmitExamOnTimeout(sessionId, studentId) {
+  const session = await prisma.exam_session.findUnique({
+    where: { id: sessionId },
+    include: {
+      exam_instance: {
+        include: {
+          exam_template: true,
+          exam_question: {
+            include: {
+              question: {
+                include: { question_choice: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!session || session.user_id !== studentId) {
+    throw new Error("Phiên làm bài không hợp lệ");
+  }
+
+  // Lấy tất cả đáp án đã chọn
+  const answers = await prisma.answer.findMany({
+    where: { exam_session_id: sessionId },
+    select: { question_id: true, choice_id: true, selected_choice_ids: true },
+  });
+
+  const answerMap = new Map(
+    answers.map((a) => [
+      a.question_id,
+      (a.selected_choice_ids && a.selected_choice_ids.length > 0)
+        ? a.selected_choice_ids
+        : (a.choice_id ? [a.choice_id] : []),
+    ])
+  );
+
+  // Tính điểm
+  let totalScore = 0;
+  let maxScore = 0;
+  const details = [];
+
+  for (const eq of session.exam_instance.exam_question) {
+    const points = Number(eq.points);
+    maxScore += points;
+
+    const chosenChoiceIds = answerMap.get(eq.question_id) || [];
+    let correct = false;
+    const correctChoices = eq.question.question_choice.filter((c) => c.is_correct).map((c) => c.id);
+    
+    if (chosenChoiceIds.length === correctChoices.length && chosenChoiceIds.length > 0) {
+      const chosenSet = new Set(chosenChoiceIds);
+      const correctSet = new Set(correctChoices);
+      const allMatch = correctChoices.every((id) => chosenSet.has(id)) && 
+                       chosenChoiceIds.every((id) => correctSet.has(id));
+      if (allMatch) {
+        correct = true;
+        totalScore += points;
+      }
+    }
+
+    details.push({
+      question_id: eq.question_id,
+      correct,
+      points_earned: correct ? points : 0,
+      points_possible: points,
+    });
+  }
+
+  // Chuyển state sang submitted
+  await prisma.exam_session.update({
+    where: { id: sessionId },
+    data: { state: "submitted" },
+  });
+
+  // Tạo submission
+  const submission = await prisma.submission.create({
+    data: {
+      exam_session_id: sessionId,
+      score: totalScore,
+      max_score: maxScore,
+      graded_at: new Date(),
+      graded_by: null, // auto-graded
+      details: details,
+    },
+  });
+
+  // Log audit
+  await prisma.audit_log.create({
+    data: {
+      event_type: "EXAM_AUTO_SUBMIT",
+      exam_session_id: sessionId,
+      user_id: studentId,
+      payload: `Tự động nộp bài do hết thời gian - Phiên ${sessionId}`,
+      source_ip: null,
+      user_agent: null,
+    },
+  });
+
+  return {
+    submission_id: submission.id,
+    score: submission.score,
+    max_score: submission.max_score,
+    graded_at: submission.graded_at,
+    details: session.exam_instance.show_answers ? submission.details : undefined,
+  };
+}
+
+/**
  * Xác thực socket bằng JWT token
  */
 function authenticateSocket(socket, next) {
@@ -260,17 +372,30 @@ function initExamTimerSocket(io) {
 
               // Nếu hết thời gian, tự động submit và thông báo
               if (remainingTime === 0) {
-                // Tự động chuyển state sang submitted
-                await prisma.exam_session.update({
-                  where: { id: updatedSession.id },
-                  data: { state: "submitted" }
-                });
-                
-                socket.emit("time-expired", {
-                  examInstanceId,
-                  examSessionId: updatedSession.id,
-                  message: "Thời gian làm bài đã hết, bài thi được tự động nộp"
-                });
+                try {
+                  // Gọi logic tự động chấm điểm giống như nộp thủ công
+                  const result = await autoSubmitExamOnTimeout(updatedSession.id, socket.userId);
+                  
+                  socket.emit("time-expired", {
+                    examInstanceId,
+                    examSessionId: updatedSession.id,
+                    message: "Thời gian làm bài đã hết, bài thi được tự động nộp",
+                    submission: result
+                  });
+                } catch (error) {
+                  console.error(`[ExamTimer] Auto-submit failed:`, error);
+                  // Fallback: chỉ cập nhật state
+                  await prisma.exam_session.update({
+                    where: { id: updatedSession.id },
+                    data: { state: "submitted" }
+                  });
+                  
+                  socket.emit("time-expired", {
+                    examInstanceId,
+                    examSessionId: updatedSession.id,
+                    message: "Thời gian làm bài đã hết, bài thi được tự động nộp"
+                  });
+                }
                 
                 clearInterval(intervalId);
                 timerIntervals.delete(socket.id);

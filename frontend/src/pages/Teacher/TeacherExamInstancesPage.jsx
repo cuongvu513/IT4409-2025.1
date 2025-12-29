@@ -442,11 +442,13 @@ const TeacherExamInstancesPage = () => {
                             <div className={styles.questionListPreview}>
                                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                     {viewExam.exam_question?.map((eq, index) => (
-                                        <li key={eq.id} style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', display: 'flex', gap: '10px' }}>
+                                        <li key={eq.id} style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                                             <span style={{ fontWeight: 'bold', color: '#007bff', minWidth: '60px' }}>
                                                 Câu {index + 1}:
                                             </span>
-                                            <span style={{ flex: 1 }}>{getQuestionText(eq.question_id)}</span>
+                                            <span style={{ flex: 1 }}>
+                                                <MathRenderer text={getQuestionText(eq.question_id)} />
+                                            </span>
                                             <span style={{ fontSize: '0.8rem', color: '#999' }}>({eq.points} điểm)</span>
                                         </li>
                                     ))}

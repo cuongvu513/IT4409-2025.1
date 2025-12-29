@@ -198,7 +198,7 @@ module.exports = {
                     // questions: existingQuestions,
                 };
             }
-            const blockedStates = ["submitted", "locked"];
+            const blockedStates = ["submitted", "expired", "locked"];
             if (blockedStates.includes(existingSession.state)) {
                 const err = new Error("Phiên làm bài đã kết thúc hoặc bị khóa");
                 err.status = 400;
@@ -311,12 +311,12 @@ module.exports = {
         }
         const now = new Date();
         if (session.ends_at && now > session.ends_at) {
-            // tự động chuyển sang submitted
+            // tự động chuyển sang expired
             await prisma.exam_session.update({
                 where: { id: sessionId },
-                data: { state: "submitted" },
+                data: { state: "expired" },
             });
-            const err = new Error("Phiên làm bài đã hết hạn và được tự động nộp");
+            const err = new Error("Phiên làm bài đã hết hạn");
             err.status = 400;
             throw err;
         }
@@ -371,8 +371,8 @@ module.exports = {
         }
         const now = new Date();
         if (session.ends_at && now > session.ends_at) {
-            await prisma.exam_session.update({ where: { id: sessionId }, data: { state: "submitted" } });
-            const err = new Error("Phiên làm bài đã hết hạn và được tự động nộp");
+            await prisma.exam_session.update({ where: { id: sessionId }, data: { state: "expired" } });
+            const err = new Error("Phiên làm bài đã hết hạn");
             err.status = 400;
             throw err;
         }
