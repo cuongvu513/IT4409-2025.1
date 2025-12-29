@@ -386,68 +386,68 @@
 
 /* Responsive tweaks */
 @media (max-width: 800px) {
-  .contentBody {
-    padding: 16px;
-    max-width: 100%;
-  }
-
-  .welcomeBanner {
-    padding: 18px;
-
-    h1 {
-      font-size: 1.3rem;
+    .contentBody {
+        padding: 16px;
+        max-width: 100%;
     }
-  }
 
-  .statsGrid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-  }
+    .welcomeBanner {
+        padding: 18px;
 
-  .contentSection {
-    padding: 18px;
-  }
+        h1 {
+            font-size: 1.3rem;
+        }
+    }
 
-  .sectionHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
+    .statsGrid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+    }
 
-  .viewMore {
-    align-self: flex-end;
-  }
+    .contentSection {
+        padding: 18px;
+    }
 
-  .classesGrid {
-    grid-template-columns: 1fr;
-  }
+    .sectionHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
 
-  .classCard {
-    padding: 14px;
-  }
+    .viewMore {
+        align-self: flex-end;
+    }
 
-  .modalContent {
-    width: 95%;
-    max-width: 720px;
-    padding: 18px;
-  }
+    .classesGrid {
+        grid-template-columns: 1fr;
+    }
 
-  .modalActions {
-    flex-direction: column-reverse;
-    gap: 8px;
-    align-items: stretch;
-  }
+    .classCard {
+        padding: 14px;
+    }
 
-  .modalActions button {
-    width: 100%;
-  }
+    .modalContent {
+        width: 95%;
+        max-width: 720px;
+        padding: 18px;
+    }
 
-  /* If layout/sidebar used, collapse it */
-  .layout {
-    flex-direction: column;
-  }
+    .modalActions {
+        flex-direction: column-reverse;
+        gap: 8px;
+        align-items: stretch;
+    }
 
-  .sidebar {
-    display: none;
-  }
+    .modalActions button {
+        width: 100%;
+    }
+
+    /* If layout/sidebar used, collapse it */
+    .layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        display: none;
+    }
 }
