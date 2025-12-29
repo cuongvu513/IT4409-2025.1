@@ -358,7 +358,71 @@ Nếu không truyền `password`, mật khẩu mặc định sẽ là `Password1
 
 ---
 
-## Endpoint 9 - Lấy danh sách kỳ thi
+## Endpoint 9 - Xóa lớp học (Soft Delete)
+
+**DELETE `/api/admin/classes/:id`**
+
+- **Mô tả: Xóa mềm (soft delete) một lớp học - lớp học sẽ được đánh dấu là đã xóa thay vì xóa vĩnh viễn. Lớp học có thể được khôi phục sau này.**
+- **HTTP:** DELETE
+- **URL:** `/api/admin/classes/:id`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **URL Parameters:**
+  - `id`: ID của lớp học cần xóa
+
+- **Response body (Thành công):**
+
+```json
+{
+  "class_id": "uuid",
+  "class_name": "Tin học đại cương",
+  "message": "Class archived successfully (soft deleted)"
+}
+```
+
+**Lưu ý:**
+- Lớp học sẽ được đánh dấu `is_deleted = true` và lưu thông tin người xóa, thời gian xóa
+- Lớp học đã xóa sẽ không hiển thị trong danh sách lớp học thông thường
+- Không thể xóa lớp học nếu có exam sessions ở trạng thái `started` hoặc `submitted`
+- Hành động xóa sẽ được ghi nhận vào lịch sử admin với action_type `DELETE_CLASS`
+- Có thể khôi phục lớp học bằng endpoint restore
+
+- **400 Bad Request** (lớp học có bài thi đang hoạt động)
+
+```json
+{
+  "error": "Không thể xóa lớp học có phiên thi đang hoạt động. Lớp học có dữ liệu thi."
+}
+```
+
+- **404 Not Found** (lớp học không tồn tại hoặc đã bị xóa)
+
+```json
+{
+  "error": "Không tìm thấy lớp học"
+}
+```
+
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+  "error": "Không có quyền truy cập"
+}
+```
+
+- **403 Forbidden** (không phải admin)
+
+```json
+{
+  "error": "Chỉ dành cho quản trị viên"
+}
+```
+
+
+
+---
+
+## Endpoint 10 - Lấy danh sách kỳ thi
 
 **GET `/api/admin/exams?status=ongoing&search=giua+ky&page=1&limit=50`**
 
@@ -685,3 +749,87 @@ Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi
 ```
 
 ---
+
+## Endpoint 13 - Lấy thống kê Dashboard
+
+**GET `/api/admin/dashboard`**
+
+- **Mô tả: Lấy thống kê tổng quan cho dashboard admin, bao gồm lịch sử hoạt động của admin đó**
+- **HTTP:** GET 
+- **URL:** `/api/admin/dashboard`
+- **Headers:** `Authorization: Bearer <access_token>`
+
+- **Response body:**
+
+```json
+{
+  "users": {
+    "total": 150
+  },
+  "classes": {
+    "total": 25
+  },
+  "exams": {
+    "total": 80,
+    "active": 3,
+    "upcoming": 5
+  },
+  "submissions": {
+    "today": 45
+  },
+  "admin_activities": [
+    {
+      "id": "uuid",
+      "action_type": "LOCK_USER",
+      "target_type": "user",
+      "target_id": "uuid",
+      "description": "Khóa tài khoản student@example.com",
+      "metadata": {
+        "user_email": "student@example.com",
+        "user_name": "Nguyễn Văn A"
+      },
+      "ip_address": "192.168.1.1",
+      "created_at": "2025-12-29T10:30:00Z"
+    },
+    {
+      "id": "uuid",
+      "action_type": "RESET_PASSWORD",
+      "target_type": "user",
+      "target_id": "uuid",
+      "description": "Reset mật khẩu cho tài khoản teacher@example.com",
+      "metadata": {
+        "user_email": "teacher@example.com",
+        "user_name": "Trần Thị B"
+      },
+      "ip_address": "192.168.1.1",
+      "created_at": "2025-12-29T09:15:00Z"
+    }
+  ]
+}
+```
+
+**Giải thích:**
+```
+LOCK_USER - Khóa tài khoản người dùng
+UNLOCK_USER - Mở khóa tài khoản người dùng
+RESET_PASSWORD - Reset mật khẩu người dùng
+DELETE_CLASS - Xóa lớp học
+```
+- **401 Unauthorized** (missing/invalid token)
+
+```json
+{
+  "error": "Không có quyền truy cập"
+}
+```
+
+- **403 Forbidden** (không phải admin)
+
+```json
+{
+  "error": "Chỉ dành cho quản trị viên"
+}
+```
+
+---
+

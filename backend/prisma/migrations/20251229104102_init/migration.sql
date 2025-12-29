@@ -7,8 +7,6 @@ CREATE TYPE "enrollment_status" AS ENUM ('pending', 'approved', 'rejected', 'can
 -- CreateEnum
 CREATE TYPE "session_state" AS ENUM ('pending', 'started', 'submitted', 'expired', 'locked');
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp",
-
 -- CreateTable
 CREATE TABLE "accommodation" (
     "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
@@ -27,6 +25,7 @@ CREATE TABLE "answer" (
     "exam_session_id" UUID NOT NULL,
     "question_id" UUID NOT NULL,
     "choice_id" UUID,
+    "selected_choice_ids" UUID[],
     "answered_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "answer_pkey" PRIMARY KEY ("id")
@@ -61,6 +60,9 @@ CREATE TABLE "class" (
     "name" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "description" TEXT,
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMPTZ(6),
+    "deleted_by" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -89,6 +91,10 @@ CREATE TABLE "exam_instance" (
     "ends_at" TIMESTAMPTZ(6) NOT NULL,
     "published" BOOLEAN NOT NULL DEFAULT false,
     "created_by" UUID,
+    "show_answers" BOOLEAN NOT NULL DEFAULT false,
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMPTZ(6),
+    "deleted_by" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "exam_instance_pkey" PRIMARY KEY ("id")
@@ -135,33 +141,12 @@ CREATE TABLE "exam_template" (
     "shuffle_questions" BOOLEAN NOT NULL DEFAULT false,
     "passing_score" DECIMAL(5,2),
     "created_by" UUID,
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMPTZ(6),
+    "deleted_by" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "exam_template_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "grade_override" (
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
-    "submission_id" UUID NOT NULL,
-    "overridden_by" UUID,
-    "new_score" DECIMAL(8,2) NOT NULL,
-    "reason" TEXT,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "grade_override_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "notification" (
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
-    "user_id" UUID NOT NULL,
-    "type" TEXT NOT NULL,
-    "payload" JSONB,
-    "is_read" BOOLEAN NOT NULL DEFAULT false,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "notification_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -172,6 +157,9 @@ CREATE TABLE "question" (
     "explanation" TEXT,
     "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "difficulty" "difficulty_level" DEFAULT 'medium',
+    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "deleted_at" TIMESTAMPTZ(6),
+    "deleted_by" UUID,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -188,34 +176,6 @@ CREATE TABLE "question_choice" (
     "is_correct" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "question_choice_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "question_pool" (
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
-    "exam_instance_id" UUID NOT NULL,
-    "tag_filter" TEXT[] DEFAULT ARRAY[]::TEXT[],
-    "difficulty_filter" "difficulty_level",
-    "total_to_pick" INTEGER NOT NULL DEFAULT 0,
-
-    CONSTRAINT "question_pool_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "roster_import" (
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
-    "class_id" UUID NOT NULL,
-    "uploaded_by" UUID,
-    "file_path" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'processing',
-    "rows_total" INTEGER DEFAULT 0,
-    "rows_success" INTEGER DEFAULT 0,
-    "rows_failed" INTEGER DEFAULT 0,
-    "error_summary" JSONB,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "processed_at" TIMESTAMPTZ(6),
-
-    CONSTRAINT "roster_import_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -256,6 +216,8 @@ CREATE TABLE "user" (
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "last_login_at" TIMESTAMPTZ(6),
     "bio" TEXT,
+    "reset_otp_hash" TEXT,
+    "reset_otp_expires" TIMESTAMPTZ(6),
 
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
@@ -271,6 +233,37 @@ CREATE TABLE "refresh_token" (
     "expires_at" TIMESTAMPTZ(6) NOT NULL,
 
     CONSTRAINT "refresh_token_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "pending_user" (
+    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "password_hash" TEXT NOT NULL,
+    "role_id" TEXT NOT NULL,
+    "otp_hash" TEXT NOT NULL,
+    "otp_expires_at" TIMESTAMP(3) NOT NULL,
+    "otp_used" BOOLEAN NOT NULL DEFAULT false,
+    "otp_attempts" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "pending_user_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "admin_action" (
+    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "admin_id" UUID NOT NULL,
+    "action_type" TEXT NOT NULL,
+    "target_type" TEXT,
+    "target_id" UUID,
+    "description" TEXT,
+    "metadata" JSONB,
+    "ip_address" INET,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "admin_action_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -298,6 +291,9 @@ CREATE UNIQUE INDEX "auth_role_name_key" ON "auth_role"("name");
 CREATE INDEX "idx_class_teacher" ON "class"("teacher_id");
 
 -- CreateIndex
+CREATE INDEX "idx_class_deleted" ON "class"("is_deleted");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "class_teacher_id_code_key" ON "class"("teacher_id", "code");
 
 -- CreateIndex
@@ -314,6 +310,9 @@ CREATE INDEX "idx_exam_instance_starts" ON "exam_instance"("starts_at");
 
 -- CreateIndex
 CREATE INDEX "idx_exam_instance_template" ON "exam_instance"("template_id");
+
+-- CreateIndex
+CREATE INDEX "idx_exam_instance_deleted" ON "exam_instance"("is_deleted");
 
 -- CreateIndex
 CREATE INDEX "idx_exam_question_exam" ON "exam_question"("exam_instance_id");
@@ -340,10 +339,7 @@ CREATE UNIQUE INDEX "exam_session_exam_instance_id_user_id_key" ON "exam_session
 CREATE INDEX "idx_exam_template_class" ON "exam_template"("class_id");
 
 -- CreateIndex
-CREATE INDEX "idx_grade_override_submission" ON "grade_override"("submission_id");
-
--- CreateIndex
-CREATE INDEX "idx_notification_user" ON "notification"("user_id");
+CREATE INDEX "idx_exam_template_deleted" ON "exam_template"("is_deleted");
 
 -- CreateIndex
 CREATE INDEX "idx_question_owner" ON "question"("owner_id");
@@ -352,13 +348,10 @@ CREATE INDEX "idx_question_owner" ON "question"("owner_id");
 CREATE INDEX "idx_question_tags" ON "question" USING GIN ("tags");
 
 -- CreateIndex
+CREATE INDEX "idx_question_deleted" ON "question"("is_deleted");
+
+-- CreateIndex
 CREATE INDEX "idx_choice_question" ON "question_choice"("question_id");
-
--- CreateIndex
-CREATE INDEX "idx_qpool_exam" ON "question_pool"("exam_instance_id");
-
--- CreateIndex
-CREATE INDEX "idx_roster_import_class" ON "roster_import"("class_id");
 
 -- CreateIndex
 CREATE INDEX "idx_session_flag_session" ON "session_flag"("exam_session_id");
@@ -380,6 +373,18 @@ CREATE INDEX "idx_refresh_token_expires" ON "refresh_token"("expires_at");
 
 -- CreateIndex
 CREATE INDEX "idx_refresh_token_user" ON "refresh_token"("user_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "pending_user_email_key" ON "pending_user"("email");
+
+-- CreateIndex
+CREATE INDEX "idx_admin_action_admin" ON "admin_action"("admin_id");
+
+-- CreateIndex
+CREATE INDEX "idx_admin_action_type" ON "admin_action"("action_type");
+
+-- CreateIndex
+CREATE INDEX "idx_admin_action_created" ON "admin_action"("created_at");
 
 -- AddForeignKey
 ALTER TABLE "accommodation" ADD CONSTRAINT "accommodation_exam_instance_id_fkey" FOREIGN KEY ("exam_instance_id") REFERENCES "exam_instance"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
@@ -439,28 +444,10 @@ ALTER TABLE "exam_template" ADD CONSTRAINT "exam_template_class_id_fkey" FOREIGN
 ALTER TABLE "exam_template" ADD CONSTRAINT "exam_template_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "grade_override" ADD CONSTRAINT "grade_override_overridden_by_fkey" FOREIGN KEY ("overridden_by") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "grade_override" ADD CONSTRAINT "grade_override_submission_id_fkey" FOREIGN KEY ("submission_id") REFERENCES "submission"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "notification" ADD CONSTRAINT "notification_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
 ALTER TABLE "question" ADD CONSTRAINT "question_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "question_choice" ADD CONSTRAINT "question_choice_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "question"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "question_pool" ADD CONSTRAINT "question_pool_exam_instance_id_fkey" FOREIGN KEY ("exam_instance_id") REFERENCES "exam_instance"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "roster_import" ADD CONSTRAINT "roster_import_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "class"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "roster_import" ADD CONSTRAINT "roster_import_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "user"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "session_flag" ADD CONSTRAINT "session_flag_exam_session_id_fkey" FOREIGN KEY ("exam_session_id") REFERENCES "exam_session"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
@@ -479,3 +466,6 @@ ALTER TABLE "user" ADD CONSTRAINT "user_role_id_fkey" FOREIGN KEY ("role_id") RE
 
 -- AddForeignKey
 ALTER TABLE "refresh_token" ADD CONSTRAINT "refresh_token_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "admin_action" ADD CONSTRAINT "admin_action_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION;

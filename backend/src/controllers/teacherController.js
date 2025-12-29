@@ -29,7 +29,8 @@ module.exports = {
     async getClassesByTeacher(req, res, next) {
         try {
             const teacherId = req.user.id;
-            const classes = await teacherService.getClassesByTeacher(teacherId);
+            const includeDeleted = req.query.includeDeleted === 'true';
+            const classes = await teacherService.getClassesByTeacher(teacherId, { includeDeleted });
             res.json(classes);
         } catch (error) {
             const err = new Error("Lấy danh sách lớp học thất bại");
@@ -41,7 +42,8 @@ module.exports = {
     async getClassById(req, res, next) {
         try {
             const classId = (req.params.id);
-            const classData = await teacherService.getClassById(classId);
+            const includeDeleted = req.query.includeDeleted === 'true';
+            const classData = await teacherService.getClassById(classId, { includeDeleted });
             for (let i = 0; i < classData["listStudent"].length; i++) {
                 const studentId = classData["listStudent"][i]["student_id"];
                 const studentInfo = await require('../services/userService').getUserById(studentId);
@@ -67,15 +69,29 @@ module.exports = {
             next(err);
         }
     },
-    // Xóa lớp học
+    // Xóa lớp học (soft delete)
     async deleteClass(req, res, next) {
         try {
             const classId = (req.params.id);
             const teacherId = req.user.id;
-            await teacherService.deleteClass(classId, teacherId);
-            res.status(204).end();
+            const result = await teacherService.deleteClass(classId, teacherId);
+            res.json(result);
         } catch (error) {
-            const err = new Error('Xóa lớp học thất bại: Không được xóa lớp học có sinh viên đang tham gia');
+            const err = new Error('Xóa lớp học thất bại');
+            err.status = 400;
+            next(err);
+        }
+    },
+
+    // Khôi phục lớp học
+    async restoreClass(req, res, next) {
+        try {
+            const classId = req.params.id;
+            const teacherId = req.user.id;
+            const result = await teacherService.restoreClass(classId, teacherId);
+            res.json(result);
+        } catch (error) {
+            const err = new Error('Khôi phục lớp học thất bại');
             err.status = 400;
             next(err);
         }
@@ -201,8 +217,36 @@ module.exports = {
             await teacherService.deleteQuestion(questionId, teacherId);
             res.status(200).json({ message: "Xóa câu hỏi thành công" });
         } catch (error) {
-            const err = new Error('Xóa câu hỏi thất bại: Không được xóa câu hỏi đã được sử dụng trong đề thi');
+            const err = new Error('Xóa câu hỏi thất bại');
             console.error("Error stack:", error.stack);
+            err.status = 400;
+            next(err);
+        }
+    },
+
+    // Khôi phục câu hỏi
+    async restoreQuestion(req, res, next) {
+        try {
+            const questionId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.restoreQuestion(questionId, teacherId);
+            res.status(200).json({ message: "Khôi phục câu hỏi thành công" });
+        } catch (error) {
+            const err = new Error('Khôi phục câu hỏi thất bại');
+            err.status = 400;
+            next(err);
+        }
+    },
+
+    // Khôi phục câu hỏi
+    async restoreQuestion(req, res, next) {
+        try {
+            const questionId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.restoreQuestion(questionId, teacherId);
+            res.status(200).json({ message: "Khôi phục câu hỏi thành công" });
+        } catch (error) {
+            const err = new Error('Khôi phục câu hỏi thất bại');
             err.status = 400;
             next(err);
         }
@@ -285,7 +329,8 @@ module.exports = {
     async getExamTemplatesByTeacher(req, res, next) {
         try {
             const teacherId = req.user.id;
-            const templates = await teacherService.getExamTemplate(teacherId);
+            const includeDeleted = req.query.includeDeleted === 'true';
+            const templates = await teacherService.getExamTemplate(teacherId, { includeDeleted });
             res.json(templates);
         } catch (error) {
             const err = new Error("Lấy danh sách mẫu đề thi thất bại");
@@ -326,6 +371,20 @@ module.exports = {
             err.status = 400;
             next(err);
 
+        }
+    },
+
+    // Khôi phục exam template
+    async restoreExamTemplate(req, res, next) {
+        try {
+            const templateId = req.params.id;
+            const teacherId = req.user.id;
+            const result = await teacherService.restoreExamTemplate(templateId, teacherId);
+            res.json(result);
+        } catch (error) {
+            const err = new Error('Khôi phục mẫu đề thi thất bại');
+            err.status = 400;
+            next(err);
         }
     },
 
@@ -418,7 +477,21 @@ module.exports = {
             res.json({ message: "Xóa đề thi thành công" });
             res.status(200).end();
         } catch (error) {
-            const err = new Error("Xóa đề thi thất bại: Đề thi đã được công bố hoặc có sinh viên tham gia làm bài");
+            const err = new Error("Xóa đề thi thất bại");
+            err.status = 400;
+            next(err);
+        }
+    },
+
+    // Khôi phục exam instance
+    async restoreExamInstance(req, res, next) {
+        try {
+            const instanceId = req.params.id;
+            const teacherId = req.user.id;
+            await teacherService.restoreExamInstance(instanceId, teacherId);
+            res.json({ message: "Khôi phục đề thi thành công" });
+        } catch (error) {
+            const err = new Error("Khôi phục đề thi thất bại");
             err.status = 400;
             next(err);
         }
@@ -729,7 +802,8 @@ module.exports = {
         try {
             const teacherId = req.user.id;
             const classId = req.params.classId;
-            const templates = await teacherService.getExamTemplatesByClass(teacherId, classId);
+            const includeDeleted = req.query.includeDeleted === 'true';
+            const templates = await teacherService.getExamTemplatesByClass(teacherId, classId, { includeDeleted });
             res.json(templates);
         } catch (error) {
             next(error);

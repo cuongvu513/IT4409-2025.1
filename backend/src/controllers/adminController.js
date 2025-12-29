@@ -52,7 +52,12 @@ module.exports = {
         });
       }
       
-      const result = await adminService.toggleUserStatus(id, false);
+      const result = await adminService.toggleUserStatus(
+        id, 
+        false, 
+        req.user.id, 
+        req.ip
+      );
       res.json(result);
     } catch (err) {
       next(err);
@@ -66,7 +71,12 @@ module.exports = {
   async unlockUser(req, res, next) {
     try {
       const { id } = req.params;
-      const result = await adminService.toggleUserStatus(id, true);
+      const result = await adminService.toggleUserStatus(
+        id, 
+        true, 
+        req.user.id, 
+        req.ip
+      );
       res.json(result);
     } catch (err) {
       next(err);
@@ -92,7 +102,9 @@ module.exports = {
       
       const result = await adminService.resetUserPassword(
         id, 
-        password || "Password123"
+        password || "Password123",
+        req.user.id,
+        req.ip
       );
       
       res.json(result);
@@ -156,7 +168,29 @@ module.exports = {
   async deleteClass(req, res, next) {
     try {
       const { id } = req.params;
-      const result = await adminService.deleteClass(id);
+      const result = await adminService.deleteClass(
+        id, 
+        req.user.id, 
+        req.ip
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * PUT /admin/classes/:id/restore
+   * Khôi phục lớp học đã xóa
+   */
+  async restoreClass(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await adminService.restoreClass(
+        id, 
+        req.user.id, 
+        req.ip
+      );
       res.json(result);
     } catch (err) {
       next(err);
@@ -206,8 +240,29 @@ module.exports = {
    */
   async getDashboard(req, res, next) {
     try {
-      const stats = await adminService.getDashboardStats();
+      const stats = await adminService.getDashboardStats(req.user.id);
       res.json(stats);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * GET /admin/activities
+   * Lấy lịch sử hoạt động của admin
+   * Query params: page, limit, actionType
+   */
+  async getActivities(req, res, next) {
+    try {
+      const { page, limit, actionType } = req.query;
+      
+      const result = await adminService.getAdminActivities(req.user.id, {
+        page: page ? parseInt(page) : 1,
+        limit: limit ? parseInt(limit) : 50,
+        actionType
+      });
+      
+      res.json(result);
     } catch (err) {
       next(err);
     }

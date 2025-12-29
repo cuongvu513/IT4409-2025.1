@@ -282,6 +282,26 @@
   .actions button {
     width: 100%;
   }
+
+}
+
+/* very small screens */
+@media (max-width: 420px) {
+  .actions {
+    flex-direction: column;
+    gap: 8px;
+
+    button { width: 100%; }
+  }
+
+  .form {
+    padding: 12px;
+  }
+
+  .questionsList {
+    max-height: 260px;
+  }
+
 }
 
 /* very small screens */

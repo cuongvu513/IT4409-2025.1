@@ -169,7 +169,7 @@ const TeacherTemplatesPage = () => {
                                 <th>Tiêu đề</th>
                                 <th>Mô tả</th>
                                 <th>Thời gian</th>
-                                <th>Điểm đạt</th>
+                                <th>Ngưỡng qua bài kiểm tra (%)</th>
                                 <th>Đảo câu</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -277,15 +277,15 @@ const TeacherTemplatesPage = () => {
                             </div>
                             <div className={styles.row}>
                                 <div className={styles.formGroup}>
-                                    <label>Điểm đạt</label>
+                                    <label>Ngưỡng qua bài kiểm tra (%)</label>
                                     <input type="number" name="passing_score" value={formData.passing_score} onChange={handleInputChange} />
                                 </div>
-                                <div className={styles.formGroup} style={{ marginTop: '30px' }}>
+                                {/* <div className={styles.formGroup} style={{ marginTop: '30px' }}>
                                     <label className={styles.checkboxLabel}>
                                         <input type="checkbox" name="shuffle_questions" checked={formData.shuffle_questions} onChange={handleInputChange} />
                                         Đảo câu hỏi
                                     </label>
-                                </div>
+                                </div> */}
                             </div>
                             <div className={styles.modalActions}>
                                 <button type="button" className={styles.btnCancel} onClick={() => setShowModal(false)}>Hủy</button>

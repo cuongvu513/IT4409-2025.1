@@ -97,7 +97,7 @@ const ExamTemplateForm = ({ classId, onCreated, onClose }) => {
         </div>
 
         <div>
-          <label>Điểm đạt (%)</label>
+          <label>Ngưỡng qua bài kiểm tra (%)</label>
           <input className={styles.input} type="number" min="0" max="100" step="0.1" value={passingScore} onChange={(e) => setPassingScore(e.target.value)} />
         </div>
       </div>
