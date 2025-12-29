@@ -114,11 +114,11 @@ const ExamInstanceForm = ({ templateId, classId, onCreated, onClose, initialData
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.row}>
           <div>
-            <label>Bắt đầu *</label>
+            <label>Bắt đầu</label>
             <input required type="datetime-local" name="starts_at" value={formData.starts_at ? toInputDateTime(formData.starts_at) : formData.starts_at} onChange={handleInputChange} />
           </div>
           <div>
-            <label>Kết thúc *</label>
+            <label>Kết thúc</label>
             <input required type="datetime-local" name="ends_at" value={formData.ends_at ? toInputDateTime(formData.ends_at) : formData.ends_at} onChange={handleInputChange} />
           </div>
         </div>
@@ -146,15 +146,18 @@ const ExamInstanceForm = ({ templateId, classId, onCreated, onClose, initialData
 
           {loading ? <p>Đang tải câu hỏi...</p> : (
             <div className={styles.questionsList}>
-              {filteredQuestions.length === 0 ? <p>Không tìm thấy câu hỏi.</p> : filteredQuestions.map(q => (
-                <div key={q.id} className={styles.qItem}>
-                  <input type="checkbox" id={`q-${q.id}`} checked={formData.selectedQuestionIds.includes(q.id)} onChange={() => handleQuestionToggle(q.id)} />
-                  <label htmlFor={`q-${q.id}`}>
-                    <span className={styles.diff}>{q.difficulty}</span>
-                    <MathRenderer text={q.text} />
-                  </label>
-                </div>
-              ))}
+              {filteredQuestions.length === 0 ? <p>Không tìm thấy câu hỏi.</p> : filteredQuestions.map(q => {
+                const diffClass = q.difficulty ? styles[`diff--${q.difficulty}`] : '';
+                return (
+                  <div key={q.id} className={styles.qItem}>
+                    <input type="checkbox" id={`q-${q.id}`} checked={formData.selectedQuestionIds.includes(q.id)} onChange={() => handleQuestionToggle(q.id)} />
+                    <label htmlFor={`q-${q.id}`}>
+                      <span className={`${styles.diff} ${diffClass}`}>{q.difficulty}</span>
+                      <MathRenderer text={q.text} />
+                    </label>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

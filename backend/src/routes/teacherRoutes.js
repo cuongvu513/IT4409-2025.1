@@ -7,7 +7,7 @@ router.get("/classes", teacherController.getClassesByTeacher); // Lấy danh sá
 router.get("/classes/:id", teacherController.getClassById); // Lấy thông tin lớp học theo ID
 router.put("/classes/:id", teacherController.updateClass); // Cập nhật thông tin lớp học
 router.delete("/classes/:id", teacherController.deleteClass); // Xóa lớp học
-router.delete("/classes/students/:id", teacherController.removeStudentFromClass); // Xóa học sinh khỏi lớp học
+router.delete("/classes/:classId/students/:studentId", teacherController.removeStudentFromClass); // Xóa học sinh khỏi lớp học
 
 router.get("/classes/:id/enrollment-requests", teacherController.getEnrollmentRequests); // Lấy danh sách yêu cầu tham gia lớp học
 router.post("/enrollment-requests/approve", teacherController.approveEnrollmentRequest); // Phê duyệt hoặc từ chối yêu cầu tham gia lớp học

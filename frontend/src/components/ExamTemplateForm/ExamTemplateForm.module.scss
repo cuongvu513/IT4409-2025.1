@@ -71,3 +71,76 @@
   color: #c62828;
   margin-left: 4px;
 }
+
+/* question picker */
+.questionSection {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+}
+
+.filterRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #eaeaea;
+}
+
+.difficultyFilter {
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #eaeaea;
+}
+
+.questionsList {
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid #f3f3f3;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.qItem {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 6px;
+  transition: background 0.12s ease;
+}
+
+.qItem:not(:last-child) {
+  border-bottom: 1px dashed #f3f3f3;
+}
+
+.diff {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-right: 6px;
+}
+
+/* difficulty colors */
+.diff--easy {
+  background: rgba(40, 167, 69, 0.12);
+  color: $success-color;
+}
+
+.diff--medium {
+  background: rgba(255, 193, 7, 0.12);
+  color: $warning-color;
+}
+
+.diff--hard {
+  background: rgba(220, 53, 69, 0.08);
+  color: $error-color;
+}

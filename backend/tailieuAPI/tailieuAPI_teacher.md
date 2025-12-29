@@ -1743,18 +1743,12 @@ Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi
 ## Endpoint 45 - Xóa học sinh ra khỏi lớp 
 
 
-**DELETE`/api/teacher/classes/students/:id`**
+**DELETE`/api/teacher/classes/:classId/students/:studentId`**
 
 - **Mô tả: cập nhập thông tin lớp theo ID lớp học**
 - **HTTP: DELETE**
-- **URL:** `/api/teacher/classes/students/:id`
+- **URL:** `/api/teacher/classes/:classId/students/:studentId`
 - **Headers:** `Authorization: Bearer <access_token>`
-- **Request body:**
-    ```js
-    {
-        "class_id": "....."
-    }
-    ```
 - **Response body:**
     
     **200 OK (thành công)**
