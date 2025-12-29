@@ -735,4 +735,17 @@ module.exports = {
             next(error);
         }
     },
+    async removeStudentFromClass(req, res, next) {
+        try {
+            const studentId = req.params.id;
+            const classId = req.body.class_id;
+            const teacherId = req.user.id;
+            await teacherService.removeStudentFromClass(teacherId, classId, studentId);
+            res.status(200).json({ message: "Xóa học sinh khỏi lớp học thành công" });
+        } catch (error) {
+            const err = new Error("Xóa học sinh khỏi lớp học thất bại");
+            err.status = 400;
+            next(err);
+        }
+    },
 };

@@ -1739,3 +1739,34 @@ Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi
     "error": "Lớp học không tồn tại hoặc bạn không có quyền"
 }
 ```
+
+## Endpoint 45 - Xóa học sinh ra khỏi lớp 
+
+
+**DELETE`/api/teacher/classes/students/:id`**
+
+- **Mô tả: cập nhập thông tin lớp theo ID lớp học**
+- **HTTP: DELETE**
+- **URL:** `/api/teacher/classes/students/:id`
+- **Headers:** `Authorization: Bearer <access_token>`
+- **Request body:**
+    ```js
+    {
+        "class_id": "....."
+    }
+    ```
+- **Response body:**
+    
+    **200 OK (thành công)**
+    ```js
+    {
+        "message": "Xóa học sinh khỏi lớp học thành công"
+    }
+    ```
+    **400Bad Request**
+    
+    ```jsx
+    {
+        "error": "Xóa học sinh khỏi lớp học thất bại"
+    }
+    ```
