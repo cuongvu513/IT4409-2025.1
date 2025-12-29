@@ -284,13 +284,13 @@ const TeacherExamInstancesPage = () => {
                                                 <button className={`${styles.btnIcon} ${styles.btnDelete}`} onClick={() => handleDelete(exam.id)} title="Xóa">
                                                     <i className="fa-solid fa-trash"></i>
                                                 </button>
-                                            <Link
-                                                to={`/teacher/classes/${templateInfo?.class_id || templateId}/exams/${exam.id}`}
-                                                className={styles.btnManage}
-                                                title="Quản lý phiên thi"
-                                            >
-                                                <i className="fa-solid fa-gauge"></i>
-                                            </Link>
+                                                <Link
+                                                    to={`/teacher/classes/${templateInfo?.class_id || templateId}/exams/${exam.id}`}
+                                                    className={styles.btnManage}
+                                                    title="Quản lý phiên thi"
+                                                >
+                                                    <i className="fa-solid fa-gauge"></i>
+                                                </Link>
                                             </div>
                                         </td>
                                     </tr>

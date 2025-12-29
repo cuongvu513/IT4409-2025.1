@@ -15,16 +15,31 @@ module.exports = {
         return newClass;
     },
     // Lấy danh sách lớp học của giáo viên
-    async getClassesByTeacher(teacherId) {
+    async getClassesByTeacher(teacherId, options = {}) {
+        const { includeDeleted = false } = options;
+        const where = { teacher_id: teacherId };
+        
+        if (!includeDeleted) {
+            where.is_deleted = false;
+        }
+        
         const classes = await prisma.Renamedclass.findMany({
-            where: { teacher_id: teacherId },
+            where,
+            orderBy: { created_at: 'desc' }
         });
         return classes;
     },
     // Lấy thông tin lớp học theo ID
-    async getClassById(classId) {
+    async getClassById(classId, options = {}) {
+        const { includeDeleted = false } = options;
+        const where = { id: classId };
+        
+        if (!includeDeleted) {
+            where.is_deleted = false;
+        }
+        
         const classInfo = await prisma.Renamedclass.findFirst({
-            where: { id: classId },
+            where,
         });
         const listStudent = await prisma.enrollment_request.findMany({
             where: { class_id: classId, status: "approved" },
@@ -43,10 +58,160 @@ module.exports = {
     },
     // Xóa lớp học
     async deleteClass(classId, teacherId) {
-        await prisma.Renamedclass.delete({
-            where: { id: classId, teacher_id: teacherId },
+        // Kiểm tra lớp học có tồn tại và quyền sở hữu
+        const classData = await prisma.Renamedclass.findFirst({
+            where: { id: classId, teacher_id: teacherId, is_deleted: false },
+            select: {
+                id: true,
+                name: true,
+                exam_template: {
+                    where: { is_deleted: false },
+                    select: {
+                        id: true,
+                        exam_instance: {
+                            where: { is_deleted: false },
+                            select: { id: true }
+                        }
+                    }
+                }
+            }
         });
-        return;
+
+        if (!classData) {
+            const err = new Error("Không tìm thấy lớp học hoặc không có quyền xóa");
+            err.status = 404;
+            throw err;
+        }
+
+        // Soft delete với cascade xuống exam_template và exam_instance
+        await prisma.$transaction(async (tx) => {
+            // 1. Xóa mềm tất cả exam_instance
+            const templateIds = classData.exam_template.map(t => t.id);
+            if (templateIds.length > 0) {
+                await tx.exam_instance.updateMany({
+                    where: {
+                        template_id: { in: templateIds },
+                        is_deleted: false
+                    },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: new Date(),
+                        deleted_by: teacherId
+                    }
+                });
+
+                // 2. Xóa mềm tất cả exam_template
+                await tx.exam_template.updateMany({
+                    where: {
+                        class_id: classId,
+                        is_deleted: false
+                    },
+                    data: {
+                        is_deleted: true,
+                        deleted_at: new Date(),
+                        deleted_by: teacherId
+                    }
+                });
+            }
+
+            // 3. Xóa mềm lớp học
+            await tx.Renamedclass.update({
+                where: { id: classId },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: teacherId
+                }
+            });
+        });
+
+        return { 
+            message: "Class and related exam templates/instances archived successfully (soft deleted)",
+            details: {
+                templates_archived: classData.exam_template.length,
+                instances_archived: classData.exam_template.reduce((sum, t) => sum + t.exam_instance.length, 0)
+            }
+        };
+    },
+
+    // Khôi phục lớp học
+    async restoreClass(classId, teacherId) {
+        const classData = await prisma.Renamedclass.findFirst({
+            where: { id: classId, teacher_id: teacherId, is_deleted: true },
+            select: {
+                id: true,
+                name: true,
+                exam_template: {
+                    where: { is_deleted: true },
+                    select: {
+                        id: true,
+                        exam_instance: {
+                            where: { is_deleted: true },
+                            select: { id: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!classData) {
+            const err = new Error("Không tìm thấy lớp học đã xóa hoặc không có quyền khôi phục");
+            err.status = 404;
+            throw err;
+        }
+
+        // Khôi phục với cascade
+        await prisma.$transaction(async (tx) => {
+            // 1. Khôi phục lớp học
+            await tx.Renamedclass.update({
+                where: { id: classId },
+                data: {
+                    is_deleted: false,
+                    deleted_at: null,
+                    deleted_by: null
+                }
+            });
+
+            // 2. Khôi phục exam_template
+            const templateIds = classData.exam_template.map(t => t.id);
+            if (templateIds.length > 0) {
+                await tx.exam_template.updateMany({
+                    where: {
+                        class_id: classId,
+                        is_deleted: true
+                    },
+                    data: {
+                        is_deleted: false,
+                        deleted_at: null,
+                        deleted_by: null
+                    }
+                });
+
+                // 3. Khôi phục exam_instance
+                const instanceIds = classData.exam_template.flatMap(t => t.exam_instance.map(i => i.id));
+                if (instanceIds.length > 0) {
+                    await tx.exam_instance.updateMany({
+                        where: {
+                            id: { in: instanceIds },
+                            is_deleted: true
+                        },
+                        data: {
+                            is_deleted: false,
+                            deleted_at: null,
+                            deleted_by: null
+                        }
+                    });
+                }
+            }
+        });
+
+        return { 
+            message: "Class and related exam templates/instances restored successfully",
+            details: {
+                templates_restored: classData.exam_template.length,
+                instances_restored: classData.exam_template.reduce((sum, t) => sum + t.exam_instance.length, 0)
+            }
+        };
     },
     // Hiển thị danh sách yêu cầu tham gia lớp học
     async getEnrollmentRequests(classId, teacherId) {
@@ -127,14 +292,22 @@ module.exports = {
         });
     },
     // Lấy danh sách câu hỏi theo giáo viên
-    async getQuestionsbyTeacher(teacherId) {
+    async getQuestionsbyTeacher(teacherId, options = {}) {
         if (!teacherId) {
             const err = new Error("Vui lòng nhập mã giáo viên");
             err.status = 400;
             throw err;
         }
+        
+        const { includeDeleted = false } = options;
+        const where = { owner_id: teacherId };
+        
+        if (!includeDeleted) {
+            where.is_deleted = false;
+        }
+        
         const questions = await prisma.question.findMany({
-            where: { owner_id: teacherId },
+            where,
             include: {
                 question_choice: {
                     orderBy: { order: "asc" }
@@ -262,7 +435,7 @@ module.exports = {
     //     });
     // },
     
-    //xóa câu hỏi - dat
+    //xóa câu hỏi - dat (soft delete)
     async deleteQuestion(questionId, teacherId) {
         return await prisma.$transaction(async (tx) => {
 
@@ -270,7 +443,8 @@ module.exports = {
             const question = await tx.question.findFirst({
                 where: {
                     id: questionId,
-                    owner_id: teacherId
+                    owner_id: teacherId,
+                    is_deleted: false
                 }
             });
 
@@ -278,29 +452,50 @@ module.exports = {
                 throw new Error("Không tìm thấy câu hỏi hoặc không có quyền xóa");
             }
 
-            // 2. XÓA liên kết đề thi - câu hỏi (nếu câu hỏi đang ở trong 1 đề thi nào đó)
-            await tx.exam_question.deleteMany({
-                where: { question_id: questionId }
-            });
-
-            // 3. Xóa đáp án
-            await tx.question_choice.deleteMany({
-                where: { question_id: questionId }
-            });
-
-            // 4. Xóa câu hỏi
-            await tx.question.delete({
-                where: { id: questionId }
+            // 2. Soft delete câu hỏi
+            await tx.question.update({
+                where: { id: questionId },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: teacherId
+                }
             });
 
             return true;
         });
     },
 
+    // Khôi phục câu hỏi
+    async restoreQuestion(questionId, teacherId) {
+        const question = await prisma.question.findFirst({
+            where: {
+                id: questionId,
+                owner_id: teacherId,
+                is_deleted: true
+            }
+        });
+
+        if (!question) {
+            throw new Error("Không tìm thấy câu hỏi đã xóa hoặc không có quyền khôi phục");
+        }
+
+        await prisma.question.update({
+            where: { id: questionId },
+            data: {
+                is_deleted: false,
+                deleted_at: null,
+                deleted_by: null
+            }
+        });
+
+        return true;
+    },
+
     // lấy chi tiết câu hỏi theo ID
     async getQuestionById(questionId, teacherId) {
         const question = await prisma.question.findFirst({
-            where: { id: questionId, owner_id: teacherId },
+            where: { id: questionId, owner_id: teacherId, is_deleted: false },
             include: {
                 question_choice: {
                     orderBy: { order: "asc" }
@@ -372,7 +567,7 @@ module.exports = {
         return await prisma.$transaction(async (tx) => {
             // Kiểm tra quyền sở hữu template
             const existing = await tx.exam_template.findFirst({
-                where: { id: templateId}
+                where: { id: templateId, is_deleted: false}
             });
             if (!existing) {
                 const err = new Error("Vui lòng nhập mã chính xác");
@@ -384,50 +579,128 @@ module.exports = {
                 err.status = 403;
                 throw err;
             }
-            // Xóa template
-            await tx.exam_template.delete({
-                where: { id: templateId }
+            // Soft delete template
+            await tx.exam_template.update({
+                where: { id: templateId },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: actorId
+                }
             });
-            return;
+            return { message: "Exam template archived successfully" };
         });
     },
+
+    // Khôi phục exam template
+    async restoreExamTemplate(templateId, actorId) {
+        const existing = await prisma.exam_template.findFirst({
+            where: { id: templateId, is_deleted: true, created_by: actorId }
+        });
+
+        if (!existing) {
+            throw new Error("Không tìm thấy template đã xóa hoặc không có quyền khôi phục");
+        }
+
+        await prisma.exam_template.update({
+            where: { id: templateId },
+            data: {
+                is_deleted: false,
+                deleted_at: null,
+                deleted_by: null
+            }
+        });
+
+        return { message: "Exam template restored successfully" };
+    },
     // Lấy danh sách template đề thi theo giáo viên
-    async getExamTemplate(teacherId) {
+    async getExamTemplate(teacherId, options = {}) {
         if (!teacherId) {
             const err = new Error("Vui lòng nhập mã giáo viên");
             err.status = 400;
             throw err;
         }
+        
+        const { includeDeleted = false } = options;
+        const where = { created_by: teacherId };
+        
+        if (!includeDeleted) {
+            where.is_deleted = false;
+        }
+        
         const templates = await prisma.exam_template.findMany({
-            where: { created_by: teacherId },
+            where,
+            include: {
+                Renamedclass: {
+                    select: {
+                        id: true,
+                        name: true,
+                        code: true,
+                        is_deleted: true
+                    }
+                }
+            },
             orderBy: { created_at: "desc" }
-            });
+        });
         return templates;
     },
     // lấy template đề thi theo keyword
-    async searchExamTemplates(teacherId, keyword) {
+    async searchExamTemplates(teacherId, keyword, options = {}) {
         if (!keyword || keyword.trim() === "") {
             return [];
-        }   
+        }
+        
+        const { includeDeleted = false } = options;
+        const where = {
+            created_by: teacherId,
+            title: {
+                contains: keyword,
+                mode: "insensitive"
+            }
+        };
+        
+        if (!includeDeleted) {
+            where.is_deleted = false;
+        }
+        
         const templates = await prisma.exam_template.findMany({
-            where: {
-                created_by: teacherId,
-                title: {
-                    contains: keyword,
-                    mode: "insensitive"
+            where,
+            include: {
+                Renamedclass: {
+                    select: {
+                        id: true,
+                        name: true,
+                        is_deleted: true
+                    }
                 }
-            },  
+            },
             orderBy: { created_at: "desc" }
         });
         return templates;
     },  
     // lấy template theo id 
-    async getExamTemplateById(teacherId,templateId){
+    async getExamTemplateById(teacherId, templateId, options = {}){
+        const { includeDeleted = false } = options;
+        const where = { id: templateId, created_by: teacherId };
+        
+        if (!includeDeleted) {
+            where.is_deleted = false;
+        }
+        
         const template = await prisma.exam_template.findFirst({
-            where: { id: templateId, created_by: teacherId },
+            where,
+            include: {
+                Renamedclass: {
+                    select: {
+                        id: true,
+                        name: true,
+                        is_deleted: true
+                    }
+                }
+            }
         });
         if(!template){
-            const err = new Error("Template đề thi không tồn tại hoăc không có quyền truy cập");
+            const err = new Error("Template đề thi không tồn tại hoặc không có quyền truy cập");
             err.status = 400;
             throw err;
         }
@@ -501,22 +774,50 @@ module.exports = {
             const instance = await tx.exam_instance.findFirst({
                 where: {
                     id: instanceId,
-                    created_by: teacherId
+                    created_by: teacherId,
+                    is_deleted: false
                 }
             });
             if (!instance) {
                 throw new Error("Không tìm thấy instance đề thi hoặc không có quyền xóa");
             }
-            // XÓA liên kết đề thi - câu hỏi
-            await tx.exam_question.deleteMany({
-                where: { exam_instance_id: instanceId }
-            }); 
-            // Xóa instance đề thi
-            await tx.exam_instance.delete({
-                where: { id: instanceId }
+            // Soft delete instance đề thi
+            await tx.exam_instance.update({
+                where: { id: instanceId },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    deleted_by: teacherId
+                }
             });
             return true;
         });
+    },
+
+    // Khôi phục exam instance
+    async restoreExamInstance(instanceId, teacherId) {
+        const instance = await prisma.exam_instance.findFirst({
+            where: {
+                id: instanceId,
+                created_by: teacherId,
+                is_deleted: true
+            }
+        });
+
+        if (!instance) {
+            throw new Error("Không tìm thấy instance đã xóa hoặc không có quyền khôi phục");
+        }
+
+        await prisma.exam_instance.update({
+            where: { id: instanceId },
+            data: {
+                is_deleted: false,
+                deleted_at: null,
+                deleted_by: null
+            }
+        });
+
+        return true;
     },
 
     // Lấy danh sách instance đề thi theo template  
@@ -530,7 +831,7 @@ module.exports = {
             throw err;
         }
         const instances = await prisma.exam_instance.findMany({
-            where: { template_id: templateId },
+            where: { template_id: templateId, is_deleted: false },
             orderBy: { created_at: "desc" }
         });
         return instances;
@@ -753,7 +1054,7 @@ module.exports = {
             throw err;
         }
 
-        if (session.state === "submitted" || session.state === "expired") {
+        if (session.state === "submitted") {
             const err = new Error("Không thể khóa phiên đã nộp hoặc đã hết hạn");
             err.status = 400;
             throw err;
@@ -915,10 +1216,10 @@ module.exports = {
 
     // Liệt kê học sinh đang thi (có exam_session state='started') trong một lớp
     async listActiveStudentsInClass(teacherId, classId) {
-        // 1) Kiểm tra lớp thuộc giáo viên
+        // 1) Kiểm tra lớp thuộc giáo viên (cho phép xem cả lớp đã xóa)
         const klass = await prisma.Renamedclass.findFirst({
             where: { id: classId, teacher_id: teacherId },
-            select: { id: true }
+            select: { id: true, is_deleted: true }
         });
         if (!klass) {
             const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
@@ -960,7 +1261,8 @@ module.exports = {
         const klass = await prisma.Renamedclass.findFirst({
             where: {
                 id: classId,
-                teacher_id: teacherId
+                teacher_id: teacherId,
+                is_deleted: false
             },
             select: { id: true }
         });
@@ -971,11 +1273,13 @@ module.exports = {
             throw err;
         }
 
-        // 2) Lấy exam_instance thông qua exam_template
+        // 2) Lấy exam_instance thông qua exam_template (không tính đã xóa)
         const instances = await prisma.exam_instance.findMany({
             where: {
+                is_deleted: false,
                 exam_template: {
-                    class_id: classId
+                    class_id: classId,
+                    is_deleted: false
                 }
             },
             orderBy: {
@@ -989,13 +1293,13 @@ module.exports = {
     // Lấy tiến độ làm bài thi của sinh viên trong lớp
     async getExamProgressByClass(teacherId, classId, examInstanceId) {
 
-        // 1️ Check quyền giáo viên
+        // 1️ Check quyền giáo viên (cho phép xem cả lớp đã xóa)
         const klass = await prisma.Renamedclass.findFirst({
             where: {
                 id: classId,
                 teacher_id: teacherId
             },
-            select: { id: true }
+            select: { id: true, is_deleted: true }
         });
 
         if (!klass) {
@@ -1050,7 +1354,8 @@ module.exports = {
         const result = {
             not_started: [],
             in_progress: [],
-            finished: []
+            finished: [],
+            locked: [] // Thêm category cho sessions bị khóa
         };
 
         const now = new Date();
@@ -1064,7 +1369,18 @@ module.exports = {
                 continue;
             }
 
-            // 5.2 Đang làm bài (started + còn thời gian)
+            // 5.2 Bị khóa bởi giáo viên
+            if (session.state === "locked") {
+                result.locked.push({
+                    ...user,
+                    state: session.state,
+                    started_at: session.started_at,
+                    ends_at: session.ends_at
+                });
+                continue;
+            }
+
+            // 5.3 Đang làm bài (started + còn thời gian)
             if (
                 session.state === "started" &&
                 (!session.ends_at || now <= session.ends_at)
@@ -1078,10 +1394,11 @@ module.exports = {
                 continue;
             }
 
-            // 5.3 Đã kết thúc (submitted / expired / locked / started nhưng hết giờ)
+            // 5.4 Đã kết thúc (submitted / started nhưng hết giờ)
+            // Tất cả các trường hợp còn lại đều được tính là đã nộp bài
             result.finished.push({
                 ...user,
-                state: session.state,
+                state: session.state === "started" && session.ends_at && now > session.ends_at ? "submitted" : session.state,
                 started_at: session.started_at,
                 ends_at: session.ends_at
             });
@@ -1092,37 +1409,37 @@ module.exports = {
 
     // Lấy thông tin dashboard của giáo viên (số lớp, học sinh, đề thi, hoạt động)
     async getDashboardStats(teacherId) {
-        //  Lấy số lớp học
+        //  Lấy số lớp học (không tính đã xóa mềm)
         const classCount = await prisma.Renamedclass.count({
-            where: { teacher_id: teacherId }
+            where: { teacher_id: teacherId, is_deleted: false }
         });
 
-        //  Lấy tổng số học sinh từ các lớp của giáo viên
+        //  Lấy tổng số học sinh từ các lớp của giáo viên (không tính lớp đã xóa)
         const totalStudents = await prisma.enrollment_request.count({
             where: {
                 status: "approved",
-                Renamedclass: { teacher_id: teacherId }
+                Renamedclass: { teacher_id: teacherId, is_deleted: false }
             }
         });
 
-        //  Lấy số đề thi đã tạo
+        //  Lấy số đề thi đã tạo (không tính đã xóa mềm)
         const examInstanceCount = await prisma.exam_instance.count({
-            where: { created_by: teacherId }
+            where: { created_by: teacherId, is_deleted: false }
         });
 
         // Lấy hoạt động gần đây (từ các action khác nhau)
         const [recentClasses, recentEnrollments, recentExams, recentQuestions, recentTemplates] = await Promise.all([
-            // Lớp học được tạo
+            // Lớp học được tạo (không tính đã xóa)
             prisma.Renamedclass.findMany({
-                where: { teacher_id: teacherId },
+                where: { teacher_id: teacherId, is_deleted: false },
                 select: { id: true, name: true, created_at: true },
                 orderBy: { created_at: "desc" },
                 take: 10
             }),
-            // Học sinh tham gia được duyệt
+            // Học sinh tham gia được duyệt (không tính lớp đã xóa)
             prisma.enrollment_request.findMany({
                 where: {
-                    Renamedclass: { teacher_id: teacherId },
+                    Renamedclass: { teacher_id: teacherId, is_deleted: false },
                     status: "approved"
                 },
                 select: {
@@ -1136,9 +1453,9 @@ module.exports = {
                 orderBy: { requested_at: "desc" },
                 take: 10
             }),
-            // Đề thi được tạo
+            // Đề thi được tạo (không tính đã xóa)
             prisma.exam_instance.findMany({
-                where: { created_by: teacherId },
+                where: { created_by: teacherId, is_deleted: false },
                 select: {
                     id: true,
                     created_at: true,
@@ -1147,9 +1464,9 @@ module.exports = {
                 orderBy: { created_at: "desc" },
                 take: 10
             }),
-            // Câu hỏi được tạo
+            // Câu hỏi được tạo (không tính đã xóa)
             prisma.question.findMany({
-                where: { owner_id: teacherId },
+                where: { owner_id: teacherId, is_deleted: false },
                 select: {
                     id: true,
                     text: true,
@@ -1158,9 +1475,9 @@ module.exports = {
                 orderBy: { created_at: "desc" },
                 take: 10
             }),
-            // Template được tạo
+            // Template được tạo (không tính đã xóa)
             prisma.exam_template.findMany({
-                where: { created_by: teacherId },
+                where: { created_by: teacherId, is_deleted: false },
                 select: {
                     id: true,
                     title: true,
@@ -1216,8 +1533,8 @@ module.exports = {
                 totalClasses: classCount,
                 totalStudents,
                 totalExams: examInstanceCount,
-                totalQuestions: await prisma.question.count({ where: { owner_id: teacherId } }),
-                totalTemplates: await prisma.exam_template.count({ where: { created_by: teacherId } })
+                totalQuestions: await prisma.question.count({ where: { owner_id: teacherId, is_deleted: false } }),
+                totalTemplates: await prisma.exam_template.count({ where: { created_by: teacherId, is_deleted: false } })
             },
             recentActivities
         };
@@ -1271,7 +1588,8 @@ module.exports = {
         const classInfo = await prisma.Renamedclass.findFirst({
             where: { 
                 id: classId,
-                teacher_id: teacherId
+                teacher_id: teacherId,
+                is_deleted: false
             }
         });
 
@@ -1493,6 +1811,7 @@ module.exports = {
             where: {
                 id: classId,
                 teacher_id: teacherId,
+                is_deleted: false
             },
             select: { id: true },
         });
@@ -1567,22 +1886,33 @@ module.exports = {
 
 
     // lấy danh sách template đề thi theo lớp học
-    async getExamTemplatesByClass(teacherId, classId) {
+    async getExamTemplatesByClass(teacherId, classId, options = {}) {
+        const { includeDeleted = false } = options;
+        
+        // Kiểm tra quyền truy cập lớp (cho phép xem cả lớp đã xóa)
+        const classWhere = {
+            id: classId,
+            teacher_id: teacherId
+        };
+        
         const klass = await prisma.Renamedclass.findFirst({
-            where: {
-                id: classId,
-                teacher_id: teacherId
-            },
-            select: { id: true }
+            where: classWhere,
+            select: { id: true, is_deleted: true, name: true }
         });
+        
         if (!klass) {
             const err = new Error("Lớp học không tồn tại hoặc bạn không có quyền");
             err.status = 403;
             throw err;
         }
 
+        const templateWhere = { class_id: classId };
+        if (!includeDeleted) {
+            templateWhere.is_deleted = false;
+        }
+        
         const templates = await prisma.exam_template.findMany({
-            where: { class_id: classId },
+            where: templateWhere,
             orderBy: { created_at: "desc" }
         });
         return templates;
@@ -1592,7 +1922,8 @@ module.exports = {
         const klass = await prisma.Renamedclass.findFirst({
             where: { 
                 id: classId,
-                teacher_id: teacherId
+                teacher_id: teacherId,
+                is_deleted: false
             }
         });
         if (!klass) {
