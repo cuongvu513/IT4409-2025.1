@@ -34,8 +34,8 @@ const teacherService = {
     },
 
     // Vi phạm
-    getClassFlags(classId) {
-        return axiosClient.get(`/api/teacher/classes/${classId}/flags`);
+    getClassFlags(examInstanceId) {
+        return axiosClient.get(`/api/teacher/classes/${examInstanceId}/flags`);
     },
 
     // Cộng giờ
