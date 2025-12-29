@@ -141,10 +141,30 @@ const StudentTakeExamPage = () => {
             },
             // onExpired
             (data) => {
-                console.log('[StudentTakeExam] Time expired or exam ended');
+                console.log('[StudentTakeExam] Time expired or exam ended', data);
                 setTimeLeft(0);
-                alert('Hết thời gian làm bài! Bài thi sẽ được nộp tự động.');
-                handleSubmitExam();
+                
+                // Nếu backend đã tự động nộp và trả về điểm, hiển thị luôn
+                if (data.submission) {
+                    console.log('[StudentTakeExam] Auto-submitted with score:', data.submission);
+                    
+                    // Clear intervals và socket
+                    clearInterval(timerRef.current);
+                    clearInterval(heartbeatRef.current);
+                    if (socketService.isConnected()) {
+                        socketService.unsubscribeFromExam(examId);
+                    }
+                    localStorage.removeItem(`exam_session_${examId}`);
+                    
+                    // Hiển thị kết quả
+                    setExamResult(data.submission);
+                    setReviewMode(true);
+                    alert(`Hết thời gian làm bài! Bài thi đã được tự động nộp.\nĐiểm số: ${data.submission.score}/${data.submission.max_score}`);
+                } else {
+                    // Fallback: gọi submit thủ công nếu backend không trả về submission
+                    alert('Hết thời gian làm bài! Bài thi sẽ được nộp tự động.');
+                    handleSubmitExam();
+                }
             }
         );
     };
