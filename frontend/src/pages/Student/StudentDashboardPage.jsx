@@ -8,17 +8,19 @@ import styles from './StudentDashboardPage.module.scss';
 
 const StudentDashboardPage = () => {
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext); // Chỉ cần lấy user để hiện tên
+    const { user } = useContext(AuthContext);
 
     // --- STATE DỮ LIỆU DASHBOARD ---
     const [dashboardData, setDashboardData] = useState({
         classes: [],
         averageScore: 0,
         upcomingCount: 0,
-        completedCount: 0
+        completedCount: 0,
+        notAttemptedCount: 0, // Số lượng bài chưa làm
+        notAttemptedExams: []
     });
     const [loading, setLoading] = useState(true);
-    
+
     // Pagination for classes
     const [currentPage, setCurrentPage] = useState(1);
     const classesPerPage = 6;
@@ -28,7 +30,7 @@ const StudentDashboardPage = () => {
     const [formData, setFormData] = useState({ classCode: '', note: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // --- 1. LOAD DATA TỪ API (Endpoint 10) ---
+    // --- 1. LOAD DATA TỪ API ---
     const fetchDashboard = async () => {
         try {
             setLoading(true);
@@ -45,14 +47,12 @@ const StudentDashboardPage = () => {
         fetchDashboard();
     }, []);
 
-
-
     // --- XỬ LÝ NHẬP LIỆU ---
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // --- GỌI API ENROLL (Endpoint 1) ---
+    // --- GỌI API ENROLL ---
     const handleEnroll = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -62,6 +62,7 @@ const StudentDashboardPage = () => {
             alert(res.data.message || "Đã gửi yêu cầu tham gia thành công!");
             setFormData({ classCode: '', note: '' });
             setShowModal(false);
+            fetchDashboard();
         } catch (error) {
             alert(error.response?.data?.error || "Tham gia thất bại. Vui lòng kiểm tra lại mã lớp!");
         } finally {
@@ -77,7 +78,6 @@ const StudentDashboardPage = () => {
     const formatDate = (str) => new Date(str).toLocaleDateString('vi-VN');
 
     return (
-        // XÓA LAYOUT, SIDEBAR, HEADER. CHỈ GIỮ NỘI DUNG CHÍNH
         <div className={styles.contentBody}>
 
             {/* Banner chào mừng */}
@@ -86,16 +86,27 @@ const StudentDashboardPage = () => {
                 <p>Chúc bạn một ngày học tập hiệu quả.</p>
             </div>
 
-            {/* --- 3. HIỂN THỊ THỐNG KÊ TỪ API --- */}
+            {/* --- 3. HIỂN THỊ THỐNG KÊ (ĐÃ THÊM Ô 'CHƯA LÀM') --- */}
             <div className={styles.statsGrid}>
+                {/* Ô 1: Đã làm */}
                 <div className={styles.card}>
                     <p>Bài thi đã làm</p>
                     <h3>{dashboardData.completedCount}</h3>
                 </div>
+
+                {/* Ô 2: Chưa làm (MỚI) - Hiển thị màu đỏ để gây chú ý */}
+                <div className={styles.card}>
+                    <p>Bài thi đã mở(chưa làm)</p>
+                    <h3 style={{ color: '#dc3545' }}>{dashboardData.notAttemptedCount}</h3>
+                </div>
+
+                {/* Ô 3: Sắp tới */}
                 <div className={styles.card}>
                     <p>Bài thi sắp tới</p>
                     <h3>{dashboardData.upcomingCount}</h3>
                 </div>
+
+                {/* Ô 4: Điểm TB */}
                 <div className={styles.card}>
                     <p>Điểm trung bình</p>
                     <h3>{dashboardData.averageScore ? Number(dashboardData.averageScore).toFixed(1) : '--'}</h3>
@@ -113,29 +124,27 @@ const StudentDashboardPage = () => {
                     <p style={{ textAlign: 'center', color: '#999' }}>Đang tải dữ liệu...</p>
                 ) : dashboardData.classes.length > 0 ? (
                     <>
-                        {/* Hiển thị dạng lưới các lớp học */}
                         <div className={styles.classesGrid}>
                             {dashboardData.classes
                                 .slice((currentPage - 1) * classesPerPage, currentPage * classesPerPage)
                                 .map(cls => (
-                            <div key={cls.id} className={styles.classCard}>
-                                <h3 className={styles.classTitle}>{cls.name}</h3>
-                                <p className={styles.classDesc}>{cls.description || "Không có"}</p>
-                                <div className={styles.classMeta}>
-                                    <span>Mã: {cls.code}</span>
-                                    <span>{formatDate(cls.created_at)}</span>
-                                </div>
-                                <button
-                                    className={styles.primaryBtn}
-                                    onClick={() => navigate(`/student/classes/${cls.id}/exams`)}
-                                >
-                                    Vào lớp
-                                </button>
-                            </div>
-                            ))}
+                                    <div key={cls.id} className={styles.classCard}>
+                                        <h3 className={styles.classTitle}>{cls.name}</h3>
+                                        <p className={styles.classDesc}>{cls.description || "Không có"}</p>
+                                        <div className={styles.classMeta}>
+                                            <span>Mã: {cls.code}</span>
+                                            <span>{formatDate(cls.created_at)}</span>
+                                        </div>
+                                        <button
+                                            className={styles.primaryBtn}
+                                            onClick={() => navigate(`/student/classes/${cls.id}/exams`)}
+                                        >
+                                            Vào lớp
+                                        </button>
+                                    </div>
+                                ))}
                         </div>
-                        
-                        {/* Pagination */}
+
                         {dashboardData.classes.length > classesPerPage && (
                             <Pagination
                                 currentPage={currentPage}
@@ -147,7 +156,6 @@ const StudentDashboardPage = () => {
                         )}
                     </>
                 ) : (
-                    // Empty State
                     <div className={styles.emptyState}>
                         <p>Bạn chưa tham gia lớp học nào.</p>
                         <button
