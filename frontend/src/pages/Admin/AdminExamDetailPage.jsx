@@ -21,7 +21,14 @@ const AdminExamDetailPage = () => {
                 setLoading(false);
             }
         };
+        setLoading(true);
         fetchDetail();
+        const intervalId = setInterval(() => {
+            fetchDetail(true);
+        }, 5000);
+
+        return () => clearInterval(intervalId);
+
     }, [id]);
 
     // Helpers
