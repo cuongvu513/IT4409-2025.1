@@ -23,14 +23,11 @@ const studentService = {
 
     // --- ENDPOINT 10 (HỦY YÊU CẦU) ---
     cancelEnrollment(classId) {
-        // Lưu ý: Theo tài liệu bạn đưa là POST
         return axiosClient.post(`/api/student/classes/${classId}/cancel-enrollment`);
     },
 
     // Endpoint 4: Get Exams
     getExamsByClass(classId) {
-        // Lưu ý: Đổi thành .post nếu backend bắt buộc POST như tài liệu, 
-        // còn chuẩn REST là GET
         return axiosClient.get(`/api/student/exams/classes/${classId}`);
     },
 
