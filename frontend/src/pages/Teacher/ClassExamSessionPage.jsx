@@ -23,7 +23,7 @@ const ClassExamSessionPage = () => {
             const [studentsRes, progressRes, flagsRes] = await Promise.all([
             teacherService.getActiveStudents(classId),
             teacherService.getExamProgress(classId, examInstanceId),
-            teacherService.getClassFlags(classId),
+            teacherService.getClassFlags(examInstanceId),
             ]);
 
             setActiveStudents(studentsRes.data);
@@ -182,20 +182,26 @@ const ClassExamSessionPage = () => {
                     <ProgressCircle
                     title="Chưa bắt đầu"
                     value={progress.not_started.length}
-                    total={activeStudents.length}
+                    total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
                     color="#9ca3af"
                     />
                     <ProgressCircle
                     title="Đang làm"
                     value={progress.in_progress.length}
-                    total={activeStudents.length}
+                    total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
                     color="#f59e0b"
                     />
                     <ProgressCircle
                     title="Đã nộp"
                     value={progress.finished.length}
-                    total={activeStudents.length}
+                    total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
                     color="#10b981"
+                    />
+                    <ProgressCircle
+                    title="Đã khóa"
+                    value={progress.locked?.length || 0}
+                    total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
+                    color="#ef4444"
                     />
                 </div>
             </section>

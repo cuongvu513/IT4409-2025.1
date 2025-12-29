@@ -42,8 +42,8 @@ module.exports = async function examSessionMiddleware(req, res, next) {
       throw err;
     }
     if (session.ends_at && now > session.ends_at) {
-      await prisma.exam_session.update({ where: { id: sessionId }, data: { state: "expired" } });
-      const err = new Error("Phiên làm bài đã hết hạn");
+      await prisma.exam_session.update({ where: { id: sessionId }, data: { state: "submitted" } });
+      const err = new Error("Phiên làm bài đã hết hạn và được tự động nộp");
       err.status = 400;
       throw err;
     }

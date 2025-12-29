@@ -258,11 +258,18 @@ function initExamTimerSocket(io) {
                 ends_at: updatedSession.ends_at
               });
 
-              // Nếu hết thời gian, thông báo và dừng timer
+              // Nếu hết thời gian, tự động submit và thông báo
               if (remainingTime === 0) {
+                // Tự động chuyển state sang submitted
+                await prisma.exam_session.update({
+                  where: { id: updatedSession.id },
+                  data: { state: "submitted" }
+                });
+                
                 socket.emit("time-expired", {
                   examInstanceId,
-                  examSessionId: updatedSession.id
+                  examSessionId: updatedSession.id,
+                  message: "Thời gian làm bài đã hết, bài thi được tự động nộp"
                 });
                 
                 clearInterval(intervalId);

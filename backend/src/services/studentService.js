@@ -5,7 +5,7 @@ module.exports = {
     // Tham gia lớp học
     async joinClass(studentId, classCode, note) {
         const classInfo = await prisma.Renamedclass.findFirst({
-            where: { code: classCode },
+            where: { code: classCode, is_deleted: false },
         });
         if (!classInfo) {
             throw new Error("Lớp học không tồn tại");
@@ -37,7 +37,13 @@ module.exports = {
             throw err;
         }
         const enrollments = await prisma.enrollment_request.findMany({
-            where: { student_id: studentId, status: status },
+            where: { 
+                student_id: studentId, 
+                status: status,
+                Renamedclass: {
+                    is_deleted: false
+                }
+            },
             include: { Renamedclass: true },
         });
         const classes = enrollments.map((enrollment) => enrollment.Renamedclass);
@@ -63,10 +69,11 @@ module.exports = {
         }   
         const exams = await prisma.exam_instance.findMany({
             where: { 
-
+                is_deleted: false,
                 published: true,
                 exam_template: {
                     class_id: classId,
+                    is_deleted: false
                 },
             },
             select: {
@@ -191,7 +198,7 @@ module.exports = {
                     // questions: existingQuestions,
                 };
             }
-            const blockedStates = ["submitted", "expired", "locked"];
+            const blockedStates = ["submitted", "locked"];
             if (blockedStates.includes(existingSession.state)) {
                 const err = new Error("Phiên làm bài đã kết thúc hoặc bị khóa");
                 err.status = 400;
@@ -304,12 +311,12 @@ module.exports = {
         }
         const now = new Date();
         if (session.ends_at && now > session.ends_at) {
-            // tự động chuyển sang expired
+            // tự động chuyển sang submitted
             await prisma.exam_session.update({
                 where: { id: sessionId },
-                data: { state: "expired" },
+                data: { state: "submitted" },
             });
-            const err = new Error("Phiên làm bài đã hết hạn");
+            const err = new Error("Phiên làm bài đã hết hạn và được tự động nộp");
             err.status = 400;
             throw err;
         }
@@ -364,8 +371,8 @@ module.exports = {
         }
         const now = new Date();
         if (session.ends_at && now > session.ends_at) {
-            await prisma.exam_session.update({ where: { id: sessionId }, data: { state: "expired" } });
-            const err = new Error("Phiên làm bài đã hết hạn");
+            await prisma.exam_session.update({ where: { id: sessionId }, data: { state: "submitted" } });
+            const err = new Error("Phiên làm bài đã hết hạn và được tự động nộp");
             err.status = 400;
             throw err;
         }
@@ -637,24 +644,37 @@ module.exports = {
             throw err;
         }
 
-        // 2️ Lấy danh sách lớp đã tham gia
+        // 2️ Lấy danh sách lớp đã tham gia (không bao gồm lớp đã xóa mềm)
         const classes = await prisma.enrollment_request.findMany({
-            where: { student_id: studentId, status: "approved" },
+            where: { 
+                student_id: studentId, 
+                status: "approved",
+                Renamedclass: {
+                    is_deleted: false
+                }
+            },
             include: { Renamedclass: true },
         });
 
-        const classList = classes.map(e => e.Renamedclass);
+        const classList = classes.map(e => e.Renamedclass).filter(Boolean);
         const classIds = classList.map(c => c.id);
 
         const now = new Date();
 
-        // 3️ Lấy submission đã hoàn thành
+        // 3️ Lấy submission đã hoàn thành (không tính từ lớp/kỳ thi đã xóa mềm)
         const submissions = await prisma.submission.findMany({
             where: {
                 exam_session: {
                     user_id: studentId,
                     exam_instance: {
+                        is_deleted: false,
                         published: true,
+                        exam_template: {
+                            is_deleted: false,
+                            Renamedclass: {
+                                is_deleted: false
+                            }
+                        }
                     },
                 },
                 graded_at: { not: null },
@@ -676,32 +696,42 @@ module.exports = {
         }
         avgScore = Number(avgScore.toFixed(2));
 
-        // 4️ Số kỳ thi sắp tới
+        // 4️⃣ Số kỳ thi sắp tới (không tính đã xóa)
         const upcomingCount = await prisma.exam_instance.count({
             where: {
+                is_deleted: false,
                 published: true,
                 starts_at: { gt: now },
                 exam_template: {
                     class_id: { in: classIds },
+                    is_deleted: false
                 },
             },
         });
 
-        // 5️ Số kỳ thi đã hoàn thành
+        // 5️ Số kỳ thi đã hoàn thành (không tính từ lớp/kỳ thi đã xóa)
         const completedCount = await prisma.submission.count({
             where: {
                 exam_session: {
                     user_id: studentId,
                     exam_instance: {
+                        is_deleted: false,
                         published: true,
+                        exam_template: {
+                            is_deleted: false,
+                            Renamedclass: {
+                                is_deleted: false
+                            }
+                        }
                     },
                 },
             },
         });
 
-        // 6️ bài thi đã mở nhưng chưa thi
+        // 6️⃣ bài thi đã mở nhưng chưa thi (không tính đã xóa)
         const notAttemptedExams = await prisma.exam_instance.findMany({
             where: {
+                is_deleted: false,
                 published: true,
                 starts_at: { lte: now },
                 ends_at: { gt: now },
@@ -709,6 +739,7 @@ module.exports = {
                     class_id: {
                         in: classList.map(c => c.id),
                     },
+                    is_deleted: false
                 },
                 exam_session: {
                     none: {
