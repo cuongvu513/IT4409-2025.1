@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import styles from './ClassDetailPage.module.scss';
 import ExamInstanceForm from '../../components/ExamInstanceForm/ExamInstanceForm';
+import ExamTemplateForm from '../../components/ExamTemplateForm/ExamTemplateForm';
 
 
 const ClassDetailPage = () => {
@@ -30,6 +31,10 @@ const ClassDetailPage = () => {
 
     const [templatesLoading, setTemplatesLoading] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
+
+    // show inline create form inside templates modal
+    const [showCreateTemplateForm, setShowCreateTemplateForm] = useState(false);
+
     // open instance form modal
     const [showInstanceForm, setShowInstanceForm] = useState(false);
 
@@ -59,6 +64,7 @@ const ClassDetailPage = () => {
 
     const handleSelectTemplate = (template) => {
         setShowTemplatesModal(false);
+        setShowCreateTemplateForm(false);
 
         if (templateAction === 'create') {
             setSelectedTemplate(template);
@@ -68,6 +74,17 @@ const ClassDetailPage = () => {
         if (templateAction === 'view') {
             navigate(`/teacher/exam-templates/${template.id}`);
         }
+    };
+
+    // Called when creating a template inside the templates modal
+    const handleTemplateCreatedInModal = (newTemplate) => {
+        if (!newTemplate) return;
+        // add to list and immediately open instance creation with this template
+        setTemplates(prev => [newTemplate, ...prev]);
+        setShowTemplatesModal(false);
+        setShowCreateTemplateForm(false);
+        setSelectedTemplate(newTemplate);
+        setShowInstanceForm(true);
     };
 
     const handleInstanceCreated = (newInstance) => {
@@ -263,11 +280,18 @@ const ClassDetailPage = () => {
                         <div className={`${styles.modalContent} ${styles.wide}`} onClick={(e) => e.stopPropagation()}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h3 style={{ margin: 0 }}>Chọn Template để tạo/xem Đề Thi</h3>
-                                <button onClick={() => setShowTemplatesModal(false)} aria-label="Đóng">&times;</button>
+                                <div>
+                                    <button className={styles.actionBtn} onClick={() => setShowCreateTemplateForm(true)} style={{ marginRight: 8 }}>Tạo mới</button>
+                                    <button onClick={() => { setShowTemplatesModal(false); setShowCreateTemplateForm(false); }} aria-label="Đóng">&times;</button>
+                                </div>
                             </div>
 
                             <div style={{ marginTop: 12 }}>
-                                {templatesLoading ? (
+                                {showCreateTemplateForm ? (
+                                    <div>
+                                        <ExamTemplateForm classId={classInfo.id} onCreated={handleTemplateCreatedInModal} onClose={() => setShowCreateTemplateForm(false)} />
+                                    </div>
+                                ) : templatesLoading ? (
                                     <p>Đang tải templates...</p>
                                 ) : templates.length === 0 ? (
                                     <p>Không có template nào cho lớp này.</p>
