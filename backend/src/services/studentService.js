@@ -703,6 +703,8 @@ module.exports = {
         const notAttemptedExams = await prisma.exam_instance.findMany({
             where: {
                 published: true,
+                starts_at: { lte: now },
+                ends_at: { gt: now },
                 exam_template: {
                     class_id: {
                         in: classList.map(c => c.id),
@@ -720,7 +722,6 @@ module.exports = {
                 ends_at: true,
                 exam_template: {
                     select: {
-                        id: true,
                         title: true,
                         duration_seconds: true,
                         class_id: true,
@@ -738,10 +739,7 @@ module.exports = {
             class_id: e.exam_template.class_id,
         }));
 
-
         const notAttemptedCount = notAttempted.length;
-
-
 
         return {
             classes: classList,
