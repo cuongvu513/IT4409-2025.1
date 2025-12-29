@@ -5,10 +5,12 @@ import { AuthContext } from '../../context/AuthContext';
 import studentService from '../../services/studentService';
 import Pagination from '../../components/Pagination';
 import styles from './StudentDashboardPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const StudentDashboardPage = () => {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
+    const { showConfirm, showAlert } = useModal();
 
     // --- STATE DỮ LIỆU DASHBOARD ---
     const [dashboardData, setDashboardData] = useState({
@@ -33,7 +35,7 @@ const StudentDashboardPage = () => {
     // --- 1. LOAD DATA TỪ API ---
     const fetchDashboard = async () => {
         try {
-            setLoading(true);
+            // setLoading(true);
             const res = await studentService.getDashboard();
             setDashboardData(res.data);
         } catch (error) {
@@ -44,7 +46,10 @@ const StudentDashboardPage = () => {
     };
 
     useEffect(() => {
+        setLoading(true);
         fetchDashboard();
+        const intervalId = setInterval(fetchDashboard, 5000);
+        return () => clearInterval(intervalId);
     }, []);
 
     // --- XỬ LÝ NHẬP LIỆU ---
@@ -59,12 +64,12 @@ const StudentDashboardPage = () => {
 
         try {
             const res = await studentService.enrollClass(formData);
-            alert(res.data.message || "Đã gửi yêu cầu tham gia thành công!");
+            showAlert(res.data.message || "Đã gửi yêu cầu tham gia thành công!");
             setFormData({ classCode: '', note: '' });
             setShowModal(false);
             fetchDashboard();
         } catch (error) {
-            alert(error.response?.data?.error || "Tham gia thất bại. Vui lòng kiểm tra lại mã lớp!");
+            showAlert(error.response?.data?.error || "Tham gia thất bại. Vui lòng kiểm tra lại mã lớp!");
         } finally {
             setIsSubmitting(false);
         }
