@@ -174,22 +174,99 @@
     display: inline-block;
 }
 
-.section {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    min-height: 200px;
-
-    h3 {
-        margin-top: 0;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 15px;
-    }
-}
 
 .emptyState {
     color: #999;
     text-align: center;
     padding: 40px;
+}
+
+.section {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-top: 30px;
+
+    h3 {
+        margin-top: 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+        color: #333;
+    }
+}
+
+/* ACTIVITY LIST STYLES */
+.activityList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 400px;
+    /* Giới hạn chiều cao nếu danh sách dài */
+    overflow-y: auto;
+}
+
+.activityItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #eee;
+
+    &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+}
+
+.actIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.actContent {
+    flex: 1;
+}
+
+.actDesc {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.actMeta {
+    display: flex;
+    gap: 15px;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.actIP {
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #eee;
+    font-family: monospace;
+}
+
+.emptyState {
+    text-align: center;
+    color: #999;
+    padding: 30px;
+    font-style: italic;
+}
+
+.loading {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+    font-size: 1.1rem;
 }

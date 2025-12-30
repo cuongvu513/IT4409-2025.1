@@ -4,8 +4,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import styles from './ClassExamSessionPage.module.scss';
 import ProgressCircle from '../../components/ProgressCircle';
+import { useModal } from '../../context/ModalContext';
+
 
 const ClassExamSessionPage = () => {
+    const { showConfirm, showAlert } = useModal();
     const { classId, examInstanceId } = useParams();
     const navigate = useNavigate();
 
@@ -21,9 +24,9 @@ const ClassExamSessionPage = () => {
     const fetchAll = async () => {
         try {
             const [studentsRes, progressRes, flagsRes] = await Promise.all([
-            teacherService.getActiveStudents(classId),
-            teacherService.getExamProgress(classId, examInstanceId),
-            teacherService.getClassFlags(examInstanceId),
+                teacherService.getActiveStudents(classId),
+                teacherService.getExamProgress(classId, examInstanceId),
+                teacherService.getClassFlags(examInstanceId),
             ]);
 
             setActiveStudents(studentsRes.data);
@@ -35,10 +38,10 @@ const ClassExamSessionPage = () => {
             const status = err.response?.status;
 
             if (status === 403 || status === 404 || status === 500) {
-            alert('Không thể truy cập phiên thi này. Bạn sẽ được quay lại.');
-            navigate(`/teacher/classes/${classId}/exams`);
+                alert('Không thể truy cập phiên thi này. Bạn sẽ được quay lại.');
+                navigate(`/teacher/classes/${classId}/exams`);
             } else {
-            alert('Lỗi không xác định');
+                alert('Lỗi không xác định');
             }
         } finally {
             setLoading(false);
@@ -72,50 +75,78 @@ const ClassExamSessionPage = () => {
             setProcessing(true);
 
             await teacherService.addAccommodation(examInstanceId, {
-            student_id: selectedStudent,
-            add_seconds: addSeconds,
-            notes: note,
+                student_id: selectedStudent,
+                add_seconds: addSeconds,
+                notes: note,
             });
 
-            alert('Cộng giờ thành công');
+            showAlert('Thành công', 'Cộng giờ thành công');
             setNote('');
         } catch (err) {
-            alert(err.response?.data?.error || 'Không thể cộng giờ');
+            showAlert('Thất bại', err.response?.data?.error || 'Không thể cộng giờ');
         } finally {
             setProcessing(false);
         }
     };
 
     //API 36+37
-    const handleLockSession = async (sessionId) => {
-        if (!window.confirm('Bạn chắc chắn muốn khóa phiên thi?')) return;
+    const handleLockSession = (sessionId) => {
+        // 1. Thay window.confirm bằng showConfirm
+        showConfirm(
+            "Khóa phiên thi", // Tiêu đề
+            "Bạn có chắc chắn muốn khóa phiên thi này không? Hành động này sẽ ngăn học sinh tiếp tục làm bài.", // Nội dung
+            async () => {
+                // Callback này chỉ chạy khi người dùng bấm "Đồng ý"
+                try {
+                    setProcessing(true);
 
-        try {
-            setProcessing(true);
-            await teacherService.lockSession(sessionId, 'Khóa thủ công');
-            alert('Đã khóa phiên thi');
-            await fetchAll();
-        } catch (err) {
-            alert(err.response?.data?.error || 'Không thể khóa');
-        } finally {
-            setProcessing(false);
-        }
+                    // Gọi API
+                    await teacherService.lockSession(sessionId, 'Khóa thủ công');
+
+                    // 2. Thay alert thành công bằng showAlert
+                    showAlert('Thành công', 'Đã khóa phiên thi thành công.');
+
+                    // Load lại dữ liệu
+                    await fetchAll();
+                } catch (err) {
+                    // 3. Thay alert lỗi bằng showAlert
+                    console.error(err);
+                    showAlert('Thất bại', err.response?.data?.error || 'Không thể khóa phiên thi');
+                } finally {
+                    setProcessing(false);
+                }
+            }
+        );
     };
 
-    const handleUnlockSession = async (sessionId) => {
-        if (!window.confirm('Bạn chắc chắn muốn mở khóa phiên thi?')) return;
+    const handleUnlockSession = (sessionId) => {
+        showConfirm(
+            "Mở khóa phiên thi", // Tiêu đề
+            "Bạn có chắc chắn muốn mở khóa phiên thi này? Học sinh sẽ có thể tiếp tục làm bài.", // Nội dung
+            async () => {
+                // Callback này chỉ chạy khi bấm "Đồng ý"
+                try {
+                    setProcessing(true);
 
-        try {
-            setProcessing(true);
-            await teacherService.unlockSession(sessionId, 'Mở lại');
-            alert('Đã mở khóa phiên thi');
-            await fetchAll();
-        } catch (err) {
-            alert(err.response?.data?.error || 'Không thể mở khóa');
-        } finally {
-            setProcessing(false);
-        }
+                    // Gọi API mở khóa
+                    await teacherService.unlockSession(sessionId, 'Mở lại');
+
+                    // 2. Thay alert thành công bằng showAlert
+                    showAlert('Thành công', 'Đã mở khóa phiên thi thành công.');
+
+                    // Load lại dữ liệu
+                    await fetchAll();
+                } catch (err) {
+                    console.error(err);
+                    // 3. Thay alert lỗi bằng showAlert
+                    showAlert('Thất bại', err.response?.data?.error || 'Không thể mở khóa phiên thi');
+                } finally {
+                    setProcessing(false);
+                }
+            }
+        );
     };
+
 
     // Helper to extract filename from content-disposition header
     const getFilenameFromDisp = (disp) => {
@@ -162,171 +193,171 @@ const ClassExamSessionPage = () => {
 
     return (
         <div className={styles.contentBody}>
-        <div className={styles.header}>
-            <h2>Quản lý phiên thi</h2>
-            <div className={styles.headerActions}>
-                <button className={styles.exportBtn} onClick={handleExportResults} aria-label="Xuất kết quả CSV">⬇️ Xuất kết quả (CSV)</button>
-                <button className={styles.exportBtn} onClick={handleExportLogs} aria-label="Xuất nhật ký CSV">⬇️ Xuất nhật ký (CSV)</button>
-                <button className={styles.backButton} onClick={() => navigate(-1)} aria-label="Quay lại">← Quay lại</button>
-            </div>
-        </div>
-
-        {loading ? (
-            <p>Đang tải dữ liệu...</p>
-        ) : (
-            <>
-            <section className={styles.section}>
-                <h3>📊 Tiến độ làm bài</h3>
-
-                <div className={styles.circleGrid}>
-                    <ProgressCircle
-                    title="Chưa bắt đầu"
-                    value={progress.not_started.length}
-                    total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
-                    color="#9ca3af"
-                    />
-                    <ProgressCircle
-                    title="Đang làm"
-                    value={progress.in_progress.length}
-                    total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
-                    color="#f59e0b"
-                    />
-                    <ProgressCircle
-                    title="Đã nộp"
-                    value={progress.finished.length}
-                    total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
-                    color="#10b981"
-                    />
-                    <ProgressCircle
-                    title="Đã khóa"
-                    value={progress.locked?.length || 0}
-                    total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
-                    color="#ef4444"
-                    />
+            <div className={styles.header}>
+                <h2>Quản lý phiên thi</h2>
+                <div className={styles.headerActions}>
+                    <button className={styles.exportBtn} onClick={handleExportResults} aria-label="Xuất kết quả CSV">⬇️ Xuất kết quả (CSV)</button>
+                    <button className={styles.exportBtn} onClick={handleExportLogs} aria-label="Xuất nhật ký CSV">⬇️ Xuất nhật ký (CSV)</button>
+                    <button className={styles.backButton} onClick={() => navigate(-1)} aria-label="Quay lại">← Quay lại</button>
                 </div>
-            </section>
+            </div>
 
-            <section className={styles.section}>
-                <h3>👨‍🎓 Học sinh đang thi</h3>
+            {loading ? (
+                <p>Đang tải dữ liệu...</p>
+            ) : (
+                <>
+                    <section className={styles.section}>
+                        <h3>📊 Tiến độ làm bài</h3>
 
-                {activeStudents.length === 0 ? (
-                    <p>Không có học sinh nào đang thi</p>
-                ) : (
-                    <div className={styles.studentList}>
-                    {activeStudents.map((s) => {
-                        const session = sessionOptions.find(
-                        (x) => x.name === s.name
-                        );
-
-                        return (
-                        <div key={s.id} className={styles.studentCard}>
-                            <div className={styles.studentInfo}>
-                            <strong>{s.name}</strong>
-                            <span>Session: {session?.sessionId || '—'}</span>
-                            </div>
-
-                            <div className={styles.studentActions}>
-                            <button
-                                onClick={() => {
-                                setSelectedStudent(s.id);
-                                setAddSeconds(300);
-                                }}
-                            >
-                                ➕ Cộng giờ
-                            </button>
-
-                            {session && (
-                                <>
-                                <button
-                                    className={styles.lockBtn}
-                                    onClick={() =>
-                                    handleLockSession(session.sessionId)
-                                    }
-                                >
-                                    🔒 Khóa
-                                </button>
-                                </>
-                            )}
-
-                            {selectedStudent && (
-                                <section className={styles.section}>
-                                    <h3>⏱ Cộng thêm thời gian</h3>
-
-                                    <div className={styles.formRow}>
-                                    <input
-                                        type="number"
-                                        min={60}
-                                        step={60}
-                                        value={addSeconds}
-                                        onChange={(e) => setAddSeconds(Number(e.target.value))}
-                                    />
-
-                                    <input
-                                        type="text"
-                                        placeholder="Ghi chú"
-                                        value={note}
-                                        onChange={(e) => setNote(e.target.value)}
-                                    />
-
-                                    <button onClick={handleAddTime} disabled={processing}>
-                                        {processing ? '⏳' : '✔ Xác nhận'}
-                                    </button>
-
-                                    <button
-                                        className={styles.cancelBtn}
-                                        onClick={() => setSelectedStudent('')}
-                                    >
-                                        ✖ Hủy
-                                    </button>
-                                    </div>
-                            </section>
-                                )}
-                            </div>
+                        <div className={styles.circleGrid}>
+                            <ProgressCircle
+                                title="Chưa bắt đầu"
+                                value={progress.not_started.length}
+                                total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
+                                color="#9ca3af"
+                            />
+                            <ProgressCircle
+                                title="Đang làm"
+                                value={progress.in_progress.length}
+                                total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
+                                color="#f59e0b"
+                            />
+                            <ProgressCircle
+                                title="Đã nộp"
+                                value={progress.finished.length}
+                                total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
+                                color="#10b981"
+                            />
+                            <ProgressCircle
+                                title="Đã khóa"
+                                value={progress.locked?.length || 0}
+                                total={progress.not_started.length + progress.in_progress.length + progress.finished.length + (progress.locked?.length || 0)}
+                                color="#ef4444"
+                            />
                         </div>
-                        );
-                    })}
-                    </div>
-                )}
-            </section>
-            <section className={styles.section}>
-                <h3>🚩 Phiên thi có dấu hiệu bất thường</h3>
-                {flags.length > 0 && (
-                <section className={styles.section}>
-                    <h3>🚨 Vi phạm</h3>
+                    </section>
 
-                    <table>
-                    <thead>
-                        <tr>
-                        <th>Học sinh</th>
-                        <th>Loại</th>
-                        <th>Thời gian</th>
-                        <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {flags.map((f) => (
-                        <tr key={f.id}>
-                            <td>{f.student?.name}</td>
-                            <td>{f.flag_type}</td>
-                            <td>{new Date(f.created_at).toLocaleString()}</td>
-                            <td>
-                            <button
-                                onClick={() => handleUnlockSession(f.session_id)}
-                                disabled={processing}
-                            >
-                                🔓 Mở khóa
-                            </button>
-                            </td>
-                        </tr>
-                        ))}
-                    </tbody>
-                    </table>
-                </section>
-                )}
-                {flags.length === 0 && <p>Không có phiên thi nào bị đánh dấu.</p>}
-            </section>
-            </>
-        )}
+                    <section className={styles.section}>
+                        <h3>👨‍🎓 Học sinh đang thi</h3>
+
+                        {activeStudents.length === 0 ? (
+                            <p>Không có học sinh nào đang thi</p>
+                        ) : (
+                            <div className={styles.studentList}>
+                                {activeStudents.map((s) => {
+                                    const session = sessionOptions.find(
+                                        (x) => x.name === s.name
+                                    );
+
+                                    return (
+                                        <div key={s.id} className={styles.studentCard}>
+                                            <div className={styles.studentInfo}>
+                                                <strong>{s.name}</strong>
+                                                <span>Session: {session?.sessionId || '—'}</span>
+                                            </div>
+
+                                            <div className={styles.studentActions}>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedStudent(s.id);
+                                                        setAddSeconds(300);
+                                                    }}
+                                                >
+                                                    ➕ Cộng giờ
+                                                </button>
+
+                                                {session && (
+                                                    <>
+                                                        <button
+                                                            className={styles.lockBtn}
+                                                            onClick={() =>
+                                                                handleLockSession(session.sessionId)
+                                                            }
+                                                        >
+                                                            🔒 Khóa
+                                                        </button>
+                                                    </>
+                                                )}
+
+                                                {selectedStudent && (
+                                                    <section className={styles.section}>
+                                                        <h3>⏱ Cộng thêm thời gian</h3>
+
+                                                        <div className={styles.formRow}>
+                                                            <input
+                                                                type="number"
+                                                                min={60}
+                                                                step={60}
+                                                                value={addSeconds}
+                                                                onChange={(e) => setAddSeconds(Number(e.target.value))}
+                                                            />
+
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Ghi chú"
+                                                                value={note}
+                                                                onChange={(e) => setNote(e.target.value)}
+                                                            />
+
+                                                            <button onClick={handleAddTime} disabled={processing}>
+                                                                {processing ? '⏳' : '✔ Xác nhận'}
+                                                            </button>
+
+                                                            <button
+                                                                className={styles.cancelBtn}
+                                                                onClick={() => setSelectedStudent('')}
+                                                            >
+                                                                ✖ Hủy
+                                                            </button>
+                                                        </div>
+                                                    </section>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </section>
+                    <section className={styles.section}>
+                        <h3>🚩 Phiên thi có dấu hiệu bất thường</h3>
+                        {flags.length > 0 && (
+                            <section className={styles.section}>
+                                <h3>🚨 Vi phạm</h3>
+
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Học sinh</th>
+                                            <th>Loại</th>
+                                            <th>Thời gian</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {flags.map((f) => (
+                                            <tr key={f.id}>
+                                                <td>{f.student?.name}</td>
+                                                <td>{f.flag_type}</td>
+                                                <td>{new Date(f.created_at).toLocaleString()}</td>
+                                                <td>
+                                                    <button
+                                                        onClick={() => handleUnlockSession(f.session_id)}
+                                                        disabled={processing}
+                                                    >
+                                                        🔓 Mở khóa
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </section>
+                        )}
+                        {flags.length === 0 && <p>Không có phiên thi nào bị đánh dấu.</p>}
+                    </section>
+                </>
+            )}
         </div>
     );
 };

@@ -103,10 +103,7 @@ const ExamTemplateForm = ({ classId, onCreated, onClose }) => {
       </div>
 
       <div className={styles.row}>
-        <label>
-          <input type="checkbox" checked={shuffleQuestions} onChange={(e) => setShuffleQuestions(e.target.checked)} />
-          {' '}Trộn câu hỏi
-        </label>
+
       </div>
 
       <div className={styles.questionSection}>

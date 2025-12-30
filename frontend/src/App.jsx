@@ -1,6 +1,8 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ModalProvider } from './context/ModalContext';
+import GlobalModal from './components/GlobalModal';
 
 // Layouts
 import StudentLayout from './layouts/StudentLayout';
@@ -47,46 +49,49 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/" element={<OutsidePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <ModalProvider>
+          <GlobalModal />
+          <Routes>
+            <Route path="/" element={<OutsidePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
 
-          {/* Đường dẫn cho Học sinh */}
-          <Route path="/student" element={<StudentLayout />}>
-            <Route path="dashboard" element={<StudentDashboardPage />} />
-            <Route path="classes" element={<StudentClassesPage />} />
-            <Route path="classes/:classId/exams" element={<StudentClassExamsPage />} />
-            <Route path="exam/take/:examId" element={<StudentTakeExamPage />} />
-          </Route>
+            {/* Đường dẫn cho Học sinh */}
+            <Route path="/student" element={<StudentLayout />}>
+              <Route path="dashboard" element={<StudentDashboardPage />} />
+              <Route path="classes" element={<StudentClassesPage />} />
+              <Route path="classes/:classId/exams" element={<StudentClassExamsPage />} />
+              <Route path="exam/take/:examId" element={<StudentTakeExamPage />} />
+            </Route>
 
 
 
-          {/* Đường dẫn cho Giáo viên */}
-          <Route path="/teacher" element={<TeacherLayout />}>
-            <Route path="dashboard" element={<TeacherDashboardPage />} />
-            <Route path="classes" element={<TeacherClassesPage />} />
-            <Route path="classes/:id" element={<ClassDetailPage />} />
-            <Route path="questions" element={<TeacherQuestionsPage />} />
-            <Route path="exam-templates" element={<TeacherTemplatesPage />} />
-            <Route path="exam-templates/:templateId" element={<TeacherExamInstancesPage />} />
-            <Route path="classes/:classId/exams/:examInstanceId" element={<ClassExamSessionPage />} />
-          </Route>
+            {/* Đường dẫn cho Giáo viên */}
+            <Route path="/teacher" element={<TeacherLayout />}>
+              <Route path="dashboard" element={<TeacherDashboardPage />} />
+              <Route path="classes" element={<TeacherClassesPage />} />
+              <Route path="classes/:id" element={<ClassDetailPage />} />
+              <Route path="questions" element={<TeacherQuestionsPage />} />
+              <Route path="exam-templates" element={<TeacherTemplatesPage />} />
+              <Route path="exam-templates/:templateId" element={<TeacherExamInstancesPage />} />
+              <Route path="classes/:classId/exams/:examInstanceId" element={<ClassExamSessionPage />} />
+            </Route>
 
-          {/* --- NHÓM ROUTE ADMIN --- */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="users" element={<AdminUserPage />} />
-            <Route path="classes" element={<AdminClassPage />} />
-            <Route path="classes/:id" element={<AdminClassDetailPage />} />
-            <Route path="exams" element={<AdminExamPage />} />
-            <Route path="exams/:id" element={<AdminExamDetailPage />} />
-          </Route>
+            {/* --- NHÓM ROUTE ADMIN --- */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="dashboard" element={<AdminDashboardPage />} />
+              <Route path="users" element={<AdminUserPage />} />
+              <Route path="classes" element={<AdminClassPage />} />
+              <Route path="classes/:id" element={<AdminClassDetailPage />} />
+              <Route path="exams" element={<AdminExamPage />} />
+              <Route path="exams/:id" element={<AdminExamDetailPage />} />
+            </Route>
 
 
-        </Routes>
+          </Routes>
+        </ModalProvider>
       </AuthProvider>
     </BrowserRouter>
   );
