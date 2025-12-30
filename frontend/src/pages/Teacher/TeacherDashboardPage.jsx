@@ -3,8 +3,11 @@ import React, { useState, useEffect } from 'react';
 import teacherService from '../../services/teacherService';
 import Pagination from '../../components/Pagination';
 import styles from './TeacherDashboardPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const TeacherDashboardPage = () => {
+
+    const { showConfirm, showAlert } = useModal();
 
     // --- STATE DỮ LIỆU DASHBOARD ---
     const [stats, setStats] = useState({
@@ -16,7 +19,7 @@ const TeacherDashboardPage = () => {
     });
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Pagination for activities
     const [currentPage, setCurrentPage] = useState(1);
     const activitiesPerPage = 5;
@@ -82,12 +85,12 @@ const TeacherDashboardPage = () => {
         setIsSubmitting(true);
         try {
             const res = await teacherService.createClass(formData);
-            alert(res.data.message || 'Tạo lớp thành công!');
+            showAlert(res.data.message || 'Tạo lớp thành công!');
 
             setFormData({ name: '', description: '' });
             setShowModal(false);
         } catch (error) {
-            alert(error.response?.data?.error || 'Tạo lớp thất bại!');
+            showAlert(error.response?.data?.error || 'Tạo lớp thất bại!');
         } finally {
             setIsSubmitting(false);
         }
@@ -149,24 +152,24 @@ const TeacherDashboardPage = () => {
                         activities
                             .slice((currentPage - 1) * activitiesPerPage, currentPage * activitiesPerPage)
                             .map((act) => {
-                            const config = getActivityConfig(act.type);
-                            return (
-                                <div key={act.id} className={styles.activityItem}>
-                                    <div className={styles.actIcon} style={{ backgroundColor: config.color }}>
-                                        <i className={`fa-solid ${config.icon}`}></i>
+                                const config = getActivityConfig(act.type);
+                                return (
+                                    <div key={act.id} className={styles.activityItem}>
+                                        <div className={styles.actIcon} style={{ backgroundColor: config.color }}>
+                                            <i className={`fa-solid ${config.icon}`}></i>
+                                        </div>
+                                        <div className={styles.actContent}>
+                                            <p className={styles.actDesc}>{act.description}</p>
+                                            <span className={styles.actTime}>{formatDate(act.timestamp)}</span>
+                                        </div>
                                     </div>
-                                    <div className={styles.actContent}>
-                                        <p className={styles.actDesc}>{act.description}</p>
-                                        <span className={styles.actTime}>{formatDate(act.timestamp)}</span>
-                                    </div>
-                                </div>
-                            );
-                        })
+                                );
+                            })
                     ) : (
                         <p className={styles.emptyText}>Chưa có hoạt động nào.</p>
                     )}
                 </div>
-                
+
                 {/* Pagination for activities */}
                 {activities.length > activitiesPerPage && (
                     <Pagination

@@ -4,14 +4,15 @@ import { Link } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import Pagination from '../../components/Pagination';
 import styles from './TeacherClassesPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const TeacherClassesPage = () => {
-    // KHÔNG CẦN AuthContext hay TopHeader nữa vì Layout đã lo
+    const { showConfirm, showAlert } = useModal();
 
     // --- STATE DỮ LIỆU ---
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const classesPerPage = 10;
@@ -50,26 +51,46 @@ const TeacherClassesPage = () => {
             const res = await teacherService.createClass(formData);
             const newClass = res.data.newClass;
             setClasses([newClass, ...classes]);
-            alert(res.data.message || "Tạo lớp thành công!");
+            showAlert(res.data.message || "Tạo lớp thành công!");
             setFormData({ name: '', description: '' });
             setShowModal(false);
         } catch (error) {
-            alert(error.response?.data?.error || "Tạo lớp thất bại!");
+            showAlert(error.response?.data?.error || "Tạo lớp thất bại!");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     // 4. XÓA LỚP
-    const handleDeleteClass = async (classId) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa lớp học này không?")) return;
-        try {
-            await teacherService.deleteClass(classId);
-            setClasses((prevClasses) => prevClasses.filter(cls => cls.id !== classId));
-            alert("Xóa lớp học thành công!");
-        } catch (error) {
-            alert(error.response?.data?.error || "Xóa lớp học thất bại");
-        }
+    const handleDeleteClass = (classId) => {
+        showConfirm(
+            "Xóa lớp học", // Tiêu đề
+            "Bạn có chắc chắn muốn xóa lớp học này không? Hành động này không thể hoàn tác.", // Nội dung
+            async () => {
+                // Callback này chạy khi bấm "Đồng ý"
+                try {
+                    await teacherService.deleteClass(classId);
+
+                    // Cập nhật UI
+                    setClasses((prevClasses) => prevClasses.filter(cls => cls.id !== classId));
+
+                    // Thông báo thành công
+                    showAlert("Thành công", "Xóa lớp học thành công!");
+                } catch (error) {
+                    const errorMsg = error.response?.data?.error || "Xóa lớp học thất bại";
+
+                    // Xử lý lỗi ràng buộc dữ liệu (Nếu lớp đã có học sinh hoặc bài thi)
+                    if (errorMsg.includes("Foreign key") || errorMsg.includes("constraint")) {
+                        showAlert(
+                            "Không thể xóa",
+                            "Lớp học này đang có học sinh hoặc bài kiểm tra liên quan. Vui lòng xóa dữ liệu liên quan trước!"
+                        );
+                    } else {
+                        showAlert("Lỗi", errorMsg);
+                    }
+                }
+            }
+        );
     };
 
     const formatDate = (dateString) => {
@@ -106,39 +127,39 @@ const TeacherClassesPage = () => {
                             {classes
                                 .slice((currentPage - 1) * classesPerPage, currentPage * classesPerPage)
                                 .map((cls, index) => (
-                                <tr key={cls.id}>
-                                    <td data-label="STT">{(currentPage - 1) * classesPerPage + index + 1}</td>
-                                    <td data-label="Tên lớp" className={styles.className}>
-                                        <Link to={`/teacher/classes/${cls.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                            {cls.name}
-                                        </Link>
-                                    </td>
-                                    <td data-label="Mã lớp"><span className={styles.codeTag}>{cls.code}</span></td>
-                                    <td data-label="Mô tả">{cls.description}</td>
-                                    <td data-label="Ngày tạo">{formatDate(cls.created_at)}</td>
-                                    <td data-label="Hành động">
-                                        <div className={styles.actionButtons}>
-                                            <Link
-                                                to={`/teacher/classes/${cls.id}`}
-                                                className={styles.btnView}
-                                            >
-                                                Chi tiết
+                                    <tr key={cls.id}>
+                                        <td data-label="STT">{(currentPage - 1) * classesPerPage + index + 1}</td>
+                                        <td data-label="Tên lớp" className={styles.className}>
+                                            <Link to={`/teacher/classes/${cls.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                                {cls.name}
                                             </Link>
+                                        </td>
+                                        <td data-label="Mã lớp"><span className={styles.codeTag}>{cls.code}</span></td>
+                                        <td data-label="Mô tả">{cls.description}</td>
+                                        <td data-label="Ngày tạo">{formatDate(cls.created_at)}</td>
+                                        <td data-label="Hành động">
+                                            <div className={styles.actionButtons}>
+                                                <Link
+                                                    to={`/teacher/classes/${cls.id}`}
+                                                    className={styles.btnView}
+                                                >
+                                                    Chi tiết
+                                                </Link>
 
 
-                                            <button
-                                                className={styles.btnDelete}
-                                                onClick={() => handleDeleteClass(cls.id)}
-                                            >
-                                                Xóa
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                                <button
+                                                    className={styles.btnDelete}
+                                                    onClick={() => handleDeleteClass(cls.id)}
+                                                >
+                                                    Xóa
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
                         </tbody>
                     </table>
-                    
+
                     {/* Pagination */}
                     {classes.length > classesPerPage && (
                         <Pagination

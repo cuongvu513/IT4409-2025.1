@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import studentService from '../../services/studentService';
 import Pagination from '../../components/Pagination';
 import styles from './StudentClassesPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const StudentClassesPage = () => {
     const navigate = useNavigate();
+    const { showConfirm, showAlert } = useModal();
 
     // --- STATE ---
     const [classes, setClasses] = useState([]);
@@ -17,7 +19,7 @@ const StudentClassesPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ classCode: '', note: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const classesPerPage = 9; // 3x3 grid
@@ -51,61 +53,79 @@ const StudentClassesPage = () => {
         setIsSubmitting(true);
         try {
             const res = await studentService.enrollClass(formData);
-            alert(res.data.message || "Gửi yêu cầu thành công!");
 
-            // Reset và đóng modal
+            // Reset form và đóng modal nhập liệu trước
             setFormData({ classCode: '', note: '' });
             setShowModal(false);
 
-            // Logic chuyển tab hoặc reload
             if (status === 'pending') {
-                // Nếu đang ở tab chờ duyệt -> Reload để thấy lớp vừa xin
+                // TRƯỜNG HỢP 1: Đang ở tab chờ duyệt -> Chỉ cần báo thành công và reload
+                showAlert("Thành công", res.data.message || "Gửi yêu cầu thành công!");
                 fetchClasses();
             } else {
-                // Nếu đang ở tab đã tham gia -> Hỏi người dùng sang tab chờ
-                if (window.confirm("Yêu cầu đang chờ duyệt. Bạn có muốn sang danh sách chờ để xem không?")) {
-                    setStatus('pending');
-                }
+                // TRƯỜNG HỢP 2: Đang ở tab khác -> Dùng showConfirm để báo thành công KÈM hỏi chuyển tab
+                showConfirm(
+                    "Gửi yêu cầu thành công", // Tiêu đề
+                    "Yêu cầu của bạn đang chờ duyệt. Bạn có muốn chuyển sang danh sách chờ để xem không?", // Nội dung
+                    () => {
+                        // Callback khi bấm "Đồng ý"
+                        setStatus('pending');
+                    }
+                );
             }
         } catch (error) {
-            alert(error.response?.data?.error || "Tham gia thất bại. Vui lòng kiểm tra mã lớp!");
+            // Thay alert lỗi bằng showAlert
+            showAlert("Thất bại", error.response?.data?.error || "Tham gia thất bại. Vui lòng kiểm tra mã lớp!");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     // --- 3. XỬ LÝ RỜI LỚP (Endpoint 3) - Dành cho tab Approved ---
-    const handleLeaveClass = async (classId, className) => {
-        if (!window.confirm(`Bạn có chắc chắn muốn rời khỏi lớp "${className}" không? Mọi dữ liệu bài thi trong lớp này có thể bị mất.`)) {
-            return;
-        }
+    const handleLeaveClass = (classId, className) => {
+        showConfirm(
+            "Rời lớp học", // Tiêu đề Modal
+            `Bạn có chắc chắn muốn rời khỏi lớp "${className}" không? Mọi dữ liệu bài thi trong lớp này có thể bị mất.`, // Nội dung
+            async () => {
+                // Callback này chạy khi bấm "Đồng ý"
+                try {
+                    await studentService.leaveClass(classId);
 
-        try {
-            await studentService.leaveClass(classId);
-            alert("Đã rời lớp thành công!");
+                    // Thay alert thành công bằng showAlert
+                    showAlert("Thành công", "Đã rời lớp thành công!");
 
-            // Reload lại danh sách để đảm bảo đồng bộ với Server
-            fetchClasses();
-        } catch (error) {
-            alert(error.response?.data?.error || "Rời lớp thất bại.");
-        }
+                    // Reload lại danh sách
+                    fetchClasses();
+                } catch (error) {
+                    // Thay alert lỗi bằng showAlert
+                    showAlert("Thất bại", error.response?.data?.error || "Rời lớp thất bại.");
+                }
+            }
+        );
     };
 
     // --- 4. XỬ LÝ HỦY YÊU CẦU (Endpoint 10) - Dành cho tab Pending ---
-    const handleCancelRequest = async (classId, className) => {
-        if (!window.confirm(`Bạn muốn hủy yêu cầu tham gia lớp "${className}"?`)) {
-            return;
-        }
+    const handleCancelRequest = (classId, className) => {
+        showConfirm(
+            "Hủy yêu cầu", // Tiêu đề
+            `Bạn muốn hủy yêu cầu tham gia lớp "${className}"?`, // Nội dung
+            async () => {
+                // Callback này chạy khi bấm "Đồng ý"
+                try {
+                    // Gọi API Endpoint 10
+                    await studentService.cancelEnrollment(classId);
 
-        try {
-            await studentService.cancelEnrollment(classId);
-            alert("Đã hủy yêu cầu thành công!");
+                    // Thay alert thành công bằng showAlert
+                    showAlert("Thành công", "Đã hủy yêu cầu thành công!");
 
-            // Reload lại danh sách để Server cập nhật trạng thái
-            fetchClasses();
-        } catch (error) {
-            alert(error.response?.data?.error || "Hủy yêu cầu thất bại.");
-        }
+                    // Reload lại danh sách để Server cập nhật trạng thái
+                    fetchClasses();
+                } catch (error) {
+                    // Thay alert lỗi bằng showAlert
+                    showAlert("Thất bại", error.response?.data?.error || "Hủy yêu cầu thất bại.");
+                }
+            }
+        );
     };
 
     const handleInputChange = (e) => {
@@ -151,59 +171,59 @@ const StudentClassesPage = () => {
                         {classes.length > 0 ? classes
                             .slice((currentPage - 1) * classesPerPage, currentPage * classesPerPage)
                             .map(cls => (
-                        <div key={cls.id} className={styles.classCard}>
-                            <div className={styles.cardHeader}>
-                                <h3>{cls.name}</h3>
-                                <span className={styles.codeTag}>{cls.code}</span>
-                            </div>
-                            <p className={styles.desc}>{cls.description || "Chưa có mô tả"}</p>
-                            <div className={styles.cardFooter}>
-                                <span>GV ID: {cls.teacher_id?.substring(0, 8)}...</span>
-                                <span className={styles.date}>{formatDate(cls.created_at)}</span>
-                            </div>
+                                <div key={cls.id} className={styles.classCard}>
+                                    <div className={styles.cardHeader}>
+                                        <h3>{cls.name}</h3>
+                                        <span className={styles.codeTag}>{cls.code}</span>
+                                    </div>
+                                    <p className={styles.desc}>{cls.description || "Chưa có mô tả"}</p>
+                                    <div className={styles.cardFooter}>
+                                        <span>GV ID: {cls.teacher_id?.substring(0, 8)}...</span>
+                                        <span className={styles.date}>{formatDate(cls.created_at)}</span>
+                                    </div>
 
-                            {/* --- BUTTONS CHO TAB APPROVED --- */}
-                            {status === 'approved' && (
-                                <div className={styles.buttonGroup}>
-                                    <button
-                                        className={styles.examBtn}
-                                        onClick={() => navigate(`/student/classes/${cls.id}/exams`)}
-                                    >
-                                        <i className="fa-solid fa-file-pen"></i> Đề thi
-                                    </button>
+                                    {/* --- BUTTONS CHO TAB APPROVED --- */}
+                                    {status === 'approved' && (
+                                        <div className={styles.buttonGroup}>
+                                            <button
+                                                className={styles.examBtn}
+                                                onClick={() => navigate(`/student/classes/${cls.id}/exams`)}
+                                            >
+                                                <i className="fa-solid fa-file-pen"></i> Đề thi
+                                            </button>
 
-                                    <button
-                                        className={styles.leaveBtn}
-                                        onClick={() => handleLeaveClass(cls.id, cls.name)}
-                                        title="Rời khỏi lớp học này"
-                                    >
-                                        Rời lớp
-                                    </button>
+                                            <button
+                                                className={styles.leaveBtn}
+                                                onClick={() => handleLeaveClass(cls.id, cls.name)}
+                                                title="Rời khỏi lớp học này"
+                                            >
+                                                Rời lớp
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* --- BUTTONS CHO TAB PENDING --- */}
+                                    {status === 'pending' && (
+                                        <div className={styles.buttonGroup}>
+                                            <button className={styles.pendingBtn} disabled>Chờ duyệt...</button>
+
+                                            <button
+                                                className={styles.leaveBtn} // Tái sử dụng style nút đỏ
+                                                onClick={() => handleCancelRequest(cls.id, cls.name)}
+                                                title="Hủy yêu cầu tham gia"
+                                            >
+                                                Hủy
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            )) : (
+                            <div className={styles.emptyState}>
+                                <p>Không có lớp học nào ở trạng thái này.</p>
+                            </div>
+                        )}
+                    </div>
 
-                            {/* --- BUTTONS CHO TAB PENDING --- */}
-                            {status === 'pending' && (
-                                <div className={styles.buttonGroup}>
-                                    <button className={styles.pendingBtn} disabled>Chờ duyệt...</button>
-
-                                    <button
-                                        className={styles.leaveBtn} // Tái sử dụng style nút đỏ
-                                        onClick={() => handleCancelRequest(cls.id, cls.name)}
-                                        title="Hủy yêu cầu tham gia"
-                                    >
-                                        Hủy
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )) : (
-                        <div className={styles.emptyState}>
-                            <p>Không có lớp học nào ở trạng thái này.</p>
-                        </div>
-                    )}
-                </div>
-                    
                     {/* Pagination */}
                     {classes.length > classesPerPage && (
                         <Pagination

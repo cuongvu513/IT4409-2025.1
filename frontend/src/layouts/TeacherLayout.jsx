@@ -31,14 +31,7 @@ const TeacherLayout = () => {
                         <i className="fa-solid fa-house"></i> Tổng quan
                     </Link>
 
-                    <Link
-                        to="/teacher/classes"
-                        className={location.pathname.includes('/classes') ? styles.active : ''}
-                        onClick={() => setSidebarOpen(false)}
-                    >
-                        {/* Icon Bảng lớp */}
-                        <i className="fa-solid fa-chalkboard-user"></i> Quản lý Lớp học
-                    </Link>
+
 
                     <Link
                         to="/teacher/questions"
@@ -56,6 +49,14 @@ const TeacherLayout = () => {
                     >
                         {/* Icon Tài liệu */}
                         <i className="fa-solid fa-file-lines"></i> Mẫu đề thi
+                    </Link>
+                    <Link
+                        to="/teacher/classes"
+                        className={location.pathname.includes('/classes') ? styles.active : ''}
+                        onClick={() => setSidebarOpen(false)}
+                    >
+                        {/* Icon Bảng lớp */}
+                        <i className="fa-solid fa-chalkboard-user"></i> Quản lý Lớp học
                     </Link>
                 </nav>
                 <div className={styles.sidebarFooter}>
