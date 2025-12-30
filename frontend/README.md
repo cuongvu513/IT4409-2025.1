@@ -11,7 +11,7 @@ Frontend của hệ thống **EduTest** – nền tảng thi và luyện tập t
 - ⚡ **Vite**
 - 🎨 **SCSS / CSS Modules**
 - 🧭 **React Router DOM**
-- 🌐 **Fetch API dùng axios**
+- 🌐 **Fetch API**
 - 📦 **Node.js (>= 18)**
 
 ---
