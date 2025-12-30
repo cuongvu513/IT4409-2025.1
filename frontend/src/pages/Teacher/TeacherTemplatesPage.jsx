@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
 import Pagination from '../../components/Pagination';
 import styles from './TeacherTemplatesPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const TeacherTemplatesPage = () => {
-    // Không cần AuthContext vì Layout lo rồi
+
+    const { showConfirm, showAlert } = useModal();
 
     // State Data
     const [templates, setTemplates] = useState([]);
@@ -15,7 +17,7 @@ const TeacherTemplatesPage = () => {
 
     // State Tìm kiếm
     const [keyword, setKeyword] = useState('');
-    
+
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const templatesPerPage = 10;
@@ -108,13 +110,13 @@ const TeacherTemplatesPage = () => {
         try {
             if (editingTemplate) {
                 const res = await teacherService.updateExamTemplate(editingTemplate.id, payload);
-                alert(res.data.message);
+                showAlert(res.data.message);
                 setTemplates(prev => prev.map(t =>
                     t.id === editingTemplate.id ? res.data.updatedTemplate : t
                 ));
             } else {
                 const res = await teacherService.createExamTemplate(payload);
-                alert(res.data.message);
+                showAlert(res.data.message);
                 if (res.data.newTemplate) {
                     setTemplates([res.data.newTemplate, ...templates]);
                 } else {
@@ -123,22 +125,39 @@ const TeacherTemplatesPage = () => {
             }
             setShowModal(false);
         } catch (error) {
-            alert(error.response?.data?.error || "Có lỗi xảy ra!");
+            showAlert(error.response?.data?.error || "Có lỗi xảy ra!");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     // --- 5. XÓA ---
-    const handleDelete = async (id) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa mẫu đề thi này?")) return;
-        try {
-            const res = await teacherService.deleteExamTemplate(id);
-            setTemplates(prev => prev.filter(t => t.id !== id));
-            alert(res.data.message);
-        } catch (error) {
-            alert(error.response?.data?.error || "Xóa thất bại");
-        }
+    const handleDelete = (id) => {
+        showConfirm(
+            "Xóa mẫu đề thi", // Tiêu đề
+            "Bạn có chắc chắn muốn xóa mẫu đề thi này? Hành động này không thể hoàn tác.", // Nội dung
+            async () => {
+                // Callback này chạy khi bấm "Đồng ý"
+                try {
+                    const res = await teacherService.deleteExamTemplate(id);
+
+                    // Cập nhật UI
+                    setTemplates(prev => prev.filter(t => t.id !== id));
+
+                    // Thông báo thành công
+                    showAlert("Thành công", res.data.message || "Xóa thành công!");
+                } catch (error) {
+                    const errorMsg = error.response?.data?.error || "Xóa thất bại";
+
+                    // Xử lý lỗi ràng buộc dữ liệu (nếu có đề thi đã dùng template này)
+                    if (errorMsg.includes("Foreign key") || errorMsg.includes("constraint")) {
+                        showAlert("Không thể xóa", "Mẫu đề thi này đang được sử dụng bởi các đề thi khác. Vui lòng xóa các đề thi liên quan trước!");
+                    } else {
+                        showAlert("Lỗi", errorMsg);
+                    }
+                }
+            }
+        );
     };
 
     const formatTime = (seconds) => `${Math.floor(seconds / 60)} phút`;
@@ -169,7 +188,7 @@ const TeacherTemplatesPage = () => {
                                 <th>Tiêu đề</th>
                                 <th>Mô tả</th>
                                 <th>Thời gian</th>
-                                <th>Điểm đạt</th>
+                                <th>Ngưỡng qua bài kiểm tra (%)</th>
                                 <th>Đảo câu</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -178,49 +197,49 @@ const TeacherTemplatesPage = () => {
                             {templates.length > 0 ? templates
                                 .slice((currentPage - 1) * templatesPerPage, currentPage * templatesPerPage)
                                 .map(tpl => (
-                                <tr key={tpl.id}>
-                                    <td>
-                                        <Link
-                                            to={`/teacher/exam-templates/${tpl.id}`}
-                                            style={{ color: '#007bff', fontWeight: 'bold', textDecoration: 'none' }}
-                                        >
-                                            {tpl.title}
-                                        </Link>
-                                    </td>
-                                    <td style={{ maxWidth: '250px' }}>{tpl.description}</td>
-                                    <td>{formatTime(tpl.duration_seconds)}</td>
-                                    <td>{tpl.passing_score}</td>
-                                    <td>
-                                        {tpl.shuffle_questions
-                                            ? <span className={styles.tagYes}>Có</span>
-                                            : <span className={styles.tagNo}>Không</span>}
-                                    </td>
-                                    <td>
-                                        <div className={styles.actionButtons}>
-                                            <button
-                                                className={`${styles.btnIcon} ${styles.btnEdit}`}
-                                                onClick={() => openEditModal(tpl)}
-                                                title="Sửa"
+                                    <tr key={tpl.id}>
+                                        <td>
+                                            <Link
+                                                to={`/teacher/exam-templates/${tpl.id}`}
+                                                style={{ color: '#007bff', fontWeight: 'bold', textDecoration: 'none' }}
                                             >
-                                                <i className="fa-solid fa-pen"></i>
-                                            </button>
+                                                {tpl.title}
+                                            </Link>
+                                        </td>
+                                        <td style={{ maxWidth: '250px' }}>{tpl.description}</td>
+                                        <td>{formatTime(tpl.duration_seconds)}</td>
+                                        <td>{tpl.passing_score}</td>
+                                        <td>
+                                            {tpl.shuffle_questions
+                                                ? <span className={styles.tagYes}>Có</span>
+                                                : <span className={styles.tagNo}>Không</span>}
+                                        </td>
+                                        <td>
+                                            <div className={styles.actionButtons}>
+                                                <button
+                                                    className={`${styles.btnIcon} ${styles.btnEdit}`}
+                                                    onClick={() => openEditModal(tpl)}
+                                                    title="Sửa"
+                                                >
+                                                    <i className="fa-solid fa-pen"></i>
+                                                </button>
 
-                                            <button
-                                                className={`${styles.btnIcon} ${styles.btnDelete}`}
-                                                onClick={() => handleDelete(tpl.id)}
-                                                title="Xóa"
-                                            >
-                                                <i className="fa-solid fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )) : (
+                                                <button
+                                                    className={`${styles.btnIcon} ${styles.btnDelete}`}
+                                                    onClick={() => handleDelete(tpl.id)}
+                                                    title="Xóa"
+                                                >
+                                                    <i className="fa-solid fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )) : (
                                 <tr><td colSpan="6" style={{ textAlign: 'center' }}>Không tìm thấy mẫu đề thi nào.</td></tr>
                             )}
                         </tbody>
                     </table>
-                    
+
                     {/* Pagination */}
                     {templates.length > templatesPerPage && (
                         <Pagination
@@ -277,15 +296,15 @@ const TeacherTemplatesPage = () => {
                             </div>
                             <div className={styles.row}>
                                 <div className={styles.formGroup}>
-                                    <label>Điểm đạt</label>
+                                    <label>Ngưỡng qua bài kiểm tra (%)</label>
                                     <input type="number" name="passing_score" value={formData.passing_score} onChange={handleInputChange} />
                                 </div>
-                                <div className={styles.formGroup} style={{ marginTop: '30px' }}>
+                                {/* <div className={styles.formGroup} style={{ marginTop: '30px' }}>
                                     <label className={styles.checkboxLabel}>
                                         <input type="checkbox" name="shuffle_questions" checked={formData.shuffle_questions} onChange={handleInputChange} />
                                         Đảo câu hỏi
                                     </label>
-                                </div>
+                                </div> */}
                             </div>
                             <div className={styles.modalActions}>
                                 <button type="button" className={styles.btnCancel} onClick={() => setShowModal(false)}>Hủy</button>

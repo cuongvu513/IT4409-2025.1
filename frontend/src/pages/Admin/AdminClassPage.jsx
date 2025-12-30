@@ -3,8 +3,11 @@ import React, { useEffect, useState } from 'react';
 import adminService from '../../services/adminService';
 import styles from './AdminClassPage.module.scss'; // Tạo file css ở bước 3
 import { useNavigate } from 'react-router-dom';
+import { useModal } from '../../context/ModalContext';
 
 const AdminClassPage = () => {
+
+    const { showAlert } = useModal();
     // --- STATE ---
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -64,25 +67,24 @@ const AdminClassPage = () => {
 
     // --- HÀM XUẤT FILE CSV 
     const handleExport = async (classId, className) => {
-        // 1. Hỏi người dùng muốn xuất trạng thái nào
+        // 1. Dùng prompt để lấy tham số lọc (Vì GlobalModal chưa hỗ trợ input)
         const status = window.prompt(
             `Xuất danh sách học sinh lớp "${className}".\n\nNhập trạng thái muốn lọc (active / locked) hoặc để trống để lấy tất cả:`,
             "active"
         );
 
-        // Nếu bấm Cancel thì hủy
+        // Nếu bấm Cancel thì dừng
         if (status === null) return;
 
         try {
-            // 2. Gọi API exportStudents đã định nghĩa ở Bước 1
+            // 2. Gọi API
             const response = await adminService.exportStudents(classId, status.trim());
 
-            // 3. Tạo file và tải xuống
+            // 3. Xử lý tải xuống
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
 
-            // Đặt tên file: danh-sach-[ten_lop]-[status]-[time].csv
             const timestamp = new Date().toISOString().slice(0, 10);
             const safeName = className.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             const statusSuffix = status ? `-${status}` : '-all';
@@ -94,9 +96,14 @@ const AdminClassPage = () => {
             link.remove();
             window.URL.revokeObjectURL(url);
 
+            // 4. Thông báo thành công bằng showAlert (Thay vì im lặng)
+            showAlert("Thành công", "Đã xuất file danh sách học sinh thành công!");
+
         } catch (error) {
             console.error("Export error:", error);
-            alert("Xuất file thất bại. Kiểm tra lại API hoặc quyền truy cập.");
+
+            // 5. Thay alert lỗi bằng showAlert
+            showAlert("Thất bại", "Xuất file thất bại. Vui lòng kiểm tra lại hệ thống.");
         }
     };
 

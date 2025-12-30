@@ -4,8 +4,10 @@ import studentService from '../../services/studentService';
 import socketService from '../../services/socketService';
 import MathRenderer from '../../components/MathRenderer';
 import styles from './StudentTakeExamPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const StudentTakeExamPage = () => {
+    const { showConfirm, showAlert } = useModal();
     const { examId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -81,7 +83,7 @@ const StudentTakeExamPage = () => {
                     }
                 });
                 setUserAnswers(savedAnswers);
-                
+
                 // D. KẾT NỐI SOCKET với examId từ URL params và JWT token từ localStorage
                 // examId là UUID string, KHÔNG parse thành number
                 const jwtToken = localStorage.getItem('accessToken');
@@ -90,12 +92,12 @@ const StudentTakeExamPage = () => {
                 } else {
                     console.warn('[StudentTakeExam] No JWT token found, socket disabled');
                 }
-                
+
                 setLoading(false);
 
             } catch (error) {
                 console.error("Lỗi khởi tạo:", error);
-                alert("Bạn đã hoàn thành bài thi !");
+                showAlert("Bạn đã hoàn thành bài thi !");
                 navigate(backPath);
             }
         };
@@ -119,10 +121,10 @@ const StudentTakeExamPage = () => {
         console.log('[StudentTakeExam] Initializing socket connection...');
         console.log('[StudentTakeExam] JWT Token:', jwtToken ? 'Present' : 'Missing');
         console.log('[StudentTakeExam] Exam Instance ID:', examInstanceId);
-        
+
         // Kết nối socket với JWT token (không phải session token)
         socketService.connect(jwtToken);
-        
+
         // Subscribe để nhận cập nhật thời gian
         socketService.subscribeToExam(
             examInstanceId,
@@ -141,10 +143,31 @@ const StudentTakeExamPage = () => {
             },
             // onExpired
             (data) => {
-                console.log('[StudentTakeExam] Time expired or exam ended');
+                console.log('[StudentTakeExam] Time expired or exam ended', data);
                 setTimeLeft(0);
-                alert('Hết thời gian làm bài! Bài thi sẽ được nộp tự động.');
-                handleSubmitExam();
+                
+                // Nếu backend đã tự động nộp và trả về điểm, hiển thị luôn
+                if (data.submission) {
+                    console.log('[StudentTakeExam] Auto-submitted with score:', data.submission);
+                    
+                    // Clear intervals và socket
+                    clearInterval(timerRef.current);
+                    clearInterval(heartbeatRef.current);
+                    if (socketService.isConnected()) {
+                        socketService.unsubscribeFromExam(examId);
+                    }
+                    localStorage.removeItem(`exam_session_${examId}`);
+                    
+                    // Hiển thị kết quả
+                    setExamResult(data.submission);
+                    setReviewMode(true);
+                    alert(`Hết thời gian làm bài! Bài thi đã được tự động nộp.\nĐiểm số: ${data.submission.score}/${data.submission.max_score}`);
+                } else {
+                    // Fallback: gọi submit thủ công nếu backend không trả về submission
+                    alert('Hết thời gian làm bài! Bài thi sẽ được nộp tự động.');
+                    handleSubmitExam();
+                }
+
             }
         );
     };
@@ -186,7 +209,7 @@ const StudentTakeExamPage = () => {
         const handleHeartbeatResponse = (res) => {
             // Kiểm tra nếu Backend báo locked
             if (res.data && res.data.locked) {
-                alert("Bạn đã vi phạm quy chế thi quá số lần cho phép. Bài thi đã bị khóa!");
+                showAlert("Bạn đã vi phạm quy chế thi quá số lần cho phép. Bài thi đã bị khóa!");
                 // Tự động nộp bài hoặc đá ra ngoài
                 navigate(backPath);
                 // Hoặc gọi hàm handleSubmitExam() để nộp cưỡng ép
@@ -253,32 +276,42 @@ const StudentTakeExamPage = () => {
     };
 
     // --- 5. NỘP BÀI ---
-    const handleSubmitExam = async () => {
-        if (!window.confirm("Bạn có chắc chắn muốn nộp bài?")) return;
-        setIsSubmitting(true);
-        try {
-            const res = await studentService.finishExam(sessionData.session_id, sessionData.token);
-            const result = res.data;
+    const handleSubmitExam = () => {
+        showConfirm(
+            "Nộp bài thi", // Tiêu đề
+            "Bạn có chắc chắn muốn nộp bài?", // Nội dung
+            async () => {
+                // Callback này chạy khi bấm "Đồng ý"
+                setIsSubmitting(true);
+                try {
+                    const res = await studentService.finishExam(sessionData.session_id, sessionData.token);
+                    const result = res.data;
 
-            clearInterval(timerRef.current);
-            clearInterval(heartbeatRef.current);
-            
-            // Ngắt kết nối socket
-            if (socketService.isConnected()) {
-                socketService.unsubscribeFromExam(examId);
+                    // Dọn dẹp tài nguyên
+                    clearInterval(timerRef.current);
+                    clearInterval(heartbeatRef.current);
+
+                    // Ngắt kết nối socket (nếu có dùng)
+                    if (socketService.isConnected()) {
+                        socketService.unsubscribeFromExam(examId);
+                    }
+
+                    // Xóa session lưu tạm
+                    localStorage.removeItem(`exam_session_${examId}`);
+
+                    // Cập nhật State để hiện kết quả
+                    setExamResult(result);
+                    setReviewMode(true);
+                    setIsSubmitting(false);
+
+                    // Thông báo điểm số đẹp mắt
+                    showAlert("Hoàn thành", `Nộp bài thành công!\nĐiểm số: ${result.score}/${result.max_score}`);
+                } catch (error) {
+                    setIsSubmitting(false);
+                    showAlert("Thất bại", error.response?.data?.error || "Nộp bài thất bại. Vui lòng thử lại!");
+                }
             }
-            
-            localStorage.removeItem(`exam_session_${examId}`);
-
-            setExamResult(result);
-            setReviewMode(true);
-            setIsSubmitting(false);
-
-            alert(`Nộp bài thành công!\nĐiểm số: ${result.score}/${result.max_score}`);
-        } catch (error) {
-            alert("Nộp bài thất bại. Vui lòng thử lại!");
-            setIsSubmitting(false);
-        }
+        );
     };
 
     // --- HELPER UI ---

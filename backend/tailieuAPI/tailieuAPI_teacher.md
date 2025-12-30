@@ -74,7 +74,12 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 - **Mô tả: hiển thị danh sách lớp của giáo viên khởi tạo**
 - **HTTP: GET**
 - **URL:** `/api/teacher/classes`
+- **Query Parameters:**
+  - `includeDeleted` (optional): `true` để xem cả lớp đã xóa mềm, mặc định `false`
 - **Headers:** `Authorization: Bearer <access_token>`
+- **Ví dụ:**
+  - Chỉ lớp đang hoạt động: `GET /api/teacher/classes`
+  - Bao gồm cả lớp đã xóa: `GET /api/teacher/classes?includeDeleted=true`
 - **Response body:**
 
 ```json
@@ -135,7 +140,12 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 - **Mô tả: hiển thị chi tiết lớp theo ID của giảng viên**
 - **HTTP: GET**
 - **URL:** `/api/teacher/classes/:id`
+- **Query Parameters:**
+  - `includeDeleted` (optional): `true` để xem cả lớp đã xóa mềm, mặc định `false`
 - **Headers:** `Authorization: Bearer <access_token>`
+- **Ví dụ:**
+  - Lớp đang hoạt động: `GET /api/teacher/classes/a03cc090-d543-4474-96d5-1589d91f6027`
+  - Xem lớp đã xóa: `GET /api/teacher/classes/a03cc090-d543-4474-96d5-1589d91f6027?includeDeleted=true`
 - **Response body:**
 
 ```json
@@ -944,7 +954,13 @@ Tài liệu này mô tả các endpoint cơ bản để **đăng ký (register)*
 - **Mô tả: Giáo viên lấy toàn bộ danh sách template**
 - **HTTP: GET**
 - **URL:** **`/api/teacher/exam-templates`**
+- **Query Parameters:**
+  - `includeDeleted` (optional): `true` để xem cả template đã xóa mềm (bao gồm cả template từ lớp đã xóa), mặc định `false`
 - **Headers:** `Authorization: Bearer <access_token>`
+- **Ví dụ:**
+  - Chỉ template đang hoạt động: `GET /api/teacher/exam-templates`
+  - Bao gồm cả template đã xóa: `GET /api/teacher/exam-templates?includeDeleted=true`
+- **Lưu ý:** Khi `includeDeleted=true`, response sẽ bao gồm thông tin `Renamedclass.is_deleted` để phân biệt template từ lớp đã xóa
 
 - **Response body:**
     
@@ -1696,7 +1712,13 @@ Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi
 - **Mô tả:** lấy danh sách template đề thi theo lớp học
 - **GET:** GET
 - **URL:** `/api/teacher/classes/:classId/exam-templates`
+- **Query Parameters:**
+  - `includeDeleted` (optional): `true` để xem cả template đã xóa mềm từ lớp này (ngay cả khi lớp đã bị xóa), mặc định `false`
 - **Headers:** `Authorization: Bearer <access_token>`
+- **Ví dụ:**
+  - Chỉ template đang hoạt động: `GET /api/teacher/classes/:classId/exam-templates`
+  - Xem cả template đã xóa: `GET /api/teacher/classes/:classId/exam-templates?includeDeleted=true`
+- **Lưu ý:** Giáo viên có thể xem lại template của lớp đã xóa mềm nếu truyền `includeDeleted=true`
 - **Request body:**
 
 
@@ -1743,18 +1765,12 @@ Thời gian,Loại sự kiện,Người dùng,Email,Session ID,IP,User Agent,Chi
 ## Endpoint 45 - Xóa học sinh ra khỏi lớp 
 
 
-**DELETE`/api/teacher/classes/students/:id`**
+**DELETE`/api/teacher/classes/:classId/students/:studentId`**
 
 - **Mô tả: cập nhập thông tin lớp theo ID lớp học**
 - **HTTP: DELETE**
-- **URL:** `/api/teacher/classes/students/:id`
+- **URL:** `/api/teacher/classes/:classId/students/:studentId`
 - **Headers:** `Authorization: Bearer <access_token>`
-- **Request body:**
-    ```js
-    {
-        "class_id": "....."
-    }
-    ```
 - **Response body:**
     
     **200 OK (thành công)**

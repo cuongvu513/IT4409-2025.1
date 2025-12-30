@@ -3,12 +3,15 @@ import teacherService from '../../services/teacherService';
 import MathRenderer from '../../components/MathRenderer';
 import Pagination from '../../components/Pagination';
 import styles from './TeacherQuestionsPage.module.scss';
+import { useModal } from '../../context/ModalContext';
 
 const TeacherQuestionsPage = () => {
+
+    const { showConfirm, showAlert } = useModal();
     // State data
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -81,7 +84,7 @@ const TeacherQuestionsPage = () => {
     // Xóa đáp án (tối thiểu phải giữ 2 đáp án)
     const handleRemoveChoice = (index) => {
         if (formData.choices.length <= 2) {
-            alert("Cần ít nhất 2 đáp án!");
+            showAlert("Cần ít nhất 2 đáp án!");
             return;
         }
         const newChoices = formData.choices.filter((_, i) => i !== index);
@@ -113,13 +116,33 @@ const TeacherQuestionsPage = () => {
         setShowModal(true);
     };
 
-    const handleDeleteClick = async (id) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) return;
-        try {
-            await teacherService.deleteQuestion(id);
-            setQuestions(prev => prev.filter(q => q.id !== id));
-            alert("Xóa thành công!");
-        } catch (error) { alert(error.response?.data?.error || "Xóa thất bại!"); }
+    const handleDeleteClick = (id) => {
+        // Thay vì window.confirm, dùng showConfirm
+        showConfirm(
+            "Xóa câu hỏi", // Tiêu đề Modal
+            "Bạn có chắc chắn muốn xóa câu hỏi này không?", // Nội dung
+            async () => {
+                // Hàm này sẽ chạy khi người dùng bấm "Đồng ý"
+                try {
+                    await teacherService.deleteQuestion(id);
+
+                    // Cập nhật UI: Lọc bỏ câu vừa xóa
+                    setQuestions(prev => prev.filter(q => q.id !== id));
+
+                    // Thay alert thành showAlert
+                    showAlert("Thành công", "Xóa câu hỏi thành công!");
+                } catch (error) {
+                    const errorMsg = error.response?.data?.error || "Xóa thất bại!";
+
+                    // Xử lý lỗi Foreign Key (nếu có)
+                    if (errorMsg.includes("Foreign key") || errorMsg.includes("constraint")) {
+                        showAlert("Không thể xóa", "Câu hỏi này đang được sử dụng trong một đề thi nào đó.");
+                    } else {
+                        showAlert("Lỗi", errorMsg);
+                    }
+                }
+            }
+        );
     };
 
     const handleSubmit = async (e) => {
@@ -132,9 +155,9 @@ const TeacherQuestionsPage = () => {
             choices: formData.choices.filter(c => c.text.trim() !== '')
         };
 
-        if (payload.choices.length < 2) { alert("Cần ít nhất 2 đáp án!"); setIsSubmitting(false); return; }
+        if (payload.choices.length < 2) { showAlert("Cần ít nhất 2 đáp án!"); setIsSubmitting(false); return; }
         // Kiểm tra ít nhất 1 đáp án đúng
-        if (!payload.choices.some(c => c.is_correct)) { alert("Cần chọn ít nhất 1 đáp án đúng!"); setIsSubmitting(false); return; }
+        if (!payload.choices.some(c => c.is_correct)) { showAlert("Cần chọn ít nhất 1 đáp án đúng!"); setIsSubmitting(false); return; }
 
         try {
             if (editingQuestion) {
@@ -150,14 +173,14 @@ const TeacherQuestionsPage = () => {
                     }
                     return q;
                 }));
-                alert("Cập nhật thành công!");
+                showAlert("Cập nhật thành công!");
             } else {
                 const res = await teacherService.createQuestion(payload);
                 setQuestions([res.data.newQuestion, ...questions]);
-                alert("Tạo mới thành công!");
+                showAlert("Tạo mới thành công!");
             }
             resetForm();
-        } catch (error) { alert("Có lỗi xảy ra!"); }
+        } catch (error) { showAlert("Có lỗi xảy ra!"); }
         finally { setIsSubmitting(false); }
     };
 
@@ -169,8 +192,8 @@ const TeacherQuestionsPage = () => {
             else if (res.data && !Array.isArray(res.data)) detail = res.data;
 
             if (detail) setViewQuestion(detail);
-            else alert("Không tìm thấy dữ liệu.");
-        } catch (error) { alert("Lỗi tải chi tiết."); }
+            else showAlert("Không tìm thấy dữ liệu.");
+        } catch (error) { showAlert("Lỗi tải chi tiết."); }
     };
 
     return (
@@ -190,49 +213,49 @@ const TeacherQuestionsPage = () => {
                         {questions
                             .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                             .map((q, i) => (
-                        <div key={q.id} className={styles.questionCard}>
-                            <div className={styles.qHeader}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span className={styles.qIndex}>Câu {(currentPage - 1) * itemsPerPage + i + 1}</span>
-                                    <span className={`${styles.badge} ${styles[q.difficulty]}`}>{q.difficulty}</span>
+                                <div key={q.id} className={styles.questionCard}>
+                                    <div className={styles.qHeader}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span className={styles.qIndex}>Câu {(currentPage - 1) * itemsPerPage + i + 1}</span>
+                                            <span className={`${styles.badge} ${styles[q.difficulty]}`}>{q.difficulty}</span>
+                                        </div>
+
+                                        <div className={styles.actionButtons}>
+                                            <button className={styles.btnView} onClick={() => handleViewDetail(q.id)} title="Xem chi tiết">
+                                                Chi tiết
+                                            </button>
+                                            <button className={styles.btnEdit} onClick={() => handleEditClick(q)} title="Sửa">
+                                                <i className="fa-solid fa-pen"></i>
+                                            </button>
+                                            <button className={styles.btnDelete} onClick={() => handleDeleteClick(q.id)} title="Xóa">
+                                                <i className="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <p className={styles.qText}>
+                                        <MathRenderer text={q.text} />
+                                    </p>
+                                    <div className={styles.qTags}>
+                                        {q.tags?.map((t, idx) => <span key={idx}>#{t}</span>)}
+                                    </div>
+
+                                    {/* Hiển thị danh sách đáp án đúng */}
+                                    <div className={styles.qFooter}>
+                                        <span>Đáp án đúng: </span>
+                                        <strong>
+                                            {q.question_choice?.filter(c => c.is_correct).map(c => (
+                                                <span key={c.id}>
+                                                    <MathRenderer text={c.text} />
+                                                    {q.question_choice?.filter(c => c.is_correct).indexOf(c) < q.question_choice?.filter(c => c.is_correct).length - 1 ? ', ' : ''}
+                                                </span>
+                                            )) || "Chưa có"}
+                                        </strong>
+                                    </div>
                                 </div>
-
-                                <div className={styles.actionButtons}>
-                                    <button className={styles.btnView} onClick={() => handleViewDetail(q.id)} title="Xem chi tiết">
-                                        Chi tiết
-                                    </button>
-                                    <button className={styles.btnEdit} onClick={() => handleEditClick(q)} title="Sửa">
-                                        <i className="fa-solid fa-pen"></i>
-                                    </button>
-                                    <button className={styles.btnDelete} onClick={() => handleDeleteClick(q.id)} title="Xóa">
-                                        <i className="fa-solid fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <p className={styles.qText}>
-                                <MathRenderer text={q.text} />
-                            </p>
-                            <div className={styles.qTags}>
-                                {q.tags?.map((t, idx) => <span key={idx}>#{t}</span>)}
-                            </div>
-
-                            {/* Hiển thị danh sách đáp án đúng */}
-                            <div className={styles.qFooter}>
-                                <span>Đáp án đúng: </span>
-                                <strong>
-                                    {q.question_choice?.filter(c => c.is_correct).map(c => (
-                                        <span key={c.id}>
-                                            <MathRenderer text={c.text} />
-                                            {q.question_choice?.filter(c => c.is_correct).indexOf(c) < q.question_choice?.filter(c => c.is_correct).length - 1 ? ', ' : ''}
-                                        </span>
-                                    )) || "Chưa có"}
-                                </strong>
-                            </div>
-                        </div>
-                    ))}
+                            ))}
                     </div>
-                    
+
                     {/* Pagination */}
                     <Pagination
                         currentPage={currentPage}
@@ -325,7 +348,7 @@ const TeacherQuestionsPage = () => {
                                     onClick={handleAddChoice}
                                     className={styles.addChoiceBtn}
                                 >
-                                     Thêm đáp án
+                                    Thêm đáp án
                                 </button>
                             </div>
 

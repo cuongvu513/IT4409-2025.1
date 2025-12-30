@@ -34,8 +34,8 @@ const teacherService = {
     },
 
     // Vi phạm
-    getClassFlags(classId) {
-        return axiosClient.get(`/api/teacher/classes/${classId}/flags`);
+    getClassFlags(examInstanceId) {
+        return axiosClient.get(`/api/teacher/classes/${examInstanceId}/flags`);
     },
 
     // Cộng giờ
@@ -210,7 +210,12 @@ const teacherService = {
     // --- ENDPOINT 42: XUẤT NHẬT KÝ THI (CSV) ---
     exportLogs(examId) {
         return axiosClient.get(`/api/teacher/export/logs/${examId}`, { responseType: 'blob' });
-    }
+    },
+
+    // --- ENDPOINT 45: XÓA HỌC SINH KHỎI LỚP ---
+    removeStudentFromClass(classId, studentId) {
+        return axiosClient.delete(`/api/teacher/classes/${classId}/students/${studentId}`);
+    },
 
 };
 

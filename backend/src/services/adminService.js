@@ -3,6 +3,91 @@ const { hashPassword } = require("../utils/hash");
 
 module.exports = {
   /**
+   * Ghi nhận một hành động của admin
+   * @param {Object} actionData - Thông tin hành động
+   * @param {string} actionData.adminId - ID của admin
+   * @param {string} actionData.actionType - Loại hành động
+   * @param {string} [actionData.targetType] - Loại đối tượng bị tác động
+   * @param {string} [actionData.targetId] - ID của đối tượng bị tác động
+   * @param {string} [actionData.description] - Mô tả hành động
+   * @param {Object} [actionData.metadata] - Thông tin bổ sung
+   * @param {string} [actionData.ipAddress] - IP address của admin
+   * @returns {Promise<Object>} Hành động đã được ghi nhận
+   */
+  async logAdminAction(actionData) {
+    const {
+      adminId,
+      actionType,
+      targetType,
+      targetId,
+      description,
+      metadata,
+      ipAddress
+    } = actionData;
+
+    return await prisma.admin_action.create({
+      data: {
+        admin_id: adminId,
+        action_type: actionType,
+        target_type: targetType,
+        target_id: targetId,
+        description: description,
+        metadata: metadata,
+        ip_address: ipAddress
+      }
+    });
+  },
+
+  /**
+   * Lấy lịch sử hoạt động của một admin
+   * @param {string} adminId - ID của admin
+   * @param {Object} options - Tùy chọn lọc
+   * @returns {Promise<Array>} Danh sách hoạt động
+   */
+  async getAdminActivities(adminId, options = {}) {
+    const { limit = 50, page = 1, actionType } = options;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      admin_id: adminId
+    };
+
+    if (actionType) {
+      where.action_type = actionType;
+    }
+
+    const [activities, total] = await Promise.all([
+      prisma.admin_action.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          action_type: true,
+          target_type: true,
+          target_id: true,
+          description: true,
+          metadata: true,
+          ip_address: true,
+          created_at: true
+        }
+      }),
+      prisma.admin_action.count({ where })
+    ]);
+
+    return {
+      activities,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  },
+
+  /**
    * Lấy danh sách tất cả người dùng với thông tin chi tiết
    * @param {Object} filters - Bộ lọc (role, status, search)
    * @returns {Promise<Array>} Danh sách người dùng
@@ -181,12 +266,14 @@ module.exports = {
    * Khóa hoặc mở khóa tài khoản người dùng
    * @param {string} userId - ID người dùng
    * @param {boolean} isActive - true để mở khóa, false để khóa
+   * @param {string} adminId - ID của admin thực hiện
+   * @param {string} ipAddress - IP address của admin
    * @returns {Promise<Object>} Kết quả
    */
-  async toggleUserStatus(userId, isActive) {
+  async toggleUserStatus(userId, isActive, adminId, ipAddress) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, is_active: true }
+      select: { id: true, is_active: true, email: true, name: true }
     });
     
     if (!user) {
@@ -205,6 +292,19 @@ module.exports = {
         is_active: true
       }
     });
+
+    // Log admin action
+    if (adminId) {
+      await this.logAdminAction({
+        adminId,
+        actionType: isActive ? 'UNLOCK_USER' : 'LOCK_USER',
+        targetType: 'user',
+        targetId: userId,
+        description: `${isActive ? 'Mở khóa' : 'Khóa'} tài khoản ${user.email}`,
+        metadata: { user_email: user.email, user_name: user.name },
+        ipAddress
+      });
+    }
     
     return {
       id: updated.id,
@@ -219,9 +319,11 @@ module.exports = {
    * Reset mật khẩu người dùng về mật khẩu mặc định
    * @param {string} userId - ID người dùng
    * @param {string} newPassword - Mật khẩu mới (mặc định: "Password123")
+   * @param {string} adminId - ID của admin thực hiện
+   * @param {string} ipAddress - IP address của admin
    * @returns {Promise<Object>} Kết quả
    */
-  async resetUserPassword(userId, newPassword = "Password123") {
+  async resetUserPassword(userId, newPassword = "Password123", adminId, ipAddress) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, email: true, name: true }
@@ -239,6 +341,19 @@ module.exports = {
       where: { id: userId },
       data: { password_hash: hashedPassword }
     });
+
+    // Log admin action
+    if (adminId) {
+      await this.logAdminAction({
+        adminId,
+        actionType: 'RESET_PASSWORD',
+        targetType: 'user',
+        targetId: userId,
+        description: `Reset mật khẩu cho tài khoản ${user.email}`,
+        metadata: { user_email: user.email, user_name: user.name },
+        ipAddress
+      });
+    }
     
     return {
       id: user.id,
@@ -312,9 +427,11 @@ module.exports = {
    * @returns {Promise<Object>} Danh sách lớp học
    */
   async getAllClasses(filters = {}) {
-    const { search, status, page = 1, limit = 50 } = filters;
+    const { search, status, page = 1, limit = 50, includeDeleted = false } = filters;
     
-    const where = {};
+    const where = {
+      is_deleted: includeDeleted ? undefined : false
+    };
     
     // Tìm kiếm theo tên lớp hoặc code
     if (search) {
@@ -406,6 +523,8 @@ module.exports = {
         name: true,
         code: true,
         description: true,
+        is_deleted: true,
+        deleted_at: true,
         created_at: true,
         updated_at: true,
         teacher_id: true,
@@ -434,6 +553,9 @@ module.exports = {
           }
         },
         exam_template: {
+          where: {
+            is_deleted: false
+          },
           select: {
             id: true,
             title: true,
@@ -444,7 +566,7 @@ module.exports = {
       }
     });
     
-    if (!classData) {
+    if (!classData || classData.is_deleted) {
       const err = new Error("Class not found");
       err.status = 404;
       throw err;
@@ -478,13 +600,15 @@ module.exports = {
   },
 
 
-  async deleteClass(classId) {
-    // Kiểm tra lớp học có tồn tại không
+  async deleteClass(classId, adminId, ipAddress) {
+    // Kiểm tra lớp học có tồn tại không và chưa bị xóa
     const classData = await prisma.Renamedclass.findUnique({
       where: { id: classId },
       select: {
         id: true,
         name: true,
+        code: true,
+        is_deleted: true,
         exam_template: {
           select: {
             id: true,
@@ -492,13 +616,9 @@ module.exports = {
               select: {
                 id: true,
                 exam_session: {
-                  where: {
-                    state: {
-                      in: ['submitted', 'started']
-                    }
-                  },
                   select: {
-                    id: true
+                    id: true,
+                    state: true
                   }
                 }
               }
@@ -508,39 +628,218 @@ module.exports = {
       }
     });
     
-    if (!classData) {
-      const err = new Error("Class not found");
+    if (!classData || classData.is_deleted) {
+      const err = new Error("Không tìm thấy lớp học");
       err.status = 404;
       throw err;
     }
     
-    // Kiểm tra xem có bài thi đã được làm chưa
-    let hasActiveExamSessions = false;
+    // Đếm số exam sessions theo trạng thái
+    let totalSessions = 0;
+    let activeSessions = 0; // Sessions đang started
+    let submittedSessions = 0;
+    
     for (const template of classData.exam_template) {
       for (const instance of template.exam_instance) {
-        if (instance.exam_session.length > 0) {
-          hasActiveExamSessions = true;
-          break;
+        for (const session of instance.exam_session) {
+          totalSessions++;
+          if (session.state === 'started') {
+            activeSessions++;
+          } else if (session.state === 'submitted') {
+            submittedSessions++;
+          }
         }
       }
-      if (hasActiveExamSessions) break;
     }
     
-    if (hasActiveExamSessions) {
-      const err = new Error("Cannot delete class with active exam sessions. Class has exam data.");
-      err.status = 400;
-      throw err;
-    }
-    
-    // Xóa lớp học (cascade sẽ tự động xóa các bản ghi liên quan)
-    await prisma.Renamedclass.delete({
-      where: { id: classId }
+    // Soft delete: Cho phép xóa ngay cả khi có dữ liệu thi
+    // Vì đây là soft delete, dữ liệu không bị mất và có thể khôi phục
+    // Cascade soft delete xuống exam_template và exam_instance
+    await prisma.$transaction(async (tx) => {
+      // 1. Xóa mềm tất cả exam_instance của lớp
+      const templateIds = classData.exam_template.map(t => t.id);
+      if (templateIds.length > 0) {
+        await tx.exam_instance.updateMany({
+          where: {
+            template_id: { in: templateIds },
+            is_deleted: false
+          },
+          data: {
+            is_deleted: true,
+            deleted_at: new Date(),
+            deleted_by: adminId
+          }
+        });
+
+        // 2. Xóa mềm tất cả exam_template của lớp
+        await tx.exam_template.updateMany({
+          where: {
+            class_id: classId,
+            is_deleted: false
+          },
+          data: {
+            is_deleted: true,
+            deleted_at: new Date(),
+            deleted_by: adminId
+          }
+        });
+      }
+
+      // 3. Xóa mềm lớp học
+      await tx.Renamedclass.update({
+        where: { id: classId },
+        data: {
+          is_deleted: true,
+          deleted_at: new Date(),
+          deleted_by: adminId
+        }
+      });
     });
+
+    // Log admin action với thông tin chi tiết
+    if (adminId) {
+      await this.logAdminAction({
+        adminId,
+        actionType: 'DELETE_CLASS',
+        targetType: 'class',
+        targetId: classId,
+        description: `Xóa lớp học ${classData.name} (${classData.code})`,
+        metadata: { 
+          class_name: classData.name, 
+          class_code: classData.code,
+          total_exam_sessions: totalSessions,
+          active_sessions: activeSessions,
+          submitted_sessions: submittedSessions,
+          templates_archived: classData.exam_template.length,
+          instances_archived: classData.exam_template.reduce((sum, t) => sum + t.exam_instance.length, 0)
+        },
+        ipAddress
+      });
+    }
     
     return {
       class_id: classData.id,
       class_name: classData.name,
-      message: "Class deleted successfully"
+      message: "Class and related exam templates/instances archived successfully (soft deleted)",
+      details: {
+        templates_archived: classData.exam_template.length,
+        instances_archived: classData.exam_template.reduce((sum, t) => sum + t.exam_instance.length, 0)
+      },
+      warning: totalSessions > 0 ? `Lớp học có ${totalSessions} phiên thi (${activeSessions} đang thi, ${submittedSessions} đã nộp). Dữ liệu vẫn được giữ và có thể khôi phục.` : null
+    };
+  },
+
+  /**
+   * Khôi phục lớp học đã xóa (undelete)
+   * @param {string} classId - ID lớp học
+   * @param {string} adminId - ID của admin thực hiện
+   * @param {string} ipAddress - IP address của admin
+   * @returns {Promise<Object>} Kết quả
+   */
+  async restoreClass(classId, adminId, ipAddress) {
+    const classData = await prisma.Renamedclass.findUnique({
+      where: { id: classId },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        is_deleted: true,
+        exam_template: {
+          where: { is_deleted: true },
+          select: {
+            id: true,
+            exam_instance: {
+              where: { is_deleted: true },
+              select: { id: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!classData) {
+      const err = new Error("Không tìm thấy lớp học");
+      err.status = 404;
+      throw err;
+    }
+
+    if (!classData.is_deleted) {
+      const err = new Error("Lớp học chưa bị xóa");
+      err.status = 400;
+      throw err;
+    }
+
+    // Khôi phục lớp học và cascade restore xuống exam_template và exam_instance
+    await prisma.$transaction(async (tx) => {
+      // 1. Khôi phục lớp học
+      await tx.Renamedclass.update({
+        where: { id: classId },
+        data: {
+          is_deleted: false,
+          deleted_at: null,
+          deleted_by: null
+        }
+      });
+
+      // 2. Khôi phục tất cả exam_template của lớp
+      const templateIds = classData.exam_template.map(t => t.id);
+      if (templateIds.length > 0) {
+        await tx.exam_template.updateMany({
+          where: {
+            class_id: classId,
+            is_deleted: true
+          },
+          data: {
+            is_deleted: false,
+            deleted_at: null,
+            deleted_by: null
+          }
+        });
+
+        // 3. Khôi phục tất cả exam_instance của những template đó
+        const instanceIds = classData.exam_template.flatMap(t => t.exam_instance.map(i => i.id));
+        if (instanceIds.length > 0) {
+          await tx.exam_instance.updateMany({
+            where: {
+              id: { in: instanceIds },
+              is_deleted: true
+            },
+            data: {
+              is_deleted: false,
+              deleted_at: null,
+              deleted_by: null
+            }
+          });
+        }
+      }
+    });
+
+    // Log admin action
+    if (adminId) {
+      await this.logAdminAction({
+        adminId,
+        actionType: 'RESTORE_CLASS',
+        targetType: 'class',
+        targetId: classId,
+        description: `Khôi phục lớp học ${classData.name} (${classData.code})`,
+        metadata: { 
+          class_name: classData.name, 
+          class_code: classData.code,
+          templates_restored: classData.exam_template.length,
+          instances_restored: classData.exam_template.reduce((sum, t) => sum + t.exam_instance.length, 0)
+        },
+        ipAddress
+      });
+    }
+
+    return {
+      class_id: classData.id,
+      class_name: classData.name,
+      message: "Class and related exam templates/instances restored successfully",
+      details: {
+        templates_restored: classData.exam_template.length,
+        instances_restored: classData.exam_template.reduce((sum, t) => sum + t.exam_instance.length, 0)
+      }
     };
   },
 
@@ -554,12 +853,19 @@ module.exports = {
   async getAllExams(filters = {}) {
     const { status, search, page = 1, limit = 50 } = filters;
     
-    const where = {};
+    const where = {
+      is_deleted: false
+    };
     
     // Tìm kiếm theo tên đề thi
     if (search) {
       where.exam_template = {
-        title: { contains: search, mode: 'insensitive' }
+        title: { contains: search, mode: 'insensitive' },
+        is_deleted: false
+      };
+    } else {
+      where.exam_template = {
+        is_deleted: false
       };
     }
     
@@ -796,7 +1102,7 @@ module.exports = {
    * Lấy thống kê dashboard tổng quan
    * @returns {Promise<Object>} Thống kê dashboard
    */
-  async getDashboardStats() {
+  async getDashboardStats(adminId) {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -807,16 +1113,21 @@ module.exports = {
       totalExams,
       todaySubmissions,
       activeExams,
-      upcomingExams
+      upcomingExams,
+      recentActivities
     ] = await Promise.all([
       // Tổng số người dùng
       prisma.user.count(),
       
-      // Tổng số lớp học
-      prisma.Renamedclass.count(),
+      // Tổng số lớp học (không tính đã xóa mềm)
+      prisma.Renamedclass.count({
+        where: { is_deleted: false }
+      }),
       
-      // Tổng số kỳ thi
-      prisma.exam_instance.count(),
+      // Tổng số kỳ thi (không tính đã xóa mềm)
+      prisma.exam_instance.count({
+        where: { is_deleted: false }
+      }),
       
       // Số bài thi đã nộp hôm nay
       prisma.submission.count({
@@ -828,25 +1139,46 @@ module.exports = {
         }
       }),
       
-      // Số kỳ thi đang diễn ra
+      // Số kỳ thi đang diễn ra (không tính đã xóa mềm)
       prisma.exam_instance.count({
         where: {
+          is_deleted: false,
           published: true,
           starts_at: { lte: now },
           ends_at: { gte: now }
         }
       }),
       
-      // Số kỳ thi sắp diễn ra (trong 7 ngày tới)
+      // Số kỳ thi sắp diễn ra (trong 7 ngày tới, không tính đã xóa mềm)
       prisma.exam_instance.count({
         where: {
+          is_deleted: false,
           published: true,
           starts_at: {
             gt: now,
             lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
           }
         }
-      })
+      }),
+
+      // Lịch sử hoạt động của admin hiện tại (30 hoạt động gần nhất)
+      adminId ? prisma.admin_action.findMany({
+        where: {
+          admin_id: adminId
+        },
+        take: 30,
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          action_type: true,
+          target_type: true,
+          target_id: true,
+          description: true,
+          metadata: true,
+          ip_address: true,
+          created_at: true
+        }
+      }) : []
     ]);
 
     return {
@@ -863,7 +1195,8 @@ module.exports = {
       },
       submissions: {
         today: todaySubmissions
-      }
+      },
+      admin_activities: recentActivities
     };
   },
 
