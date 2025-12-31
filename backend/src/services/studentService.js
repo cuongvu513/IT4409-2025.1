@@ -709,6 +709,25 @@ module.exports = {
             },
         });
 
+
+        // 5️ Số kỳ thi đã hoàn thành (không tính từ lớp/kỳ thi đã xóa)
+        // const completedCount = await prisma.submission.count({
+        //     where: {
+        //         exam_session: {
+        //             user_id: studentId,
+        //             exam_instance: {
+        //                 
+        //                 exam_template: {
+        //                     is_deleted: false,
+        //                     Renamedclass: {
+        //                         is_deleted: false
+        //                     }
+        //                 }
+        //             },
+        //         },
+        //     },
+        // });
+
         // 5️ Số kỳ thi đã hoàn thành (không tính từ lớp/kỳ thi đã xóa)
         const completedCount = await prisma.submission.count({
             where: {
@@ -728,7 +747,7 @@ module.exports = {
             },
         });
 
-        // 6️⃣ bài thi đã mở nhưng chưa thi (không tính đã xóa)
+        // 6️ bài thi đã mở nhưng chưa thi (không tính đã xóa)
         const notAttemptedExams = await prisma.exam_instance.findMany({
             where: {
                 is_deleted: false,
@@ -780,6 +799,8 @@ module.exports = {
             notAttemptedCount,
             notAttemptedExams: notAttempted,
         };
+
+
 
     }
 
